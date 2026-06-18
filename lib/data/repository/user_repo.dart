@@ -1,0 +1,91 @@
+import 'package:abaad_flutter/data/api/api_client.dart';
+import 'package:abaad_flutter/data/model/response/userinfo_model.dart';
+import 'package:abaad_flutter/util/app_constants.dart';
+import 'package:get/get.dart';
+import 'package:get/get_connect/http/src/response/response.dart';
+import 'package:image_picker/image_picker.dart';
+
+class UserRepo {
+  final ApiClient apiClient;
+  UserRepo({required this.apiClient});
+
+  Future<Response> getUserInfo() async {
+    return await apiClient.getData(AppConstants.CUSTOMER_INFO_URI);
+  }
+
+
+  Future<Response> getUserInfoById(int userId) async {
+    return await apiClient.getData( '${AppConstants.AGENT_INFO}?user_id=$userId');
+
+  }
+
+
+
+  Future<Response> updateProfile(UserInfoModel userInfoModel, XFile? data, String token) async {
+    Map<String, String> body = {
+      'name': userInfoModel.name ?? '',
+      'email': userInfoModel.email ?? '',
+      'youtube': userInfoModel.youtube ?? '',
+      'snapchat': userInfoModel.snapchat ?? '',
+      'instagram': userInfoModel.instagram ?? '',
+      'website': userInfoModel.website ?? '',
+      'tiktok': userInfoModel.tiktok ?? '',
+      'twitter': userInfoModel.twitter ?? '',
+    };
+
+    List<MultipartBody> files = [];
+
+    if (data != null) {
+      files.add(MultipartBody('image', data));
+    }
+
+    return await apiClient.postMultipartData(
+      AppConstants.UPDATE_PROFILE_URI,
+      body,
+      files,
+    );
+  }
+
+  //
+  // Future<Response> updateProfile(UserInfoModel userInfoModel, XFile data, String token) async {
+  //   Map<String, String> body = {};
+  //   body.addAll(<String, String>{
+  //     'name': userInfoModel.name! , 'email': userInfoModel.email!,'youtube':userInfoModel.youtube!,'snapchat':userInfoModel.snapchat !,'instagram':userInfoModel.instagram!,'website':userInfoModel.website !,'tiktok':userInfoModel.tiktok !,'twitter':userInfoModel.twitter!
+  //   });
+  //   return await apiClient.postMultipartData(AppConstants.UPDATE_PROFILE_URI, body, [MultipartBody('image', data)], );
+  // }
+
+
+  // Future<Response> updateProfile(UserInfoModel userInfoModel, XFile? data, String token) async {
+  //   Map<String, String> body = {};
+  //   body.addAll(<String, String>{
+  //     'f_name': userInfoModel.name!, 'l_name': userInfoModel.name!, 'email': userInfoModel.email!
+  //   });
+  //   return await apiClient.postMultipartData(AppConstants.UPDATE_PROFILE_URI, body, [MultipartBody('image', data)]);
+  // }
+
+  Future<Response>  getEstateList(int offset, String filterBy,int userId) async {
+    return await apiClient.getData('${AppConstants.CATEGORY_ESTATEURI}/all?offset=$offset&user_id=$userId', );
+  }
+
+
+
+
+
+
+
+  Future<Response> validateNafath(String idNumber) async {
+    return await apiClient.postData(AppConstants.nafath, {"id_number": idNumber});
+  }
+
+
+
+
+  Future<Response> checkRequestStatus(String nationalId,String transId,String random ) async {
+    return await apiClient.postData(AppConstants.check_request_status,
+        {'nationalId': nationalId,
+      'transId': transId,
+      'random': random,}, );
+  }
+
+}

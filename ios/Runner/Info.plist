@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CADisableMinimumFrameDurationOnPhone</key>
+	<true/>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>$(DEVELOPMENT_LANGUAGE)</string>
+	<key>CFBundleDisplayName</key>
+	<string>Abaad</string>
+	<key>CFBundleExecutable</key>
+	<string>$(EXECUTABLE_NAME)</string>
+	<key>CFBundleIdentifier</key>
+	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleName</key>
+	<string>abaad</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>$(FLUTTER_BUILD_NAME)</string>
+	<key>CFBundleSignature</key>
+	<string>????</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLName</key>
+			<string>abaad</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>abaad</string>
+			</array>
+		</dict>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>None</string>
+		</dict>
+	</array>
+	<key>CFBundleVersion</key>
+	<string>$(FLUTTER_BUILD_NUMBER)</string>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
+	<key>LSRequiresIPhoneOS</key>
+	<true/>
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsArbitraryLoads</key>
+		<true/>
+	</dict>
+	<key>NSCameraUsageDescription</key>
+	<string>يريد تطبيق أبعاد الوصول الكاميرا الخاص بك حتى تتمكن من مشاركة صورة العقار الخاص بك</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>يريد تطبيق أبعاد الوصول الى موقعك ليساعدك على الوصول لأقرب العقارات إليك</string>
+	<key>NSLocationAlwaysUsageDescription</key>
+	<string>يريد تطبيق أبعاد الوصول الى موقعك ليساعدك على الوصول لأقرب العقارات إليك</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>يريد تطبيق أبعاد الوصول الى موقعك ليساعدك على الوصول لأقرب العقارات إليك</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>يريد تطبيق أبعاد الوصول استديو الصور الخاص بك حتى تتمكن من مشاركة صورة العقار الخاص بك</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>يريد تطبيق أبعاد الوصول استديو الصور الخاص بك حتى تتمكن من مشاركة صورة العقار الخاص بك</string>
+	<key>UIApplicationSupportsIndirectInputEvents</key>
+	<true/>
+	<key>UILaunchStoryboardName</key>
+	<string>LaunchScreen</string>
+	<key>UIMainStoryboardFile</key>
+	<string>Main</string>
+	<key>UISupportedInterfaceOrientations</key>
+	<array>
+		<string>UIInterfaceOrientationLandscapeLeft</string>
+		<string>UIInterfaceOrientationLandscapeRight</string>
+		<string>UIInterfaceOrientationPortrait</string>
+		<string>UIInterfaceOrientationPortraitUpsideDown</string>
+	</array>
+	<key>UISupportedInterfaceOrientations~ipad</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+	</array>
+	<key>UIViewControllerBasedStatusBarAppearance</key>
+	<false/>
+</dict>
+</plist>

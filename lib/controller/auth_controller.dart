@@ -34,21 +34,29 @@ class AuthController extends GetxController implements GetxService {
   List<ZoneModel>? _zoneList;
   int _selectedZoneIndex = 0;
   LatLng? _restaurantLocation;
-  LatLng? _estateLocation ;
+  LatLng? _estateLocation;
   List<int>? _zoneIds;
   XFile? _pickedImage;
 
-  final List<String> _identityTypeList = ['هوية وطنية', 'سجل تجاري', 'هوية وطنية '];
+  final List<String> _identityTypeList = [
+    'هوية وطنية',
+    'سجل تجاري',
+    'هوية وطنية ',
+  ];
   int _identityTypeIndex = 0;
   final List<String> _dmTypeList = ['مالك عقار', 'وسيط عقاري'];
   bool isFirstTime = true;
   int _dmTypeIndex = 0;
 
-  List<String> subscriptionImages = [Images.subscription1, Images.subscription2, Images.subscription3];
+  List<String> subscriptionImages = [
+    Images.subscription1,
+    Images.subscription2,
+    Images.subscription3,
+  ];
   PackageModel? _packageModel = PackageModel(packages: []);
   int _activeSubscriptionIndex = 0;
   String _businessPlanStatus = 'business';
-  String _secondStep= 'second_step';
+  String _secondStep = 'second_step';
   int _paymentIndex = 0;
   int _businessIndex = 0;
 
@@ -72,48 +80,87 @@ class AuthController extends GetxController implements GetxService {
   String get businessPlanStatus => _businessPlanStatus;
   String get secondStep => _secondStep;
   int get activeSubscriptionIndex => _activeSubscriptionIndex;
-//  ZoneModel get zoneModel => _zoneModel;
+  //  ZoneModel get zoneModel => _zoneModel;
   PackageModel? get packageModel => _packageModel;
   int get paymentIndex => _paymentIndex;
 
-
-  void resetBusiness(){
-    _businessIndex = Get.find<SplashController>().configModel?.businessPlan?.commission == 0 ? 1 : 0;
+  void resetBusiness() {
+    _businessIndex =
+        Get.find<SplashController>().configModel?.businessPlan?.commission == 0
+        ? 1
+        : 0;
     _activeSubscriptionIndex = 0;
     _businessPlanStatus = 'business';
     _secondStep = 'second_step';
     isFirstTime = true;
-    _paymentIndex = Get.find<SplashController>().configModel?.freeTrialPeriodStatus == 0 ? 1 : 0;
+    _paymentIndex =
+        Get.find<SplashController>().configModel?.freeTrialPeriodStatus == 0
+        ? 1
+        : 0;
   }
 
-  void setPaymentIndex(int index){
+  void setPaymentIndex(int index) {
     _paymentIndex = index;
     update();
   }
 
-  void setBusiness(int business){
+  void setBusiness(int business) {
     _activeSubscriptionIndex = 0;
     _businessIndex = business;
     update();
   }
-  void showBackPressedDialogue(String title){
-    Get.dialog(ConfirmationDialog(icon: Images.support,
-      title: title,
-      description: 'are_you_sure_to_go_back'.tr, isLogOut: true,
-      onYesPressed: () => Get.offAllNamed(RouteHelper.getInitialRoute()),
-    ), useSafeArea: false);
+
+  void showBackPressedDialogue(String title) {
+    Get.dialog(
+      ConfirmationDialog(
+        icon: Images.support,
+        title: title,
+        description: 'are_you_sure_to_go_back'.tr,
+        isLogOut: true,
+        onYesPressed: () => Get.offAllNamed(RouteHelper.getInitialRoute()),
+      ),
+      useSafeArea: false,
+    );
   }
+
+  /// Safely interprets a value coming from the API as a boolean.
+  /// Handles 0/1 (int), true/false (bool) and "0"/"1"/"true"/"false" (String),
+  /// so a backend type change can never silently break the verification flow.
+  bool _asBool(dynamic value) {
+    if (value == null) return false;
+    if (value is bool) return value;
+    if (value is num) return value != 0;
+    final String text = value.toString().toLowerCase().trim();
+    return text == '1' || text == 'true';
+  }
+
+  // ---------------------------------------------------------------------
+  // FIXED: registration()
+  // Previously the token-save call was commented out entirely, so even when
+  // OTP verification was disabled in business settings, a newly registered
+  // account was never actually logged in.
+  // ---------------------------------------------------------------------
   Future<ResponseModel> registration(SignUpBody signUpBody) async {
     _isLoading = true;
     update();
     Response response = await authRepo.registration(signUpBody);
     ResponseModel responseModel;
     if (response.statusCode == 200) {
-      if(!(Get.find<SplashController>().configModel!.customerVerification ?? false)) {
-       // authRepo.saveUserToken(response.body["token"]);
-       // await authRepo.updateToken();
+      final String token = (response.body['token'] ?? '').toString();
+      final bool verificationRequired =
+          Get.find<SplashController>().configModel?.customerVerification ??
+          false;
+
+      if (!verificationRequired && token.isNotEmpty) {
+        await authRepo.saveUserToken(token);
       }
-      responseModel = ResponseModel(true, response.body["token"]);
+
+      responseModel = ResponseModel(
+        true,
+        token,
+        isPhoneVerified: !verificationRequired,
+        token: token,
+      );
     } else {
       responseModel = ResponseModel(false, response.statusText.toString());
     }
@@ -122,24 +169,45 @@ class AuthController extends GetxController implements GetxService {
     return responseModel;
   }
 
-
-
-
-  Future<ResponseModel> login(String? phone, String password, {bool alreadyInApp = false}) async {
+  // ---------------------------------------------------------------------
+  // FIXED: login()
+  // 1) Token is now actually persisted (it was commented out before).
+  // 2) is_phone_verified is parsed safely instead of relying on a fragile
+  //    "substring(1)" string-concatenation trick on the calling screen.
+  // 3) The result now tells the UI whether an OTP step is still required,
+  //    so an already-verified user (or one where OTP is disabled) is not
+  //    forced through the verification screen unnecessarily.
+  // ---------------------------------------------------------------------
+  Future<ResponseModel> login(
+    String? phone,
+    String password, {
+    bool alreadyInApp = false,
+  }) async {
     _isLoading = true;
     update();
     Response response = await authRepo.login(phone: phone, password: password);
     ResponseModel responseModel;
     if (response.statusCode == 200) {
-      if(Get.find<SplashController>().configModel!.customerVerification! && response.body['is_phone_verified'] == 0) {
-        print("--------------------token jwot${response.body['token']}");
-      //  authRepo.saveUserToken(response.body['token'], alreadyInApp: alreadyInApp);
-      }else {
-        print("--------------------token jwot${response.body['token']}");
-       //authRepo .saveUserToken(response.body['token'], alreadyInApp: alreadyInApp);
-      //  await authRepo.updateToken();
+      final String token = (response.body['token'] ?? '').toString();
+      final bool isPhoneVerified = _asBool(response.body['is_phone_verified']);
+      final bool verificationRequired =
+          (Get.find<SplashController>().configModel?.customerVerification ??
+              false) &&
+          !isPhoneVerified;
+
+      // Only persist the token (i.e. actually log the user in) when no
+      // further OTP step is required. If verification is still required,
+      // verifyPhone() will persist the token once the code is confirmed.
+      if (!verificationRequired && token.isNotEmpty) {
+        await authRepo.saveUserToken(token, alreadyInApp: alreadyInApp);
       }
-      responseModel = ResponseModel(true, '${response.body['is_phone_verified']}${response.body['token']}');
+
+      responseModel = ResponseModel(
+        true,
+        token,
+        isPhoneVerified: !verificationRequired,
+        token: token,
+      );
     } else {
       responseModel = ResponseModel(false, response.statusText.toString());
     }
@@ -147,36 +215,6 @@ class AuthController extends GetxController implements GetxService {
     update();
     return responseModel;
   }
-
-  // Future<ResponseModel> login(String phone, String password) async {
-  //   _isLoading = true;
-  //   update();
-  //   Response response = await authRepo.login(phone: "+966${phone}", password: password);
-  //   ResponseModel responseModel;
-  //   if (response.statusCode == 200) {
-  //     if( (Get.find<SplashController>().configModel!.customerVerification ?? false) && response.body['is_phone_verified'] == 0) {
-  //
-  //     }else {
-  //       //print('-----------------------token${response.body['token']}');
-  //       authRepo.saveUserToken(response.body['token']);
-  //       await authRepo.updateToken();
-  //     }
-  //     responseModel = ResponseModel(true, '${response.body['is_phone_verified']}${response.body['token']}');
-  //   } else {
-  //     responseModel = ResponseModel(false, response.statusText.toString());
-  //   }
-  //   _isLoading = false;
-  //   update();
-  //   return responseModel;
-  // }
-
-
-
-
-
-  // Future<void> updateToken() async {
-  //   await authRepo.updateToken();
-  // }
 
   Future<ResponseModel> verifyToken(String email) async {
     _isLoading = true;
@@ -193,8 +231,6 @@ class AuthController extends GetxController implements GetxService {
     return responseModel;
   }
 
-
-
   Future<void> updateZone() async {
     Response response = await authRepo.updateZone();
     if (response.statusCode == 200) {
@@ -204,10 +240,11 @@ class AuthController extends GetxController implements GetxService {
     }
   }
 
-  void selectSubscriptionCard(int index){
+  void selectSubscriptionCard(int index) {
     _activeSubscriptionIndex = index;
     update();
   }
+
   String _verificationCode = '';
 
   String get verificationCode => _verificationCode;
@@ -217,10 +254,9 @@ class AuthController extends GetxController implements GetxService {
     update();
   }
 
-
   bool _isActiveRememberMe = false;
 
-  var token="";
+  var token = "";
 
   bool get isActiveRememberMe => _isActiveRememberMe;
 
@@ -242,7 +278,11 @@ class AuthController extends GetxController implements GetxService {
     return authRepo.clearSharedData();
   }
 
-  void saveUserNumberAndPassword(String number, String password, String countryCode) {
+  void saveUserNumberAndPassword(
+    String number,
+    String password,
+    String countryCode,
+  ) {
     authRepo.saveUserNumberAndPassword(number, password, countryCode);
   }
 
@@ -278,18 +318,23 @@ class AuthController extends GetxController implements GetxService {
   }
 
   void pickImage(bool isLogo, bool isRemove) async {
-    if(isRemove) {
+    if (isRemove) {
       _pickedLogo = null;
       _pickedCover = null;
-    }else {
+    } else {
       if (isLogo) {
-        _pickedLogo = await ImagePicker().pickImage(source: ImageSource.gallery);
+        _pickedLogo = await ImagePicker().pickImage(
+          source: ImageSource.gallery,
+        );
       } else {
-        _pickedCover = await ImagePicker().pickImage(source: ImageSource.gallery);
+        _pickedCover = await ImagePicker().pickImage(
+          source: ImageSource.gallery,
+        );
       }
       update();
     }
   }
+
   Future<void> getZoneList() async {
     _pickedLogo = null;
     _pickedCover = null;
@@ -300,10 +345,18 @@ class AuthController extends GetxController implements GetxService {
     if (response.statusCode == 200) {
       _zoneList = [];
       response.body.forEach((zone) => _zoneList?.add(ZoneModel.fromJson(zone)));
-      setLocation(LatLng(
-        double.parse(Get.find<SplashController>().configModel?.defaultLocation?.lat ?? '0'),
-        double.parse(Get.find<SplashController>().configModel?.defaultLocation?.lng ?? '0'),
-      ));
+      setLocation(
+        LatLng(
+          double.parse(
+            Get.find<SplashController>().configModel?.defaultLocation?.lat ??
+                '0',
+          ),
+          double.parse(
+            Get.find<SplashController>().configModel?.defaultLocation?.lng ??
+                '0',
+          ),
+        ),
+      );
     } else {
       ApiChecker.checkApi(response, showToaster: true);
     }
@@ -316,100 +369,88 @@ class AuthController extends GetxController implements GetxService {
   }
 
   void setLocation(LatLng location) async {
-    _estateLocation=location;
+    _estateLocation = location;
     ZoneResponseModel response = await Get.find<LocationController>().getZone(
-      location.latitude.toString(), location.longitude.toString(), false,
+      location.latitude.toString(),
+      location.longitude.toString(),
+      false,
     );
     _restaurantLocation = location;
-    if(response.isSuccess && response.zoneIds!.isNotEmpty) {
+    if (response.isSuccess && response.zoneIds!.isNotEmpty) {
       _restaurantLocation = location;
       _zoneIds = response.zoneIds;
-      for(int index=0; index<_zoneList!.length; index++) {
-        if(_zoneIds!.contains(_zoneList?[index].id)) {
+      for (int index = 0; index < _zoneList!.length; index++) {
+        if (_zoneIds!.contains(_zoneList?[index].id)) {
           _selectedZoneIndex = index;
           break;
         }
       }
-    }else {
+    } else {
       _restaurantLocation = null;
       _zoneIds = null;
     }
     update();
   }
 
-
-
   void setIdentityTypeIndex(String identityType, bool notify) {
     int index0 = 0;
-    for(int index=0; index<_identityTypeList.length; index++) {
-      if(_identityTypeList[index] == identityType) {
+    for (int index = 0; index < _identityTypeList.length; index++) {
+      if (_identityTypeList[index] == identityType) {
         index0 = index;
         break;
       }
     }
     _identityTypeIndex = index0;
-    if(notify) {
+    if (notify) {
       update();
     }
   }
 
   void setDMTypeIndex(String dmType, bool notify) {
     _dmTypeIndex = _dmTypeList.indexOf(dmType);
-    if(notify) {
+    if (notify) {
       update();
     }
   }
 
-
-
   Future<ResponseModel?> forgetPassword(String email) async {
+    // NOTE: intentionally left disabled (unchanged) — this app has no
+    // password-recovery UI, sign in/up always use a fixed dummy password.
+    // Not related to the login bug; left as-is to avoid touching an
+    // unrelated, unfinished feature.
     _isLoading = true;
     return null;
-    // update();
-    // Response response = await authRepo.forgetPassword(email);
-    //
-    // ResponseModel responseModel;
-    // if (response.statusCode == 200) {
-    //   responseModel = ResponseModel(true, response.body["message"]);
-    // } else {
-    //   responseModel = ResponseModel(false, response.statusText);
-    // }
-    // _isLoading = false;
-    // update();
-    // return responseModel;
   }
-  Future<ResponseModel?> resetPassword(String resetToken, String number, String password, String confirmPassword) async {
+
+  Future<ResponseModel?> resetPassword(
+    String resetToken,
+    String number,
+    String password,
+    String confirmPassword,
+  ) async {
+    // See note on forgetPassword() above.
     _isLoading = true;
     return null;
-    // update();
-    // Response response = await authRepo.resetPassword(resetToken, number, password, confirmPassword);
-    // ResponseModel responseModel;
-    // if (response.statusCode == 200) {
-    //   responseModel = ResponseModel(true, response.body["message"]);
-    // } else {
-    //   responseModel = ResponseModel(false, response.statusText);
-    // }
-    // _isLoading = false;
-    // update();
-    // return responseModel;
   }
 
-
-
-
+  // ---------------------------------------------------------------------
+  // FIXED: verifyPhone()
+  // saveUserToken() is now awaited (was fire-and-forget before), and the
+  // empty/null-safe message parsing matches the same pattern used above.
+  // ---------------------------------------------------------------------
   Future<ResponseModel> verifyPhone(String phone, String token) async {
     _isLoading = true;
     update();
     Response response = await authRepo.verifyPhone(phone, _verificationCode);
     ResponseModel responseModel;
     if (response.statusCode == 200) {
-
-
-      print("--------------------token jwot${token}");
-      authRepo.saveUserToken(token);
-
-   //await authRepo.updateToken();
-      responseModel = ResponseModel(true, response.body["message"]);
+      if (token.isNotEmpty) {
+        await authRepo.saveUserToken(token);
+      }
+      responseModel = ResponseModel(
+        true,
+        (response.body['message'] ?? '').toString(),
+      );
     } else {
       responseModel = ResponseModel(false, response.statusText.toString());
     }
@@ -417,8 +458,6 @@ class AuthController extends GetxController implements GetxService {
     update();
     return responseModel;
   }
-
-
 
   Future<void> registerAgent(Userinfo agentBody) async {
     _isLoading = true;
@@ -446,34 +485,42 @@ class AuthController extends GetxController implements GetxService {
     update();
   }
 
-
-  Future<void> submitBusinessPlan({required int estateId})async {
+  Future<void> submitBusinessPlan({required int estateId}) async {
     String businessPlan;
-    //print("ahmed ahemd$businessIndex");
-    if(businessIndex == 0){
+    if (businessIndex == 0) {
       businessPlan = 'commission';
-      setUpBusinessPlan(BusinessPlanBody(businessPlan: businessPlan, estateId: estateId.toString(), packageId: '', payment: ''));
-
-    }else{
+      setUpBusinessPlan(
+        BusinessPlanBody(
+          businessPlan: businessPlan,
+          estateId: estateId.toString(),
+          packageId: '',
+          payment: '',
+        ),
+      );
+    } else {
       _businessPlanStatus = 'payment';
-      if(!isFirstTime) {
-        if (_businessPlanStatus == 'payment' && _packageModel!.packages!.isNotEmpty  ) {
-
+      if (!isFirstTime) {
+        if (_businessPlanStatus == 'payment' &&
+            _packageModel!.packages!.isNotEmpty) {
           businessPlan = 'subscription';
-          int? packageId = _packageModel!.packages?[_activeSubscriptionIndex].id;
+          int? packageId =
+              _packageModel!.packages?[_activeSubscriptionIndex].id;
           String payment = _paymentIndex == 0 ? 'free_trial' : 'paying_now';
-          setUpBusinessPlan(BusinessPlanBody(businessPlan: businessPlan,
+          setUpBusinessPlan(
+            BusinessPlanBody(
+              businessPlan: businessPlan,
               packageId: packageId.toString(),
               estateId: estateId.toString(),
-              payment: payment),
+              payment: payment,
+            ),
           );
-
-        } else if(_packageModel?.packages?.isEmpty ?? false && _packageModel!.packages!.isEmpty ){
+        } else if (_packageModel?.packages?.isEmpty ??
+            false && _packageModel!.packages!.isEmpty) {
           showCustomSnackBar('no_package_found'.tr);
         } else {
           showCustomSnackBar('please Select Any Process');
         }
-      }else{
+      } else {
         isFirstTime = false;
       }
     }
@@ -481,7 +528,9 @@ class AuthController extends GetxController implements GetxService {
     update();
   }
 
-  Future<ResponseModel> setUpBusinessPlan(BusinessPlanBody businessPlanBody) async {
+  Future<ResponseModel> setUpBusinessPlan(
+    BusinessPlanBody businessPlanBody,
+  ) async {
     _isLoading = true;
     update();
     Response response = await authRepo.setUpBusinessPlan(businessPlanBody);
@@ -489,7 +538,10 @@ class AuthController extends GetxController implements GetxService {
     if (response.statusCode == 200) {
       _businessPlanStatus = 'complete';
       responseModel = ResponseModel(true, response.body.toString());
-      Future.delayed(Duration(seconds: 2),()=> Get.offAllNamed(RouteHelper.getInitialRoute()));
+      Future.delayed(
+        Duration(seconds: 2),
+        () => Get.offAllNamed(RouteHelper.getInitialRoute()),
+      );
     } else {
       responseModel = ResponseModel(false, response!.statusText.toString());
     }
@@ -498,10 +550,8 @@ class AuthController extends GetxController implements GetxService {
     return responseModel;
   }
 
-
-  void setBusinessStatus(String status){
+  void setBusinessStatus(String status) {
     _businessPlanStatus = status;
     update();
   }
-
 }

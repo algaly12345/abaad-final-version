@@ -15,7 +15,6 @@ import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 
-
 class UserController extends GetxController implements GetxService {
   final UserRepo userRepo;
   UserController({required this.userRepo});
@@ -38,29 +37,48 @@ class UserController extends GetxController implements GetxService {
   var latitude = '0'.obs;
   var longitude = '0'.obs;
   var address = 'Getting Address..'.obs;
-   StreamSubscription<Position>? streamSubscription;
-
+  StreamSubscription<Position>? streamSubscription;
 
   Future<ResponseModel> getUserInfo() async {
     _pickedFile = null;
     ResponseModel responseModel;
-    Response? response = await userRepo.getUserInfo();
-   //print("user respone =====================>${response?.body}");
-    if (response.statusCode == 200) {
-      _userInfoModel = UserInfoModel.fromJson(response.body);
-      //print('---------------------------body${response?.body}');
-      responseModel = ResponseModel(true, 'successful');
-    } else {
-      responseModel = ResponseModel(false, response.statusText.toString());
-  //    ApiChecker.checkApi(response, showToaster: true);
+    _isLoading = true;
+    update();
+
+    try {
+      Response? response = await userRepo.getUserInfo();
+
+      // طباعة استجابة السيرفر للتأكد من وصول البيانات
+      debugPrint(
+        "==================== 📥 [USER INFO RESPONSE] 📥 ====================",
+      );
+      debugPrint("كود الحالة: ${response?.statusCode}");
+      debugPrint("محتوى البيانات: ${response?.body}");
+      debugPrint(
+        "=================================================================",
+      );
+
+      if (response?.statusCode == 200) {
+        _userInfoModel = UserInfoModel.fromJson(response?.body);
+        responseModel = ResponseModel(true, 'successful');
+      } else {
+        responseModel = ResponseModel(
+          false,
+          response?.statusText.toString() ?? "",
+        );
+        ApiChecker.checkApi(response!, showToaster: true);
+      }
+    } catch (e, stackTrace) {
+      // 🛠️ في حال حدوث أي مشكلة أثناء معالجة البيانات، سيتم طباعتها هنا فوراً دون تعليق التطبيق
+      debugPrint("❌ [USER INFO ERROR] ❌: $e");
+      debugPrint(stackTrace.toString());
+      responseModel = ResponseModel(false, e.toString());
     }
+
+    _isLoading = false;
     update();
     return responseModel;
   }
-
-
-
-
 
   Future<ResponseModel> getUserInfoByID(int id) async {
     //print("mohammed  =====================>");
@@ -73,7 +91,7 @@ class UserController extends GetxController implements GetxService {
       responseModel = ResponseModel(true, 'successful');
     } else {
       responseModel = ResponseModel(false, response!.statusText.toString());
-     // ApiChecker.checkApi(response, showToaster: true);
+      // ApiChecker.checkApi(response, showToaster: true);
     }
     update();
     return responseModel;
@@ -118,7 +136,6 @@ class UserController extends GetxController implements GetxService {
   //   return responseModel;
   // }
 
-
   // Future<ResponseModel> updateUserInfo(UserInfoModel updateUserModel, String token) async {
   //   _isLoading = true;
   //   update();
@@ -141,8 +158,10 @@ class UserController extends GetxController implements GetxService {
   //   return responseModel;
   // }
 
-
-  Future<ResponseModel> updateUserInfo(UserInfoModel updateUserModel, String token) async {
+  Future<ResponseModel> updateUserInfo(
+    UserInfoModel updateUserModel,
+    String token,
+  ) async {
     _isLoading = true;
     update();
 
@@ -151,7 +170,11 @@ class UserController extends GetxController implements GetxService {
     // استدعاء الدالة بناءً على وجود صورة أو لا
     Response? response;
     if (_pickedFile != null) {
-      response = await userRepo.updateProfile(updateUserModel, _pickedFile, token);
+      response = await userRepo.updateProfile(
+        updateUserModel,
+        _pickedFile,
+        token,
+      );
     } else {
       response = await userRepo.updateProfile(updateUserModel, null, token);
     }
@@ -183,31 +206,27 @@ class UserController extends GetxController implements GetxService {
   Future removeUser() async {
     _isLoading = true;
     update();
-    Response? response ;
+    Response? response;
 
     if (response?.statusCode == 200) {
       showCustomSnackBar('your_account_remove_successfully'.tr);
       Get.find<AuthController>().clearSharedData();
       Get.offAllNamed(RouteHelper.getSignInRoute(RouteHelper.splash));
-
-    }else{
+    } else {
       Get.back();
-      ApiChecker.checkApi(response ?? Response() , showToaster: true);
+      ApiChecker.checkApi(response ?? Response(), showToaster: true);
     }
   }
-
 
   void updateUserWithNewData(Userinfo user) {
     _userInfoModel?.userinfo = user;
   }
-
 
   @override
   void onInit() async {
     super.onInit();
     //getLocation();
   }
-
 
   @override
   void onClose() {
@@ -264,39 +283,39 @@ class UserController extends GetxController implements GetxService {
   //   //print("adress-------------------------------------${place.locality},${place.country}");
   // }
 
-
-  Future<void> getEstateByUser(int offset, bool reload,int userId) async {
+  Future<void> getEstateByUser(int offset, bool reload, int userId) async {
     if (reload) {
       _estateModel = null;
       update();
     }
-    Response? response = await userRepo?.getEstateList(offset, _estateType,userId);
+    Response? response = await userRepo?.getEstateList(
+      offset,
+      _estateType,
+      userId,
+    );
     if (response?.statusCode == 200) {
       if (offset == 1) {
         _estateModel = EstateModel.fromJson(response?.body);
         //print("estate response ...............${response?.body}");
       } else {
-        _estateModel?.totalSize = EstateModel
-            .fromJson(response?.body)
-            .totalSize;
-        _estateModel?.offset = EstateModel
-            .fromJson(response?.body)
-            .offset;
-        _estateModel?.estates?.addAll(EstateModel
-            .fromJson(response?.body)
-            .estates as Iterable<Estate>);
-        Get.find<EstateController>() .getCategoryList(response?.body);
+        _estateModel?.totalSize = EstateModel.fromJson(
+          response?.body,
+        ).totalSize;
+        _estateModel?.offset = EstateModel.fromJson(response?.body).offset;
+        _estateModel?.estates?.addAll(
+          EstateModel.fromJson(response?.body).estates as Iterable<Estate>,
+        );
+        Get.find<EstateController>().getCategoryList(response?.body);
       }
       update();
     } else {
-      ApiChecker.checkApi(response! , showToaster: true);
+      ApiChecker.checkApi(response!, showToaster: true);
     }
   }
 
-
-  String?  transId ;
+  String? transId;
   var random = ''.obs;
-  int?  codeStatus ;
+  int? codeStatus;
 
   // void validateNafath(String idNumber,BuildContext context) async {
   //   _isLoading = true;
@@ -361,7 +380,6 @@ class UserController extends GetxController implements GetxService {
   //
   //
 
-
   Future<void> validateNafath(String idNumber, BuildContext context) async {
     _isLoading = true;
     update();
@@ -379,20 +397,21 @@ class UserController extends GetxController implements GetxService {
 
         // عرض الديالوج المخصص مع إرسال الطلب تلقائيًا
         showVerificationDialogAuto(context, idNumber, transId!, random.value);
-
       } else if (response?.statusCode == 400) {
         final errorMessage = response?.body['message']['message'].toString();
-        if (errorMessage != null && errorMessage.contains("There Is Active Trx")) {
-          Get.snackbar('تنبيه', 'يوجد عملية تحقق سابقة لم تنته بعد. حاول لاحقًا.');
+        if (errorMessage != null &&
+            errorMessage.contains("There Is Active Trx")) {
+          Get.snackbar(
+            'تنبيه',
+            'يوجد عملية تحقق سابقة لم تنته بعد. حاول لاحقًا.',
+          );
         } else {
           Get.snackbar('خطأ', errorMessage ?? 'حدث خطأ غير معروف');
         }
-
       } else {
         final errorMessage = response?.body['message']['message'].toString();
         Get.snackbar('خطأ', errorMessage ?? 'حدث خطأ غير معروف');
       }
-
     } catch (e) {
       Get.snackbar('خطأ', e.toString());
     } finally {
@@ -402,8 +421,16 @@ class UserController extends GetxController implements GetxService {
   }
 
   // تعديل checkRequestStatus لإرجاع bool
-  Future<bool> checkRequestStatus(String nationalId, String transId, String random) async {
-    final response = await userRepo?.checkRequestStatus(nationalId, transId, random);
+  Future<bool> checkRequestStatus(
+    String nationalId,
+    String transId,
+    String random,
+  ) async {
+    final response = await userRepo?.checkRequestStatus(
+      nationalId,
+      transId,
+      random,
+    );
 
     if (response?.statusCode == 200) {
       Get.offAllNamed(RouteHelper.getInitialRoute());
@@ -435,7 +462,12 @@ class UserController extends GetxController implements GetxService {
   // }
   //
 
-  void showVerificationDialogAuto(BuildContext context, String idNumber, String transId, String random) {
+  void showVerificationDialogAuto(
+    BuildContext context,
+    String idNumber,
+    String transId,
+    String random,
+  ) {
     int countdown = 60; // الوقت بالثواني
     Timer? timerCountdown;
     Timer? timerRequest;
@@ -463,8 +495,14 @@ class UserController extends GetxController implements GetxService {
 
             // بدء إرسال الطلب كل 5 ثواني
             if (timerRequest == null) {
-              timerRequest = Timer.periodic(const Duration(seconds: 5), (t) async {
-                bool success = await checkRequestStatus(idNumber, transId, random);
+              timerRequest = Timer.periodic(const Duration(seconds: 5), (
+                t,
+              ) async {
+                bool success = await checkRequestStatus(
+                  idNumber,
+                  transId,
+                  random,
+                );
                 if (success) {
                   t.cancel();
                   timerCountdown?.cancel();
@@ -479,7 +517,10 @@ class UserController extends GetxController implements GetxService {
               backgroundColor: Colors.white.withOpacity(0.95),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(20),
-                side: BorderSide(color: Theme.of(context).primaryColor, width: 2),
+                side: BorderSide(
+                  color: Theme.of(context).primaryColor,
+                  width: 2,
+                ),
               ),
               child: Padding(
                 padding: const EdgeInsets.all(20.0),
@@ -489,7 +530,9 @@ class UserController extends GetxController implements GetxService {
                   children: [
                     CircleAvatar(
                       radius: 40,
-                      backgroundColor: Theme.of(context).primaryColor.withOpacity(0.2),
+                      backgroundColor: Theme.of(
+                        context,
+                      ).primaryColor.withOpacity(0.2),
                       child: Text(
                         random,
                         style: TextStyle(
@@ -503,7 +546,10 @@ class UserController extends GetxController implements GetxService {
                     Text(
                       'click_on_confirm_the_authentication_process'.tr,
                       textAlign: TextAlign.center,
-                      style: const TextStyle(fontSize: 14, color: Colors.black87),
+                      style: const TextStyle(
+                        fontSize: 14,
+                        color: Colors.black87,
+                      ),
                     ),
                     const SizedBox(height: 15),
                     Text(
@@ -526,7 +572,9 @@ class UserController extends GetxController implements GetxService {
                           },
                           child: Text(
                             'Cancel'.tr,
-                            style: TextStyle(color: Theme.of(context).primaryColor),
+                            style: TextStyle(
+                              color: Theme.of(context).primaryColor,
+                            ),
                           ),
                         ),
                       ],
@@ -544,5 +592,3 @@ class UserController extends GetxController implements GetxService {
     });
   }
 }
-
-

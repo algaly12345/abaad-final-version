@@ -271,8 +271,7 @@
 //   }
 // }
 
-
-import 'package:abaad_chatbot_ui/abaad_chatbot_ui.dart';
+//import 'package:abaad_chatbot_ui/abaad_chatbot_ui.dart';
 import 'package:abaad_flutter/view/base/details_dilog.dart';
 import 'package:flutter/material.dart';
 import 'dart:io';
@@ -302,7 +301,6 @@ import 'data/model/response/estate_model.dart';
 import 'helper/get_di.dart' as di;
 
 Future<void> main() async {
-
   WidgetsFlutterBinding.ensureInitialized();
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
   if (ResponsiveHelper.isMobilePhone()) {
@@ -318,30 +316,6 @@ Future<void> main() async {
   // ✅ الآن نقدر نستخدم Get.find بأمان
   final SharedPreferences sharedPreferences = Get.find<SharedPreferences>();
 
-  // Chatbot wiring — when the user taps a property card or a
-  // property URL inside the chatbot reply, route to the native
-  // estate details dialog. Replaces the old _initDeepLinks /
-  // _handleDeepLink path.
-  AbaadChatbotConfig.init(
-    apiBaseUrl: 'https://chatbot.abaadapp.sa',
-    getAuthToken: () async {
-     // return Get.find<AuthController>().token; // ← Ayman: confirm this returns the JWT
-    },
-    onPropertyDetailsTap: (BuildContext ctx, int propertyId) async {
-      final estateController = Get.find<EstateController>();
-      final Estate estate = await estateController.getEstateDetails(
-        Estate(id: propertyId),
-      );
-      if (Get.isDialogOpen == true) {
-        Get.back();
-      }
-      Get.dialog(
-        DettailsDilog(estate: estate),
-        barrierDismissible: true,
-      );
-    },
-  );
-
   NotificationBody? body;
 
   try {
@@ -352,7 +326,8 @@ Future<void> main() async {
     runApp(
       MyApp(
         languages: languages,
-        body: body ?? NotificationBody(notificationType: NotificationType.order),
+        body:
+            body ?? NotificationBody(notificationType: NotificationType.order),
       ),
     );
   } catch (e) {
@@ -364,18 +339,13 @@ class MyApp extends StatefulWidget {
   final Map<String, Map<String, String>> languages;
   final NotificationBody? body;
 
-  const MyApp({
-    super.key,
-    required this.languages,
-    required this.body,
-  });
+  const MyApp({super.key, required this.languages, required this.body});
 
   @override
   State<MyApp> createState() => _MyAppState();
 }
 
 class _MyAppState extends State<MyApp> {
-
   @override
   void initState() {
     super.initState();
@@ -392,10 +362,7 @@ class _MyAppState extends State<MyApp> {
       Get.back();
     }
 
-    Get.dialog(
-      DettailsDilog(estate: estate),
-      barrierDismissible: true,
-    );
+    Get.dialog(DettailsDilog(estate: estate), barrierDismissible: true);
   }
 
   void _route() {
@@ -415,38 +382,45 @@ class _MyAppState extends State<MyApp> {
       _route();
     }
 
-    return GetBuilder<ThemeController>(builder: (themeController) {
-      return GetBuilder<LocalizationController>(builder: (localizeController) {
-        return GetBuilder<SplashController>(builder: (splashController) {
-          return (GetPlatform.isWeb && splashController.configModel == null)
-              ? const SizedBox()
-              : GetMaterialApp(
-            title: AppConstants.APP_NAME,
-            debugShowCheckedModeBanner: false,
-            navigatorKey: Get.key,
-            scrollBehavior: MaterialScrollBehavior().copyWith(
-              dragDevices: {
-                PointerDeviceKind.mouse,
-                PointerDeviceKind.touch,
+    return GetBuilder<ThemeController>(
+      builder: (themeController) {
+        return GetBuilder<LocalizationController>(
+          builder: (localizeController) {
+            return GetBuilder<SplashController>(
+              builder: (splashController) {
+                return (GetPlatform.isWeb &&
+                        splashController.configModel == null)
+                    ? const SizedBox()
+                    : GetMaterialApp(
+                        title: AppConstants.APP_NAME,
+                        debugShowCheckedModeBanner: false,
+                        navigatorKey: Get.key,
+                        scrollBehavior: MaterialScrollBehavior().copyWith(
+                          dragDevices: {
+                            PointerDeviceKind.mouse,
+                            PointerDeviceKind.touch,
+                          },
+                        ),
+                        theme: themeController.darkTheme ? dark : light,
+                        locale: localizeController.locale,
+                        translations: Messages(languages: widget.languages),
+                        fallbackLocale: Locale(
+                          AppConstants.languages[0].languageCode,
+                          AppConstants.languages[0].countryCode,
+                        ),
+                        initialRoute: GetPlatform.isWeb
+                            ? RouteHelper.getInitialRoute()
+                            : RouteHelper.getSplashRoute(widget.body),
+                        getPages: RouteHelper.routes,
+                        defaultTransition: Transition.topLevel,
+                        transitionDuration: const Duration(milliseconds: 500),
+                      );
               },
-            ),
-            theme: themeController.darkTheme ? dark : light,
-            locale: localizeController.locale,
-            translations: Messages(languages: widget.languages),
-            fallbackLocale: Locale(
-              AppConstants.languages[0].languageCode,
-              AppConstants.languages[0].countryCode,
-            ),
-            initialRoute: GetPlatform.isWeb
-                ? RouteHelper.getInitialRoute()
-                : RouteHelper.getSplashRoute(widget.body),
-            getPages: RouteHelper.routes,
-            defaultTransition: Transition.topLevel,
-            transitionDuration: const Duration(milliseconds: 500),
-          );
-        });
-      });
-    });
+            );
+          },
+        );
+      },
+    );
   }
 }
 

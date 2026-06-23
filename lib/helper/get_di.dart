@@ -1,4 +1,3 @@
-
 import 'dart:convert';
 
 import 'package:abaad_flutter/controller/auth_controller.dart';
@@ -38,39 +37,65 @@ import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:get/get.dart';
 
+import 'package:abaad_flutter/controller/service_offer_controller.dart';
+import 'package:abaad_flutter/data/repository/service_offer_repo.dart';
+
 Future<Map<String, Map<String, String>>> init() async {
   // Core
   final sharedPreferences = await SharedPreferences.getInstance();
   // Get.lazyPut(() => sharedPreferences);
-  Get.lazyPut<SharedPreferences>(() => sharedPreferences); // 👈 register properly
-  Get.lazyPut(() => ApiClient(appBaseUrl: AppConstants.BASE_URL, sharedPreferences: Get.find<SharedPreferences>()));
+  Get.lazyPut<SharedPreferences>(
+    () => sharedPreferences,
+  ); // 👈 register properly
+  Get.lazyPut(
+    () => ApiClient(
+      appBaseUrl: AppConstants.BASE_URL,
+      sharedPreferences: Get.find<SharedPreferences>(),
+    ),
+  );
 
   // Repository
-  Get.lazyPut(() => SplashRepo(sharedPreferences: Get.find(), apiClient: Get.find()));
+  Get.lazyPut(
+    () => SplashRepo(sharedPreferences: Get.find(), apiClient: Get.find()),
+  );
   Get.lazyPut(() => LanguageRepo());
-  Get.lazyPut(() => AuthRepo(apiClient: Get.find(), sharedPreferences: Get.find()));
+  Get.lazyPut(
+    () => AuthRepo(apiClient: Get.find(), sharedPreferences: Get.find()),
+  );
   Get.lazyPut(() => EstateRepo(apiClient: Get.find()));
   Get.lazyPut(() => CategoryRepo(apiClient: Get.find()));
   Get.lazyPut(() => UserRepo(apiClient: Get.find()));
   Get.lazyPut(() => BannerRepo(apiClient: Get.find()));
-  Get.lazyPut(() => NotificationRepo(apiClient: Get.find(), sharedPreferences: Get.find()));
+  Get.lazyPut(
+    () =>
+        NotificationRepo(apiClient: Get.find(), sharedPreferences: Get.find()),
+  );
   Get.lazyPut(() => ZoneRepo(apiClient: Get.find()));
-  Get.lazyPut(() => ChatRepo(apiClient: Get.find(), sharedPreferences: Get.find()));
+  Get.lazyPut(
+    () => ChatRepo(apiClient: Get.find(), sharedPreferences: Get.find()),
+  );
   Get.lazyPut(() => WishListRepo(apiClient: Get.find()));
   Get.lazyPut(() => WalletRepo(apiClient: Get.find()));
   // Controller
   Get.lazyPut(() => ThemeController(sharedPreferences: Get.find()));
   Get.lazyPut(() => SplashController(splashRepo: Get.find()));
-  Get.lazyPut(() => LocalizationController(sharedPreferences: Get.find(), apiClient: Get.find()));
+  Get.lazyPut(
+    () => LocalizationController(
+      sharedPreferences: Get.find(),
+      apiClient: Get.find(),
+    ),
+  );
   Get.lazyPut(() => AuthController(authRepo: Get.find()));
   Get.lazyPut(() => LocationController(locationRepo: Get.find()));
-  Get.lazyPut(() => LocationRepo(apiClient: Get.find(), sharedPreferences: Get.find()));
+  Get.lazyPut(
+    () => LocationRepo(apiClient: Get.find(), sharedPreferences: Get.find()),
+  );
 
   Get.lazyPut(() => OnBoardingController(onboardingRepo: Get.find()));
   Get.lazyPut(() => OnBoardingRepo());
 
   Get.lazyPut(() => EstateController(estateRepo: Get.find()));
-  Get.lazyPut(() =>CategoryController(categoryRepo: Get.find()));
+  Get.lazyPut(() => CategoryController(categoryRepo: Get.find()));
   Get.lazyPut(() => UserController(userRepo: Get.find()));
   Get.lazyPut(() => BannerController(bannerRepo: Get.find()));
   Get.lazyPut(() => ZoneController(zoneRepo: Get.find()));
@@ -79,16 +104,24 @@ Future<Map<String, Map<String, String>>> init() async {
   Get.lazyPut(() => WishListController(wishListRepo: Get.find()));
   Get.lazyPut(() => WalletController(walletRepo: Get.find()));
 
+  Get.lazyPut(() => ServiceOfferRepo(apiClient: Get.find()));
+  Get.lazyPut(() => ServiceOfferController(serviceOfferRepo: Get.find()));
+
   // Retrieving localized data
   Map<String, Map<String, String>> languages = {};
-  for(LanguageModel languageModel in AppConstants.languages) {
-    String jsonStringValues =  await rootBundle.loadString('assets/language/${languageModel.languageCode}.json');
+  for (LanguageModel languageModel in AppConstants.languages) {
+    String jsonStringValues = await rootBundle.loadString(
+      'assets/language/${languageModel.languageCode}.json',
+    );
     Map<String, String> json = {};
-    Map<String, dynamic> mappedJson = jsonDecode(jsonStringValues);// json.decode(jsonStringValues);
+    Map<String, dynamic> mappedJson = jsonDecode(
+      jsonStringValues,
+    ); // json.decode(jsonStringValues);
     mappedJson.forEach((key, value) {
       json[key] = value.toString();
     });
-    languages['${languageModel.languageCode}_${languageModel.countryCode}'] = json;
+    languages['${languageModel.languageCode}_${languageModel.countryCode}'] =
+        json;
   }
   return languages;
 }

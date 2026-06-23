@@ -38,10 +38,10 @@ dependencies:
   flutter:
     sdk: flutter
 
-  abaad_chatbot_ui:
-    git:
-      url: https://github.com/Abaad-Org/Abaad-Chatbot-UI.git
-      ref: v0.5.3
+#  abaad_chatbot_ui:
+#    git:
+#      url: https://github.com/Abaad-Org/Abaad-Chatbot-UI.git
+#      ref: v0.5.3
 
 # pubspec.yaml
 
@@ -50,7 +50,6 @@ dependencies:
   google_maps_flutter: ^2.6.0
 
 dependency_overrides:
-  street_view_platform_interface:
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.

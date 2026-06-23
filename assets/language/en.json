@@ -242,10 +242,40 @@
   "license_number": "License Number",
   "plan_number": "Plan Number",
   "service_provider": "Service Provider ",
-  "request": "request"
+  "request": "request",
 
 
-
-
-
+  "add_service_inside_estate": "Add Service Inside Estate",
+  "confirm_and_send": "Confirm and Send",
+  "previous": "Previous",
+  "package": "Package",
+  "choose_suitable_package_and_zone": "Choose the Suitable Package and Zone",
+  "estate_types": "Estate Types",
+  "zones": "Zones",
+  "selected_package": "Selected Package",
+  "service": "Service",
+  "basic_service_info": "Basic Service Information",
+  "offer_title": "Offer Title",
+  "write_offer_title": "Write the offer title",
+  "choose_service_type": "Choose Service / Service Type",
+  "example_contracting_cleaning": "Example: Contracting, Cleaning...",
+  "direct_price": "Direct Price",
+  "discount_percentage": "Discount %",
+  "discount_value_percentage": "Discount Value %",
+  "service_description": "Service Description",
+  "write_clear_description": "Write a clear description of the service to help the client understand the details.",
+  "offer_end_date": "Offer End Date",
+  "offer_image": "Offer Image",
+  "choose_offer_image": "Add a professional image representing the service",
+  "data": "Data",
+  "service_provider_data": "Service Provider Data",
+  "official_name": "Official Name",
+  "contact_phone": "Contact Phone Number",
+  "entity_name": "Entity Name",
+  "company_name_if_exists": "Company or establishment name (if any)",
+  "agree_to_terms_and_conditions": "I agree to the terms and conditions and acknowledge the accuracy of the data.",
+  "must_agree_to_terms": "You must agree to the terms and conditions",
+  "offer_added_successfully": "Offer added successfully",
+  "error_adding_offer": "An error occurred while adding the offer",
+  "connection_error": "Connection error"
 }

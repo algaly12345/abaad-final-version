@@ -1,6 +1,6 @@
 class UserInfoModel {
   int? id = 0;
-  String? name  = "";
+  String? name = "";
   String? phone = "";
   String? email = "";
   String? emailVerifiedAt = "";
@@ -27,38 +27,38 @@ class UserInfoModel {
   Userinfo? agent;
   String? membershipType = "";
   String? accountVerification = "";
-  String?  advertiserNo = "";
-  String?  unified_number = "";
+  String? advertiserNo = "";
+  String? unified_number = "";
 
   UserInfoModel({
-     this.id,
-     this.name,
-     this.phone,
-     this.email,
-     this.emailVerifiedAt,
-     this.refCode,
-     this.isActive,
-     this.userType,
-     this.isPhoneVerifiedAt,
-     this.cmFirebaseToken,
-     this.createdAt,
-     this.updatedAt,
-     this.userinfo,
-     this.estateCount,
-     this.image,
-     this.agent,
-     this.walletBalance,
-     this.loyaltyPoint,
-     this.youtube,
-     this.snapchat,
-     this.instagram,
-     this.website,
-     this.tiktok,
-     this.twitter,
-     this.membershipType,
-     this.accountVerification,
-     this.advertiserNo,
-    this.unified_number
+    this.id,
+    this.name,
+    this.phone,
+    this.email,
+    this.emailVerifiedAt,
+    this.refCode,
+    this.isActive,
+    this.userType,
+    this.isPhoneVerifiedAt,
+    this.cmFirebaseToken,
+    this.createdAt,
+    this.updatedAt,
+    this.userinfo,
+    this.estateCount,
+    this.image,
+    this.agent,
+    this.walletBalance,
+    this.loyaltyPoint,
+    this.youtube,
+    this.snapchat,
+    this.instagram,
+    this.website,
+    this.tiktok,
+    this.twitter,
+    this.membershipType,
+    this.accountVerification,
+    this.advertiserNo,
+    this.unified_number,
   });
 
   UserInfoModel.fromJson(Map<String, dynamic> json) {
@@ -76,14 +76,22 @@ class UserInfoModel {
     updatedAt = json['updated_at'];
     image = json['image'];
 
-
-    userinfo = (json['userinfo'] != null
+    // 🛠️ تم إزالة الـ ! ليكون آمن تماماً في حال كان الحساب لا يحتوي على معلومات مسوق عقاري
+    userinfo = json['userinfo'] != null
         ? Userinfo.fromJson(json['userinfo'])
-        : null)!;
+        : null;
+
     estateCount = json['estate_count'];
     agent = json['agent'] != null ? Userinfo.fromJson(json['agent']) : null;
-    walletBalance = json['wallet_balance'].toDouble();
-    loyaltyPoint = json['loyalty_point'];
+
+    // 🛠️ حماية المحفظة والنقاط من قيم الـ null
+    walletBalance = json['wallet_balance'] != null
+        ? (double.tryParse(json['wallet_balance'].toString()) ?? 0.0)
+        : 0.0;
+
+    loyaltyPoint = json['loyalty_point'] != null
+        ? (int.tryParse(json['loyalty_point'].toString()) ?? 0)
+        : 0;
 
     youtube = json['youtube'];
     snapchat = json['snapchat'];
@@ -92,30 +100,9 @@ class UserInfoModel {
     tiktok = json['tiktok'];
     twitter = json['twitter'];
     membershipType = json['membership_type'];
-    accountVerification=json['account_verification'];
-    advertiserNo=json['advertiser_no'];
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    unified_number=json['unified_number'];
-
-
+    accountVerification = json['account_verification']?.toString() ?? "0";
+    advertiserNo = json['advertiser_no']?.toString();
+    unified_number = json['unified_number']?.toString();
   }
 
   Map<String, dynamic> toJson() {
@@ -142,13 +129,13 @@ class UserInfoModel {
     data['tiktok'] = tiktok;
     data['twitter'] = twitter;
     data['membership_type'] = membershipType;
-    data['account_verification']=accountVerification;
-    data['advertiser_no']=advertiserNo;
-    data['unified_number']=unified_number;
+    data['account_verification'] = accountVerification;
+    data['advertiser_no'] = advertiserNo;
+    data['unified_number'] = unified_number;
     data['userinfo'] = userinfo?.toJson();
-      data['estate_count'] = estateCount;
+    data['estate_count'] = estateCount;
     data['agent'] = agent?.toJson();
-      return data;
+    return data;
   }
 }
 
@@ -160,33 +147,33 @@ class Userinfo {
   String? identityType = "";
   String? image = "";
   String? commercialRegisterionNo = "";
-  String?     userId = "";
+  String? userId = "";
   String? name = "";
   String? phone = "";
   String? createdAt = "";
-  String?  updatedAt = "";
+  String? updatedAt = "";
   String? falLicenseNumber = "";
 
   Userinfo({
-     this.id,
-     this.name,
-     this.phone,
-     this.identity,
-     this.image,
-     this.commercialRegisterionNo,
-     this.userId,
-     this.advertiserNo,
-     this.membershipType,
-     this.identityType,
-     this.createdAt,
-     this.updatedAt,
-     this.falLicenseNumber
+    this.id,
+    this.name,
+    this.phone,
+    this.identity,
+    this.image,
+    this.commercialRegisterionNo,
+    this.userId,
+    this.advertiserNo,
+    this.membershipType,
+    this.identityType,
+    this.createdAt,
+    this.updatedAt,
+    this.falLicenseNumber,
   });
 
   Userinfo.fromJson(Map<String, dynamic> json) {
     id = json['id'];
-    name= json['name'];
-    phone= json['phone'];
+    name = json['name'];
+    phone = json['phone'];
     identity = json['identity'];
     image = json['image'];
     commercialRegisterionNo = json['commercial_registerion_no'];
@@ -206,14 +193,14 @@ class Userinfo {
     data['image'] = image;
     data['commercial_registerion_no'] = commercialRegisterionNo;
     data['user_id'] = userId;
-    data['name']=name;
-    data['phone']=phone;
+    data['name'] = name;
+    data['phone'] = phone;
     data['advertiser_no'] = advertiserNo;
     data['membership_type'] = membershipType;
     data['identity_type'] = identityType;
     data['created_at'] = createdAt;
     data['updated_at'] = updatedAt;
-    data['fal_license_number']=falLicenseNumber;
+    data['fal_license_number'] = falLicenseNumber;
     return data;
   }
 }

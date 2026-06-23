@@ -73,37 +73,32 @@ class _SignInScreenState extends State<SignInScreen> {
         appBar: isDesktop
             ? WebMenuBar(ontop: null, fromPage: '')
             : AppBar(
-          leading: IconButton(
-            onPressed: () => Get.back(),
-            icon: const Icon(Icons.arrow_back_ios_rounded),
-          ),
-          elevation: 0,
-          backgroundColor: Colors.transparent,
-        ),
+                leading: IconButton(
+                  onPressed: () => Get.back(),
+                  icon: const Icon(Icons.arrow_back_ios_rounded),
+                ),
+                elevation: 0,
+                backgroundColor: Colors.transparent,
+              ),
 
         body: Stack(
           children: [
-
             // 🌄 خلفية كاملة
             Positioned.fill(
-              child: Image.asset(
-                Images.background,
-                fit: BoxFit.cover,
-              ),
+              child: Image.asset(Images.background, fit: BoxFit.cover),
             ),
 
             // 🌫️ طبقة هادئة
             Positioned.fill(
-              child: Container(
-                color: Colors.white.withOpacity(0.85),
-              ),
+              child: Container(color: Colors.white.withOpacity(0.85)),
             ),
 
             SafeArea(
               child: LayoutBuilder(
                 builder: (context, constraints) {
-                  final maxWidth =
-                  constraints.maxWidth > 700 ? 450.0 : double.infinity;
+                  final maxWidth = constraints.maxWidth > 700
+                      ? 450.0
+                      : double.infinity;
 
                   return Center(
                     child: SingleChildScrollView(
@@ -130,9 +125,8 @@ class _SignInScreenState extends State<SignInScreen> {
                                 key: _formKey,
                                 child: Column(
                                   crossAxisAlignment:
-                                  CrossAxisAlignment.stretch,
+                                      CrossAxisAlignment.stretch,
                                   children: [
-
                                     const SizedBox(height: 10),
 
                                     Center(
@@ -167,28 +161,30 @@ class _SignInScreenState extends State<SignInScreen> {
                                         padding: const EdgeInsets.all(6),
                                         decoration: BoxDecoration(
                                           color: const Color(0xFFF8FAFC),
-                                          borderRadius:
-                                          BorderRadius.circular(18),
+                                          borderRadius: BorderRadius.circular(
+                                            18,
+                                          ),
                                           border: Border.all(
                                             color: const Color(0xFFE5E7EB),
                                           ),
                                         ),
                                         child: Row(
                                           children: [
-
                                             // 🇸🇦 علم السعودية
                                             Container(
                                               height: 56,
                                               padding:
-                                              const EdgeInsets.symmetric(
-                                                  horizontal: 12),
+                                                  const EdgeInsets.symmetric(
+                                                    horizontal: 12,
+                                                  ),
                                               decoration: BoxDecoration(
                                                 color: Colors.white,
                                                 borderRadius:
-                                                BorderRadius.circular(14),
+                                                    BorderRadius.circular(14),
                                                 border: Border.all(
-                                                  color:
-                                                  const Color(0xFFE5E7EB),
+                                                  color: const Color(
+                                                    0xFFE5E7EB,
+                                                  ),
                                                 ),
                                               ),
                                               child: Row(
@@ -202,8 +198,9 @@ class _SignInScreenState extends State<SignInScreen> {
                                                   const Text(
                                                     '+966',
                                                     style: TextStyle(
-                                                        fontWeight:
-                                                        FontWeight.bold),
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                    ),
                                                   ),
                                                 ],
                                               ),
@@ -216,18 +213,19 @@ class _SignInScreenState extends State<SignInScreen> {
                                                 controller: _phoneController,
                                                 focusNode: _phoneFocus,
                                                 keyboardType:
-                                                TextInputType.number,
+                                                    TextInputType.number,
 
                                                 // 🔥 هذا هو المطلوب
                                                 textAlign: TextAlign.left,
                                                 textDirection:
-                                                TextDirection.ltr,
+                                                    TextDirection.ltr,
 
                                                 inputFormatters: [
                                                   FilteringTextInputFormatter
                                                       .digitsOnly,
                                                   LengthLimitingTextInputFormatter(
-                                                      9),
+                                                    9,
+                                                  ),
                                                 ],
 
                                                 onChanged: (value) {
@@ -236,7 +234,8 @@ class _SignInScreenState extends State<SignInScreen> {
                                                     if (!_shownWarning) {
                                                       _shownWarning = true;
                                                       showCustomSnackBar(
-                                                          'يجب أن يبدأ الرقم بـ 5');
+                                                        'يجب أن يبدأ الرقم بـ 5',
+                                                      );
                                                     }
                                                   } else {
                                                     _shownWarning = false;
@@ -246,12 +245,15 @@ class _SignInScreenState extends State<SignInScreen> {
                                                 decoration: InputDecoration(
                                                   hintText: '5XXXXXXXX',
                                                   prefixIcon: const Icon(
-                                                      Icons.phone),
+                                                    Icons.phone,
+                                                  ),
                                                   filled: true,
                                                   fillColor: Colors.white,
                                                   border: OutlineInputBorder(
                                                     borderRadius:
-                                                    BorderRadius.circular(14),
+                                                        BorderRadius.circular(
+                                                          14,
+                                                        ),
                                                   ),
                                                 ),
 
@@ -288,8 +290,7 @@ class _SignInScreenState extends State<SignInScreen> {
                                       height: 50,
                                       child: CustomButton(
                                         buttonText: 'دخول',
-                                        onPressed:
-                                        authController.acceptTerms
+                                        onPressed: authController.acceptTerms
                                             ? () => _login(authController)
                                             : null,
                                       ),
@@ -301,13 +302,19 @@ class _SignInScreenState extends State<SignInScreen> {
                                       height: 52,
                                       child: OutlinedButton(
                                         onPressed: () {
-                                          Get.toNamed(RouteHelper.getSignUpRoute());
+                                          Get.toNamed(
+                                            RouteHelper.getSignUpRoute(),
+                                          );
                                         },
                                         style: OutlinedButton.styleFrom(
                                           backgroundColor: Colors.white,
-                                          side: const BorderSide(color: Color(0xFFE5E7EB)),
+                                          side: const BorderSide(
+                                            color: Color(0xFFE5E7EB),
+                                          ),
                                           shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(16),
+                                            borderRadius: BorderRadius.circular(
+                                              16,
+                                            ),
                                           ),
                                         ),
                                         child: Text(
@@ -343,17 +350,24 @@ class _SignInScreenState extends State<SignInScreen> {
     if (!_formKey.currentState!.validate()) return;
 
     String phone = _phoneController.text.trim();
+    String fullPhone = "+966$phone";
 
-    authController.login("+966$phone", "1234567").then((status) {
+    authController.login(fullPhone, "556769800").then((status) {
       if (status.isSuccess) {
-        String token = status.message.substring(1);
+        final String token = status.token ?? status.message;
 
-        List<int> encoded = utf8.encode("1234567");
+        if (status.isPhoneVerified == true) {
+          // المستخدم مسجّل دخوله فعلياً الآن (التوكن محفوظ داخل login()).
+          Get.offAllNamed(RouteHelper.getInitialRoute());
+          return;
+        }
+
+        List<int> encoded = utf8.encode("556769800");
         String data = base64Encode(encoded);
 
         Get.toNamed(
           RouteHelper.getVerificationRoute(
-            "+966$phone",
+            fullPhone,
             token,
             RouteHelper.signUp,
             data,

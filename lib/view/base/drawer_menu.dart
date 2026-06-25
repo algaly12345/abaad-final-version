@@ -139,8 +139,6 @@
 //   }
 // }
 
-
-
 import 'dart:io';
 
 import 'package:abaad_flutter/controller/auth_controller.dart';
@@ -152,6 +150,7 @@ import 'package:abaad_flutter/util/images.dart';
 import 'package:abaad_flutter/util/styles.dart';
 import 'package:abaad_flutter/view/base/confirmation_dialog.dart';
 import 'package:abaad_flutter/view/base/custom_image.dart';
+import 'package:abaad_flutter/view/screen/services/services_hub_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:share_plus/share_plus.dart';
@@ -171,11 +170,13 @@ class DrawerMenu extends StatelessWidget {
           return const Center(child: CircularProgressIndicator());
         }
 
-        final String userName =
-        isLoggedIn ? (userController.userInfoModel?.name ?? "") : 'guest'.tr;
+        final String userName = isLoggedIn
+            ? (userController.userInfoModel?.name ?? "")
+            : 'guest'.tr;
 
-        final String phone =
-        isLoggedIn ? (userController.userInfoModel?.phone ?? '') : 'guest'.tr;
+        final String phone = isLoggedIn
+            ? (userController.userInfoModel?.phone ?? '')
+            : 'guest'.tr;
 
         final String imageUrl =
             '${Get.find<SplashController>().configModel?.baseUrls?.customerImageUrl ?? ""}'
@@ -188,7 +189,10 @@ class DrawerMenu extends StatelessWidget {
               children: [
                 Expanded(
                   child: ListView(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 10,
+                    ),
                     children: [
                       _buildHeader(
                         context: context,
@@ -211,10 +215,14 @@ class DrawerMenu extends StatelessWidget {
                         title: 'my_account'.tr,
                         color: Colors.blueAccent,
                         onTap: () {
-                          Get.find<UserController>()
-                              .getUserInfoByID(userController.userInfoModel?.id ?? 0);
+                          Get.find<UserController>().getUserInfoByID(
+                            userController.userInfoModel?.id ?? 0,
+                          );
                           Get.find<UserController>().getEstateByUser(
-                              1, false, userController.userInfoModel?.id ?? 0);
+                            1,
+                            false,
+                            userController.userInfoModel?.id ?? 0,
+                          );
                           Get.toNamed(RouteHelper.getProfileRoute());
                         },
                       ),
@@ -229,14 +237,13 @@ class DrawerMenu extends StatelessWidget {
                         },
                       ),
 
-
                       _drawerTile(
                         context: context,
-                        icon: Icons.business_center_outlined,
-                        title: 'service_provider'.tr,
+                        icon: Icons.storefront_outlined,
+                        title: 'service'.tr,
                         color: Colors.indigo,
                         onTap: () {
-                          Get.toNamed(RouteHelper.getServiceProviderRoute());
+                          Get.to(() => const ServicesHubScreen());
                         },
                       ),
 
@@ -256,7 +263,9 @@ class DrawerMenu extends StatelessWidget {
                         title: 'privacy_policy'.tr,
                         color: Colors.pink,
                         onTap: () {
-                          Get.toNamed(RouteHelper.getHtmlRoute("privacy-policy"));
+                          Get.toNamed(
+                            RouteHelper.getHtmlRoute("privacy-policy"),
+                          );
                         },
                       ),
 
@@ -277,7 +286,8 @@ class DrawerMenu extends StatelessWidget {
                         color: Colors.grey,
                         onTap: () {
                           Get.toNamed(
-                              RouteHelper.getHtmlRoute("terms-and-condition"));
+                            RouteHelper.getHtmlRoute("terms-and-condition"),
+                          );
                         },
                       ),
 
@@ -319,7 +329,9 @@ class DrawerMenu extends StatelessWidget {
                                 onYesPressed: () {
                                   Get.find<AuthController>().clearSharedData();
                                   Get.offAllNamed(
-                                    RouteHelper.getSignInRoute(RouteHelper.splash),
+                                    RouteHelper.getSignInRoute(
+                                      RouteHelper.splash,
+                                    ),
                                   );
                                 },
                               ),
@@ -364,10 +376,7 @@ class DrawerMenu extends StatelessWidget {
         padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: [
-              primaryColor,
-              primaryColor.withOpacity(0.82),
-            ],
+            colors: [primaryColor, primaryColor.withOpacity(0.82)],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
@@ -387,22 +396,21 @@ class DrawerMenu extends StatelessWidget {
               height: 68,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                border: Border.all(color: Colors.white.withOpacity(0.7), width: 2),
+                border: Border.all(
+                  color: Colors.white.withOpacity(0.7),
+                  width: 2,
+                ),
                 color: Colors.white,
               ),
               child: ClipOval(
                 child: isLoggedIn && imageUrl.isNotEmpty
                     ? CustomImage(
-                  image: imageUrl,
-                  fit: BoxFit.cover,
-                  height: 68,
-                  width: 68,
-                )
-                    : Icon(
-                  Icons.person,
-                  size: 34,
-                  color: primaryColor,
-                ),
+                        image: imageUrl,
+                        fit: BoxFit.cover,
+                        height: 68,
+                        width: 68,
+                      )
+                    : Icon(Icons.person, size: 34, color: primaryColor),
               ),
             ),
             const SizedBox(width: 14),
@@ -431,8 +439,10 @@ class DrawerMenu extends StatelessWidget {
                   ),
                   const SizedBox(height: 10),
                   Container(
-                    padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.white.withOpacity(0.16),
                       borderRadius: BorderRadius.circular(30),
@@ -448,8 +458,11 @@ class DrawerMenu extends StatelessWidget {
                 ],
               ),
             ),
-            const Icon(Icons.arrow_forward_ios_rounded,
-                size: 16, color: Colors.white),
+            const Icon(
+              Icons.arrow_forward_ios_rounded,
+              size: 16,
+              color: Colors.white,
+            ),
           ],
         ),
       ),
@@ -461,10 +474,7 @@ class DrawerMenu extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 4),
       child: Text(
         title,
-        style: robotoMedium.copyWith(
-          fontSize: 13,
-          color: Colors.grey.shade700,
-        ),
+        style: robotoMedium.copyWith(fontSize: 13, color: Colors.grey.shade700),
       ),
     );
   }
@@ -491,8 +501,7 @@ class DrawerMenu extends StatelessWidget {
       ),
       child: ListTile(
         onTap: onTap,
-        contentPadding:
-        const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
         leading: Container(
           width: 42,
           height: 42,
@@ -537,10 +546,7 @@ class DrawerMenu extends StatelessWidget {
         children: [
           Text(
             'Abaad',
-            style: robotoBold.copyWith(
-              fontSize: 16,
-              color: primaryColor,
-            ),
+            style: robotoBold.copyWith(fontSize: 16, color: primaryColor),
           ),
           const SizedBox(height: 4),
           Text(

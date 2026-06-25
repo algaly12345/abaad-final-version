@@ -9,6 +9,7 @@ import 'package:abaad_flutter/controller/localization_controller.dart';
 import 'package:abaad_flutter/controller/location_controller.dart';
 import 'package:abaad_flutter/controller/notification_controller.dart';
 import 'package:abaad_flutter/controller/onboarding_controller.dart';
+import 'package:abaad_flutter/controller/services_controller.dart';
 import 'package:abaad_flutter/controller/splash_controller.dart';
 import 'package:abaad_flutter/controller/theme_controller.dart';
 import 'package:abaad_flutter/controller/user_controller.dart';
@@ -28,6 +29,7 @@ import 'package:abaad_flutter/data/repository/language_repo.dart';
 import 'package:abaad_flutter/data/repository/location_repo.dart';
 import 'package:abaad_flutter/data/repository/notification_repo.dart';
 import 'package:abaad_flutter/data/repository/onboarding_repo.dart';
+import 'package:abaad_flutter/data/repository/services_repo.dart';
 import 'package:abaad_flutter/data/repository/user_repo.dart';
 import 'package:abaad_flutter/data/repository/wallet_repo.dart';
 import 'package:abaad_flutter/data/repository/wishlist_repo.dart';
@@ -106,6 +108,9 @@ Future<Map<String, Map<String, String>>> init() async {
 
   Get.lazyPut(() => ServiceOfferRepo(apiClient: Get.find()));
   Get.lazyPut(() => ServiceOfferController(serviceOfferRepo: Get.find()));
+
+  Get.lazyPut(() => ServicesRepo(apiClient: Get.find()));
+  Get.lazyPut(() => ServicesController(servicesRepo: Get.find()));
 
   // Retrieving localized data
   Map<String, Map<String, String>> languages = {};

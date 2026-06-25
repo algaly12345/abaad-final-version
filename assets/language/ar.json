@@ -241,7 +241,9 @@
   "plan_number": "رقم المخطط",
   "service_provider": "مزود الخدمة",
   "request": "طلب",
-
+  
+  "my_services": "لوحة خدماتي",
+  "all_services": "كل الخدمات",
 
   "add_service_inside_estate": "إضافة خدمة داخل عقار",
   "confirm_and_send": "تأكيد وإرسال",

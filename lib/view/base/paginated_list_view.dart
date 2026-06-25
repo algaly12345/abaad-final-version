@@ -1,4 +1,3 @@
-
 import 'package:abaad_flutter/helper/responsive_helper.dart';
 import 'package:abaad_flutter/util/dimensions.dart';
 import 'package:abaad_flutter/util/styles.dart';
@@ -7,12 +6,13 @@ import 'package:get/get.dart';
 
 class PaginatedListView extends StatefulWidget {
   final ScrollController? scrollController;
-  final Function(int offset)? onPaginate;
+  final Future<void> Function(int offset)? onPaginate;
   final int? totalSize;
   final int? offset;
   final Widget? productView;
-  final bool? enabledPagination;
-  final bool? reverse;
+  final bool enabledPagination;
+  final bool reverse;
+
   const PaginatedListView({
     Key? key,
     this.scrollController,
@@ -29,42 +29,40 @@ class PaginatedListView extends StatefulWidget {
 }
 
 class _PaginatedListViewState extends State<PaginatedListView> {
-  late int _offset;
-  late List<int> _offsetList;
   bool _isLoading = false;
 
-  @override
-  void initState() {
-    super.initState();
+  void _onScroll() {
+    if (!mounted) return;
+    if (widget.enabledPagination != true) return;
+    if (ResponsiveHelper.isDesktop(context)) return;
 
-    _offset = 1;
-    _offsetList = [1];
+    final controller = widget.scrollController;
+    if (controller == null || !controller.hasClients) return;
 
-    widget.scrollController?.addListener(() {
-      if (widget.scrollController?.position.pixels == widget.scrollController?.position.maxScrollExtent && !_isLoading && (widget.enabledPagination ?? false)) {
-        if(mounted && !ResponsiveHelper.isDesktop(context)) {
-          _paginate();
-        }
-      }
-    });
+    final position = controller.position;
+    if (position.pixels >= position.maxScrollExtent - 100) {
+      _paginate();
+    }
   }
 
-  void _paginate() async {
-    int pageSize = (widget.totalSize ?? 0 / 10).ceil();
-    if (_offset < pageSize && !_offsetList.contains(_offset+1)) {
+  Future<void> _paginate() async {
+    if (_isLoading) return;
+    if (widget.onPaginate == null) return;
 
-      setState(() {
-        _offset = _offset + 1;
-        _offsetList.add(_offset);
-        _isLoading = true;
-      });
-      await widget.onPaginate!(_offset);
-      setState(() {
-        _isLoading = false;
-      });
+    final total = widget.totalSize ?? 0;
+    final currentOffset = widget.offset ?? 1;
+    final pageCount = (total / 10).ceil();
 
-    }else {
-      if(_isLoading) {
+    if (currentOffset >= pageCount) return;
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      await widget.onPaginate!(currentOffset + 1);
+    } finally {
+      if (mounted) {
         setState(() {
           _isLoading = false;
         });
@@ -73,35 +71,84 @@ class _PaginatedListViewState extends State<PaginatedListView> {
   }
 
   @override
-  Widget build(BuildContext context) {
-    _offset = widget.offset!;
-    _offsetList = [];
-    for(int index=1; index<=widget.offset!; index++) {
-      _offsetList.add(index);
+  void initState() {
+    super.initState();
+    widget.scrollController?.addListener(_onScroll);
+  }
+
+  @override
+  void didUpdateWidget(covariant PaginatedListView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    if (oldWidget.scrollController != widget.scrollController) {
+      oldWidget.scrollController?.removeListener(_onScroll);
+      widget.scrollController?.addListener(_onScroll);
     }
-  
-    return Column(children: [
+  }
 
-      widget.reverse! ? SizedBox() : widget.productView!,
+  @override
+  void dispose() {
+    widget.scrollController?.removeListener(_onScroll);
+    super.dispose();
+  }
 
-      (ResponsiveHelper.isDesktop(context) && (_offset >= (widget.totalSize! / 10).ceil() || _offsetList.contains(_offset+1))) ? SizedBox() : Center(child: Padding(
-        padding: (_isLoading || ResponsiveHelper.isDesktop(context)) ? EdgeInsets.all(Dimensions.PADDING_SIZE_SMALL) : EdgeInsets.zero,
-        child: _isLoading ? CircularProgressIndicator() : (ResponsiveHelper.isDesktop(context)) ? InkWell(
+  Widget _buildFooter(BuildContext context, bool hasMore) {
+    if (!hasMore && !_isLoading) return const SizedBox.shrink();
+
+    if (_isLoading) {
+      return Padding(
+        padding: const EdgeInsets.all(Dimensions.PADDING_SIZE_SMALL),
+        child: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (ResponsiveHelper.isDesktop(context)) {
+      return Center(
+        child: InkWell(
           onTap: _paginate,
           child: Container(
-            padding: EdgeInsets.symmetric(vertical: Dimensions.PADDING_SIZE_SMALL, horizontal: Dimensions.PADDING_SIZE_LARGE),
-            margin: ResponsiveHelper.isDesktop(context) ? EdgeInsets.only(top: Dimensions.PADDING_SIZE_SMALL) : null,
+            padding: EdgeInsets.symmetric(
+              vertical: Dimensions.PADDING_SIZE_SMALL,
+              horizontal: Dimensions.PADDING_SIZE_LARGE,
+            ),
+            margin: EdgeInsets.only(top: Dimensions.PADDING_SIZE_SMALL),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(Dimensions.RADIUS_SMALL),
               color: Theme.of(context).primaryColor,
             ),
-            child: Text('view_more'.tr, style: robotoMedium.copyWith(fontSize: Dimensions.fontSizeLarge, color: Colors.white)),
+            child: Text(
+              'view_more'.tr,
+              style: robotoMedium.copyWith(
+                fontSize: Dimensions.fontSizeLarge,
+                color: Colors.white,
+              ),
+            ),
           ),
-        ) : SizedBox(),
-      )),
+        ),
+      );
+    }
 
-      widget.reverse! ? widget.productView! : SizedBox(),
+    return const SizedBox.shrink();
+  }
 
-    ]);
+  @override
+  Widget build(BuildContext context) {
+    final total = widget.totalSize ?? 0;
+    final currentOffset = widget.offset ?? 1;
+    final pageCount = (total / 10).ceil();
+    final hasMore = currentOffset < pageCount;
+
+    return ListView(
+      controller: widget.scrollController,
+      reverse: widget.reverse,
+      physics: const BouncingScrollPhysics(
+        parent: AlwaysScrollableScrollPhysics(),
+      ),
+      children: [
+        if (!widget.reverse) (widget.productView ?? const SizedBox.shrink()),
+        _buildFooter(context, hasMore),
+        if (widget.reverse) (widget.productView ?? const SizedBox.shrink()),
+      ],
+    );
   }
 }

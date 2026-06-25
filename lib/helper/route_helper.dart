@@ -8,6 +8,7 @@ import 'package:abaad_flutter/data/model/response/zone_model.dart';
 import 'package:abaad_flutter/util/html_type.dart';
 import 'package:abaad_flutter/view/base/custom_dialog_box.dart';
 import 'package:abaad_flutter/view/base/not_found.dart';
+import 'package:abaad_flutter/view/screen/access_location_screen.dart';
 import 'package:abaad_flutter/view/screen/agent/agent_profile_screen.dart';
 import 'package:abaad_flutter/view/screen/auth/agent_registration_screen.dart';
 import 'package:abaad_flutter/view/screen/auth/sign_in_screen.dart';
@@ -35,6 +36,8 @@ import 'package:abaad_flutter/view/screen/profile/profile_screen.dart';
 import 'package:abaad_flutter/view/screen/profile/update_profile_screen.dart';
 import 'package:abaad_flutter/view/screen/provider/add_property_service_offer_screen.dart';
 import 'package:abaad_flutter/view/screen/provider/service_offer_payment_screen.dart';
+import 'package:abaad_flutter/view/screen/services/my_services_screen.dart';
+import 'package:abaad_flutter/view/screen/services/services_catalog_screen.dart';
 import 'package:abaad_flutter/view/screen/splash/splash_screen.dart';
 import 'package:abaad_flutter/view/screen/support/support_screen.dart';
 import 'package:abaad_flutter/view/screen/update/update_screen.dart';
@@ -44,7 +47,6 @@ import 'package:get/get.dart';
 
 import '../controller/location_controller.dart';
 import '../util/app_constants.dart';
-import '../view/screen/access_location_screen.dart';
 import '../view/screen/estate/success_screen.dart';
 
 class RouteHelper {
@@ -86,6 +88,8 @@ class RouteHelper {
   static const String serviceProvider = '/service-provider';
   static const String addServiceOffer = '/add-service-offer';
   static const String serviceOfferPayment = '/service-offer-payment';
+  static const String servicesCatalog = '/services-catalog';
+  static const String myServices = '/my-services';
 
   static String getServiceProviderRoute() => serviceProvider;
   static String getAddServiceOfferRoute() => addServiceOffer;
@@ -105,6 +109,7 @@ class RouteHelper {
       '$pickMap?page=$page&route=${canRoute.toString()}';
   static String getSupportRoute() => support;
   static String getSuccess() => success;
+
   static String getSplashRoute(NotificationBody? body) {
     String data = 'null';
     List<int> encoded = utf8.encode(jsonEncode(body?.toJson()));
@@ -116,6 +121,7 @@ class RouteHelper {
   static String getOnBoardingRoute() => onBoarding;
   static String getSignInRoute(String page) => '$signIn?page=$page';
   static String getSignUpRoute() => signUp;
+
   static String getVerificationRoute(
     String number,
     String token,
@@ -126,8 +132,8 @@ class RouteHelper {
   }
 
   static String getDetailsRoute(int id) => '$estate?id=$id';
-  // static String getWebViewRoute(String ar_path) => 'ar_path=$webview';
   static String getWebViewRoute(String page) => '$webview?url=$page';
+
   static String getFeatureRoute(
     int id,
     String featureId,
@@ -145,8 +151,10 @@ class RouteHelper {
   static String getAddLicenseRoute() => addLicense;
   static String getAddEstateRouteTow() => addEstateTow;
   static String getAgentRegister() => agent;
+
   static String getBusinessPlanRoute(int restaurantId) =>
       '$businessPlan?id=$restaurantId';
+
   static String getPaymentRoute(int id) => '$payment?id=$id';
   static String getUploadRoute(int id) => '$upload_screen?id=$id';
   static String getSuccesstRoute(int id) => '$sucess2?id=$id';
@@ -230,13 +238,14 @@ class RouteHelper {
       name: serviceOfferPayment,
       page: () {
         final args = Get.arguments as Map?;
-
         return ServiceOfferPaymentScreen(
           paymentUrl: args?['url'] ?? '',
           subscriptionNumber: args?['number'] ?? '',
         );
       },
     ),
+    GetPage(name: servicesCatalog, page: () => ServicesCatalogScreen()),
+    GetPage(name: myServices, page: () => MyServicesScreen()),
     GetPage(name: success, page: () => ScreenSuccess()),
     GetPage(
       name: wallet,
@@ -287,16 +296,11 @@ class RouteHelper {
     ),
     GetPage(name: profile, page: () => ProfileScreen()),
     GetPage(name: updateProfile, page: () => UpdateProfileScreen()),
-    // GetPage(name: conversation, page: () => ConversationScreen()),
     GetPage(
       name: categories,
       page: () {
-        // MapScreen pickMapScreen = Get.arguments;
-        // bool fromAddress = Get.parameters['page'] == 'add-address';
-
         final args = Get.arguments;
         final MapScreen? pickMapScreen = args is MapScreen ? args : null;
-
         final bool fromAddress = Get.parameters['page'] == 'add-address';
 
         return (fromAddress && pickMapScreen == null)
@@ -381,6 +385,7 @@ class RouteHelper {
             ),
           );
         }
+
         Userinfo user = Userinfo(
           id: 0,
           name: "",
@@ -396,7 +401,9 @@ class RouteHelper {
           updatedAt: "",
           falLicenseNumber: "",
         );
+
         Estate estate;
+
         if (Get.parameters['user'] != 'null') {
           user = Userinfo.fromJson(
             jsonDecode(
@@ -406,6 +413,7 @@ class RouteHelper {
             ),
           );
         }
+
         return ChatScreen(
           notificationBody: notificationBody,
           user: user,
@@ -466,8 +474,6 @@ class RouteHelper {
       page: () =>
           BusinessPlanScreen(estateId: int.parse(Get.parameters['id']!)),
     ),
-
-    // GetPage(name: categories, page: () =>MapScreen(mainCategory: ZoneModel(id: int.parse(Get.parameters['id'])))),
     GetPage(
       name: marketer,
       page: () {
@@ -495,17 +501,8 @@ class RouteHelper {
   static String getUpdateRoute(bool isUpdate) =>
       '$update?update=${isUpdate.toString()}';
 
-  // static getRoute(Widget navigateTo) {
-  //   int minimumVersion = 0;
-  //   if(GetPlatform.isAndroid) {
-  //     minimumVersion = Get.find<SplashController>().configModel?.appMinimumVersionAndroid ?? 2;
-  //   }else if(GetPlatform.isIOS) {
-  //     minimumVersion = Get.find<SplashController>().configModel?.appMinimumVersionIos ?? 4;
-  //   }
-  //   // return AppConstants.APP_VERSION < _minimumVersion ? UpdateScreen(isUpdate: true)
-  //   //     : Get.find<SplashController>().configModel.maintenanceMode ? UpdateScreen(isUpdate: false));
-  //
-  // }
+  static String getServicesCatalogRoute() => servicesCatalog;
+  static String getMyServicesRoute() => myServices;
 
   static getRoute(Widget? navigateTo, {bool byPuss = false}) {
     int? minimumVersion = 0;
@@ -516,6 +513,7 @@ class RouteHelper {
       minimumVersion =
           Get.find<SplashController>().configModel!.appMinimumVersionIos;
     }
+
     return AppConstants.APP_VERSION < minimumVersion!
         ? UpdateScreen(isUpdate: true)
         : Get.find<SplashController>().configModel!.maintenanceMode!

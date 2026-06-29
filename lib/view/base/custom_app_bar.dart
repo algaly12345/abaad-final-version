@@ -1,5 +1,4 @@
 import 'package:abaad_flutter/util/dimensions.dart';
-import 'package:abaad_flutter/util/styles.dart';
 import 'package:abaad_flutter/view/base/notifi_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -9,59 +8,78 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   final bool? isBackButtonExist;
   final Function? onBackPressed;
   final bool? showCart;
-  const CustomAppBar({super.key, this.title = "", this.isBackButtonExist = true, this.onBackPressed, this.showCart = false});
+
+  const CustomAppBar({
+    super.key,
+    this.title = "",
+    this.isBackButtonExist = true,
+    this.onBackPressed,
+    this.showCart = false,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return AppBar(
-      title: Text(title!, style: robotoRegular.copyWith(fontSize: Dimensions.fontSizeLarge, color: Theme.of(context).textTheme.bodyLarge!.color)),
-      centerTitle: true,
-      leading: isBackButtonExist! ? IconButton(
-        icon: Center(
-          child:   Container(
-              height: 27,
-              width: 27,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                border: Border.all(
-                  color: Theme.of(context).primaryColor,
-                  width: 1,
-                ),
-                borderRadius: BorderRadius.circular(5),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.only(right: 4,left: 4),
-                child: Icon(Icons.arrow_back_ios,size: 23),
-              )),
-          //
-          // child: Container(
-          //   height: 27,
-          //   width: 27,
-          //   alignment: Alignment.center,
-          //   decoration: BoxDecoration(
-          //       border: Border.all(
-          //         color: Theme.of(context).primaryColor,
-          //         width: 1,
-          //       ),
-          //     borderRadius: BorderRadius.circular(2),
-          //   ),
-          //     child: Padding(
-          //       padding: const EdgeInsets.only(right: 4,left: 4),
-          //       child: Icon(Icons.arrow_back_ios,size: 22),
-          //     )),
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: AppBar(
+        title: Text(
+          title ?? "",
+          style: TextStyle(
+            fontFamily: 'Roboto',
+            fontSize: 17,
+            fontWeight: FontWeight.w700,
+            color: Theme.of(context).primaryColor,
+          ),
         ),
-        color: Theme.of(context).textTheme.bodyLarge!.color,
-        onPressed: () => onBackPressed != null ? onBackPressed!() : Navigator.pop(context),
-      ) : SizedBox(),
-      backgroundColor: Theme.of(context).cardColor,
-      elevation: 0,
-      actions: showCart! ? [
-        IconButton(onPressed: () {},
-        icon: NotifIconWidget(color: Theme.of(context).textTheme.bodyLarge!.color!, size: 25),
-      )] : null,
+        centerTitle: true,
+        leading: isBackButtonExist!
+            ? Padding(
+                padding: const EdgeInsets.all(10),
+                child: GestureDetector(
+                  onTap: () => onBackPressed != null
+                      ? onBackPressed!()
+                      : Navigator.pop(context),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).primaryColor.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Icon(
+                      Icons.arrow_back_ios_rounded,
+                      size: 18,
+                      color: Theme.of(context).primaryColor,
+                    ),
+                  ),
+                ),
+              )
+            : const SizedBox(),
+        backgroundColor: Colors.white,
+        elevation: 0,
+        actions: showCart!
+            ? [
+                Padding(
+                  padding: const EdgeInsets.only(right: 12),
+                  child: NotifIconWidget(
+                    color: Theme.of(context).primaryColor,
+                    size: 24,
+                  ),
+                ),
+              ]
+            : null,
+      ),
     );
   }
 
   @override
-  Size get preferredSize => Size(Dimensions.WEB_MAX_WIDTH, GetPlatform.isDesktop ? 70 : 50);
+  Size get preferredSize =>
+      Size(Dimensions.WEB_MAX_WIDTH, GetPlatform.isDesktop ? 70 : 56);
 }

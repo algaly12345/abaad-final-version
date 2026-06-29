@@ -232,17 +232,17 @@ class Estate {
         property?.add(Property.fromJson(v));
       });
     }
-    space = json['space'];
-    categoryId = json['category_id'];
-    price = json['price'];
-    ownershipType = json['ownership_type'];
+    space = json['space']?.toString();
+    categoryId = json['category_id'] != null ? int.tryParse(json['category_id'].toString()) : 0;
+    price = json['price']?.toString();
+    ownershipType = json['ownership_type']?.toString();
 
-    view = json['view'];
-    status = json['status'];
-    districts = json['districts'];
-    height = json['height'];
-    estate_id=json['estate_id'];
-    width = json['width'];
+    view = json['view'] != null ? int.tryParse(json['view'].toString()) : 0;
+    status = json['status']?.toString();
+    districts = json['districts']?.toString();
+    height = json['height'] != null ? int.tryParse(json['height'].toString()) : 0;
+    estate_id = json['estate_id'] != null ? int.tryParse(json['estate_id'].toString()) : 0;
+    width = json['width'] != null ? int.tryParse(json['width'].toString()) : 0;
     if (json['service_offers'] != null) {
       serviceOffers = <ServiceOffers>[];
       json['service_offers'].forEach((v) {
@@ -253,28 +253,28 @@ class Estate {
     images = json['images'] != null ? json['images'].cast<String>() : [];
     planned = json['planned'] != null ? json['planned'].cast<String>() : [];
     arPath = json['ar_path'];
-    latitude = json['latitude'];
-    longitude = json['longitude'];
-    zoneId = json['zone_id'];
-    type_add = json['type_add'];
-    territoryId = json['territory_id'];
-    ageEstate = json['age_estate'];
-    shortDescription = json['short_description'];
-    longDescription=json['long_description'];
-    floors = json['floors'];
-    near = json['near'];
-    priceNegotiation=json['price_negotiation'];
-    createdAt = json['created_at'];
-    updatedAt = json['updated_at'];
-    advertiserNo = json['advertiser_no'];
-    adNumber = json['ad_number'];
-    nationalAddress=json['national_address'];
-    city=json["city"];
-    title=json["title"];
-    category=json["category"];
-    authorization_number=json["authorization_number"];
+    latitude = json['latitude']?.toString();
+    longitude = json['longitude']?.toString();
+    zoneId = json['zone_id'] != null ? int.tryParse(json['zone_id'].toString()) : 0;
+    type_add = json['type_add']?.toString();
+    territoryId = json['territory_id'] != null ? int.tryParse(json['territory_id'].toString()) : 0;
+    ageEstate = json['age_estate']?.toString();
+    shortDescription = json['short_description']?.toString();
+    longDescription = json['long_description']?.toString();
+    floors = json['floors'] != null ? int.tryParse(json['floors'].toString()) : 0;
+    near = json['near']?.toString();
+    priceNegotiation = json['price_negotiation']?.toString();
+    createdAt = json['created_at']?.toString();
+    updatedAt = json['updated_at']?.toString();
+    advertiserNo = json['advertiser_no'] != null ? int.tryParse(json['advertiser_no'].toString()) : 0;
+    adNumber = json['ad_number'] != null ? int.tryParse(json['ad_number'].toString()) : 0;
+    nationalAddress = json['national_address']?.toString();
+    city = json["city"]?.toString();
+    title = json["title"]?.toString();
+    category = json["category"]?.toString();
+    authorization_number = json["authorization_number"]?.toString();
 
-    userId=json['user_id'];
+    userId = json['user_id'] != null ? int.tryParse(json['user_id'].toString()) : 0;
     if (json['network_type'] != null) {
       networkType = <NetworkType>[];
       json['network_type'].forEach((v) {
@@ -296,52 +296,48 @@ class Estate {
         interface?.add(Interface.fromJson(v));
       });
     }
-    streetSpace=json["street_space"];
-    buildSpace=json["build_space"];
-    documentNumber=json["document_number"];
-    videoUrl=json['video_url'];
+    streetSpace = json["street_space"]?.toString();
+    buildSpace = json["build_space"]?.toString();
+    documentNumber = json["document_number"]?.toString();
+    videoUrl = json['video_url']?.toString();
     users = json['users'] != null ? Users.fromJson(json['users']) : null;
 
+    zoneName = json["zone_name"]?.toString();
+    zoneNameAr = json["zone_name_ar"]?.toString();
+    categoryNameAr = json["category_name_ar"]?.toString();
+    categoryName = json['category_name']?.toString();
+    property_type = json['property_type']?.toString();
+    skyView = json["skyview"]?.toString();
+    estate_type = json["estate_type"]?.toString();
 
-    zoneName=json["zone_name"];
-    zoneNameAr=json["zone_name_ar"];
-    categoryNameAr=json["category_name_ar"];
-    categoryName=json['category_name'];
-    property_type= json['property_type'];
-    skyView=json["skyview"];
-    estate_type=json["estate_type"];
+    creationDate = json['creation_date']?.toString();
+    endDate = json['end_date']?.toString();
+    adLicenseNumber = json['ad_license_number']?.toString();
+    deedNumber = json['deed_number']?.toString();
+    brokerageAndMarketingLicenseNumber = json['brokerageAndMarketingLicenseNumber']?.toString();
+    titleDeedTypeName = json['titleDeedTypeName']?.toString();
+    northLimit = json['north_limit']?.toString();
+    eastLimit = json['east_limit']?.toString();
+    westLimit = json['west_limit']?.toString();
+    southLimit = json['south_limit']?.toString();
+    streetWidth = json['street_width']?.toString();
+    propertyFace = json['property_face']?.toString();
+    advertisementType = json['advertisement_type']?.toString();
+    totalPrice = json['total_price']?.toString();
+    licenseNumber = json['license_number']?.toString();
+    planNumber = json['plan_number']?.toString();
 
+    obligationsOnTheProperty = json['obligationsOnTheProperty']?.toString();
+    guaranteesAndTheirDuration = json['guaranteesAndTheirDuration']?.toString();
+    locationDescriptionOnMOJDeed = json['locationDescriptionOnMOJDeed']?.toString();
+    numberOfRooms = json['numberOfRooms']?.toString();
+    mainLandUseTypeName = json['mainLandUseTypeName']?.toString();
+    propertyUtilities = json['propertyUtilities'] != null ? List<String>.from(json['propertyUtilities'].map((e) => e.toString())) : [];
+    landNumber = json['landNumber']?.toString();
+    propertyUsages = json['propertyUsages']?.toString();
 
-
-    creationDate = json['creation_date'];
-    endDate = json['end_date'];
-    adLicenseNumber = json['ad_license_number'];
-    deedNumber = json['deed_number'];
-    brokerageAndMarketingLicenseNumber = json['brokerageAndMarketingLicenseNumber'];
-    titleDeedTypeName = json['titleDeedTypeName'];
-    northLimit = json['north_limit'];
-    eastLimit = json['east_limit'];
-    westLimit = json['west_limit'];
-    southLimit = json['south_limit'];
-    streetWidth = json['street_width'];
-    propertyFace = json['property_face'];
-    advertisementType = json['advertisement_type'];
-    totalPrice = json['total_price'];
-    licenseNumber = json['license_number'];
-    planNumber = json['plan_number'];
-
-    obligationsOnTheProperty = json['obligationsOnTheProperty'];
-    guaranteesAndTheirDuration = json['guaranteesAndTheirDuration'];
-    locationDescriptionOnMOJDeed = json['locationDescriptionOnMOJDeed'];
-    numberOfRooms = json['numberOfRooms'];
-    mainLandUseTypeName = json['mainLandUseTypeName'];
-    propertyUtilities = json['propertyUtilities'] != null ? List<String>.from(json['propertyUtilities']) : [];
-    landNumber = json['landNumber'];
-    propertyUsages= json['propertyUsages'];// ✅ New
-
-
-    agent_identity = json['agent_identity'];
-    unified_number= json['unified_number'];// ✅ New
+    agent_identity = json['agent_identity']?.toString();
+    unified_number = json['unified_number']?.toString();
 
 
 
@@ -531,22 +527,22 @@ class ServiceOffers {
      this.provider_name});
 
   ServiceOffers.fromJson(Map<String, dynamic> json) {
-    id = json['id'];
-    title = json['title'];
-    expiryDate = json['expiry_date'];
-    servicePrice = json['service_price'];
-    description = json['description'];
-    discount = json['discount'];
-    sendedAt = json['sended_at'];
-    serviceTypeId = json['service_type_id'];
-    offerType = json['offer_type'];
-    createdAt = json['created_at'];
-    updatedAt = json['updated_at'];
-    image = json['image'];
-    phoneProvider  =json['phone_provider']  ;
-    offer_id =json['offer_id']  ;
-    category_id =json['category_id']  ;
-    provider_name =json['provider_name']  ;
+    id = json['id']?.toString();
+    title = json['title']?.toString();
+    expiryDate = json['expiry_date']?.toString();
+    servicePrice = json['service_price']?.toString();
+    description = json['description']?.toString();
+    discount = json['discount']?.toString();
+    sendedAt = json['sended_at']?.toString();
+    serviceTypeId = json['service_type_id']?.toString();
+    offerType = json['offer_type']?.toString();
+    createdAt = json['created_at']?.toString();
+    updatedAt = json['updated_at']?.toString();
+    image = json['image']?.toString();
+    phoneProvider = json['phone_provider']?.toString();
+    offer_id = json['offer_id']?.toString();
+    category_id = json['category_id']?.toString();
+    provider_name = json['provider_name']?.toString();
   }
 
   Map<String, dynamic> toJson() {

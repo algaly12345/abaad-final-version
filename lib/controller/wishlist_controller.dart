@@ -68,7 +68,9 @@ class WishListController extends GetxController implements GetxService {
 
         }
         _wishRestList?.add(restaurant);
-        _wishRestIdList.add(restaurant.estate_id);
+        if (restaurant.estate_id != null) {
+          _wishRestIdList.add(restaurant.estate_id!);
+        }
 
       });
     } else {

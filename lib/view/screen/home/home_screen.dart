@@ -562,7 +562,6 @@
 //   );
 // }
 
-import 'dart:convert';
 import 'package:abaad_flutter/controller/auth_controller.dart';
 import 'package:abaad_flutter/controller/banner_controller.dart';
 import 'package:abaad_flutter/controller/category_controller.dart';
@@ -574,14 +573,12 @@ import 'package:abaad_flutter/data/model/response/estate_model.dart';
 import 'package:abaad_flutter/util/dimensions.dart';
 import 'package:abaad_flutter/util/styles.dart';
 import 'package:abaad_flutter/view/base/custom_image.dart';
-import 'package:abaad_flutter/view/base/custom_snackbar.dart';
 import 'package:abaad_flutter/view/base/no_data_screen.dart';
 import 'package:abaad_flutter/view/screen/fillter/fillter_estate_sheet.dart';
 import 'package:abaad_flutter/view/screen/home/widet/estate_card.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:http/http.dart' as http;
 
 class HomeScreen extends StatefulWidget {
   int zoneId;
@@ -618,7 +615,6 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   String? selectedZoneName;
   final TextEditingController _searchController = TextEditingController();
-  List<dynamic> _searchResults = [];
 
   @override
   void initState() {
@@ -676,45 +672,85 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       key: key,
       appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(60),
-        child: AppBar(
-          actions: [
-            Padding(
-              padding: const EdgeInsets.all(8.0),
+        preferredSize: const Size.fromHeight(64),
+        child: Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.05),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: SafeArea(
+            bottom: false,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
               child: Row(
                 children: [
+                  // Back button
                   GestureDetector(
+                    onTap: () => Navigator.pop(context),
                     child: Container(
-                      padding: const EdgeInsets.all(7),
+                      width: 40,
+                      height: 40,
                       decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(4),
-                        border: Border.all(width: 1, color: Colors.blue),
+                        color: Theme.of(context).primaryColor.withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(12),
                       ),
-                      child: const Icon(
-                        Icons.qr_code,
-                        size: 25,
-                        color: Colors.blue,
+                      child: Icon(
+                        Icons.arrow_back_ios_rounded,
+                        color: Theme.of(context).primaryColor,
+                        size: 18,
                       ),
                     ),
                   ),
-                  const SizedBox(width: 3),
+                  const SizedBox(width: 10),
+                  // Title
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          "عقارات متاحة",
+                          style: TextStyle(
+                            fontFamily: 'Roboto',
+                            fontSize: 11,
+                            color: Colors.grey[500],
+                          ),
+                        ),
+                        Text(
+                          selectedZoneName != null && selectedZoneName!.isNotEmpty
+                              ? selectedZoneName!
+                              : "جميع المناطق",
+                          style: TextStyle(
+                            fontFamily: 'Roboto',
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                            color: Theme.of(context).primaryColor,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  // Filter button
                   GetBuilder<ZoneController>(
                     builder: (zoneController) {
                       return GestureDetector(
-                        onTap: () {
-                          Get.dialog(FiltersScreen());
-                        },
+                        onTap: () => Get.dialog(FiltersScreen()),
                         child: Container(
-                          padding: const EdgeInsets.all(7),
+                          width: 40,
+                          height: 40,
                           decoration: BoxDecoration(
-                            color: Colors.blue,
-                            borderRadius: BorderRadius.circular(5),
-                            border: Border.all(width: 1, color: Colors.white),
+                            color: Theme.of(context).primaryColor,
+                            borderRadius: BorderRadius.circular(12),
                           ),
                           child: const Icon(
-                            Icons.filter_list_alt,
-                            size: 25,
+                            Icons.tune_rounded,
+                            size: 20,
                             color: Colors.white,
                           ),
                         ),
@@ -723,33 +759,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ],
               ),
-            )
-          ],
-          backgroundColor: Colors.white,
-          elevation: 0,
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back_ios, color: Colors.black),
-            onPressed: () {
-              Navigator.pop(context);
-            },
-          ),
-          title: Row(
-            children: [
-              const SizedBox(width: 12),
-              Text(
-                "قائمة في منطقه ${selectedZoneName ?? ""}",
-                style: const TextStyle(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 16,
-                ),
-              ),
-            ],
-          ),
-          bottom: PreferredSize(
-            preferredSize: const Size.fromHeight(1.0),
-            child: Container(
-              color: Colors.grey.shade300,
-              height: 1.0,
             ),
           ),
         ),
@@ -986,22 +995,4 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Future<void> _searchEstates(String query) async {
-    try {
-      final response = await http.get(
-        Uri.parse('https://app.abaadapp.sa/api/v1/estate/search?name=$query'),
-      );
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        setState(() {
-          _searchResults = data['estate'];
-        });
-      } else {
-        showCustomSnackBar('فشل في جلب النتائج');
-      }
-    } catch (e) {
-      showCustomSnackBar('حدث خطأ: $e');
-    }
-  }
 }

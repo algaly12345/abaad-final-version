@@ -21,15 +21,15 @@ class ZoneModel {
     id = json['id'];
     name = json['name'];
     coordinates = json['coordinates'] != null ? Coordinates.fromJson(json['coordinates']) : null;
-    status = json['status'];
-    createdAt = json['created_at'];
-    updatedAt = json['updated_at'];
-    territory_id = json['territory_id'];
-    latitude = json['latitude'];
-    longitude = json['longitude'];
-    estate_count = json['estate_count'];
-    nameAr=json['name_ar'];
-    image=json['image'];
+    status = json['status']?.toString() ?? "";
+    createdAt = json['created_at']?.toString() ?? "";
+    updatedAt = json['updated_at']?.toString() ?? "";
+    territory_id = json['territory_id'] ?? 0;
+    latitude = json['latitude']?.toString() ?? "";
+    longitude = json['longitude']?.toString() ?? "";
+    estate_count = json['estate_count']?.toString() ?? "";
+    nameAr = json['name_ar']?.toString() ?? "";
+    image = json['image']?.toString() ?? "";
   }
 
   Map<String, dynamic> toJson() {

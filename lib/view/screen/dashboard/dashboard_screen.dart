@@ -196,43 +196,42 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
             floatingActionButton: _pageIndex == 2
                 ? null
-                : Padding(
-                    padding: EdgeInsets.only(top: 20),
-                    child: SizedBox(
-                      height: 70,
-                      width: 70,
-                      child: FloatingActionButton(
-                        backgroundColor: Colors.transparent,
-                        elevation: 0,
-                        onPressed: () {
-                          final userController = Get.find<UserController>();
-
-                          if (userController
-                                  .userInfoModel
-                                  ?.accountVerification !=
-                              "0") {
-                            Get.toNamed(RouteHelper.getAddLicenseRoute());
-                          } else {
-                            showBottomSheet(context);
-                          }
-                        },
-                        child: Container(
-                          height: 70,
-                          width: 70,
-                          decoration: BoxDecoration(
-                            border: Border.all(color: Colors.white, width: 4),
-                            shape: BoxShape.circle,
-                            gradient: const LinearGradient(
-                              begin: Alignment(0.7, -0.5),
-                              end: Alignment(0.6, 0.5),
-                              colors: [Color(0xFF194B7C), Color(0xFF0864C0)],
+                : SizedBox(
+                    height: 62,
+                    width: 62,
+                    child: FloatingActionButton(
+                      backgroundColor: Colors.transparent,
+                      elevation: 0,
+                      onPressed: () {
+                        final userController = Get.find<UserController>();
+                        if (userController.userInfoModel?.accountVerification != "0") {
+                          Get.toNamed(RouteHelper.getAddLicenseRoute());
+                        } else {
+                          showBottomSheet(context);
+                        }
+                      },
+                      child: Container(
+                        height: 62,
+                        width: 62,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: const LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [Color(0xFF2E6DA4), Color(0xFF1A3C5E)],
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFF1A3C5E).withValues(alpha: 0.35),
+                              blurRadius: 12,
+                              offset: const Offset(0, 4),
                             ),
-                          ),
-                          child: const Icon(
-                            Icons.add,
-                            size: 40,
-                            color: Colors.white,
-                          ),
+                          ],
+                        ),
+                        child: const Icon(
+                          Icons.add_rounded,
+                          size: 32,
+                          color: Colors.white,
                         ),
                       ),
                     ),
@@ -244,48 +243,62 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
             // floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
             bottomNavigationBar: ResponsiveHelper.isDesktop(context)
-                ? SizedBox()
+                ? const SizedBox()
                 : GetBuilder<AuthController>(
                     builder: (orderController) {
-                      return BottomAppBar(
-                        elevation: 5,
-                        notchMargin: 5,
-                        clipBehavior: Clip.antiAlias,
-
-                        shape: CircularNotchedRectangle(),
-
-                        child: Padding(
-                          padding: EdgeInsets.all(
-                            Dimensions.PADDING_SIZE_EXTRA_SMALL,
-                          ),
-                          child: Row(
-                            children: [
-                              BottomNavItem(
-                                iconData: Images.home,
-                                name: "home".tr,
-                                isSelected: _pageIndex == 0,
-                                onTap: () => _setPage(0),
+                      return Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.06),
+                              blurRadius: 16,
+                              offset: const Offset(0, -4),
+                            ),
+                          ],
+                        ),
+                        child: SafeArea(
+                          child: BottomAppBar(
+                            elevation: 0,
+                            notchMargin: 8,
+                            clipBehavior: Clip.antiAlias,
+                            color: Colors.transparent,
+                            shape: const CircularNotchedRectangle(),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
                               ),
-                              BottomNavItem(
-                                iconData: Images.menu,
-                                name: "menu".tr,
-                                isSelected: _pageIndex == 1,
-                                onTap: () => _setPage(1),
+                              child: Row(
+                                children: [
+                                  BottomNavItem(
+                                    iconData: Images.home,
+                                    name: "home".tr,
+                                    isSelected: _pageIndex == 0,
+                                    onTap: () => _setPage(0),
+                                  ),
+                                  BottomNavItem(
+                                    iconData: Images.menu,
+                                    name: "menu".tr,
+                                    isSelected: _pageIndex == 1,
+                                    onTap: () => _setPage(1),
+                                  ),
+                                  const Expanded(child: SizedBox()),
+                                  BottomNavItem(
+                                    iconData: Images.request,
+                                    name: "request".tr,
+                                    isSelected: _pageIndex == 2,
+                                    onTap: () => _setPage(2),
+                                  ),
+                                  BottomNavItem(
+                                    iconData: Images.heart,
+                                    name: "favorite".tr,
+                                    isSelected: _pageIndex == 3,
+                                    onTap: () => _setPage(3),
+                                  ),
+                                ],
                               ),
-                              Expanded(child: SizedBox()),
-                              BottomNavItem(
-                                iconData: Images.request,
-                                name: "request".tr,
-                                isSelected: _pageIndex == 2,
-                                onTap: () => _setPage(2),
-                              ),
-                              BottomNavItem(
-                                iconData: Images.heart,
-                                name: "favorite".tr,
-                                isSelected: _pageIndex == 3,
-                                onTap: () => _setPage(3),
-                              ),
-                            ],
+                            ),
                           ),
                         ),
                       );

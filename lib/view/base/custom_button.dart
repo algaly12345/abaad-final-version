@@ -1,9 +1,4 @@
-import 'package:abaad_flutter/util/dimensions.dart';
-import 'package:abaad_flutter/util/styles.dart';
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
-
-
 
 class CustomButton extends StatelessWidget {
   final Function? onPressed;
@@ -19,143 +14,103 @@ class CustomButton extends StatelessWidget {
   final Color? textColor;
   final bool isLoading;
   final bool isBold;
-  const CustomButton({Key? key, this.onPressed, required this.buttonText, this.transparent = false, this.margin, this.width, this.height,
-    this.fontSize, this.radius = 10, this.icon, this.color, this.textColor, this.isLoading = false, this.isBold = true}) : super(key: key);
+
+  const CustomButton({
+    super.key,
+    this.onPressed,
+    required this.buttonText,
+    this.transparent = false,
+    this.margin,
+    this.width,
+    this.height,
+    this.fontSize,
+    this.radius = 12,
+    this.icon,
+    this.color,
+    this.textColor,
+    this.isLoading = false,
+    this.isBold = true,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final ButtonStyle flatButtonStyle = TextButton.styleFrom(
-      backgroundColor: onPressed == null ? Theme.of(context).disabledColor : transparent
-          ? Colors.transparent : color ?? Theme.of(context).primaryColor,
-      minimumSize: Size(width != null ? width! : Dimensions.fontSizeLarge, height != null ? height! : 50),
-      padding: EdgeInsets.zero,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(radius),
-      ),
-    );
+    final Color bgColor = onPressed == null
+        ? Theme.of(context).disabledColor
+        : transparent
+            ? Colors.transparent
+            : color ?? Theme.of(context).primaryColor;
 
-    return Center(child: SizedBox(width: 300 ?? Dimensions.fontSizeLarge, child: Padding(
-      padding: margin == null ? const EdgeInsets.all(10) : margin!,
-      child: TextButton(
-        onPressed: isLoading ? null : onPressed as void Function()?,
-        style: flatButtonStyle,
-        child: isLoading ? Center(child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-          const SizedBox(
-            height: 15, width: 15,
-            child: CircularProgressIndicator(
-              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-              strokeWidth: 2,
+    final Color fgColor = textColor ??
+        (transparent ? Theme.of(context).primaryColor : Colors.white);
+
+    return Padding(
+      padding: margin ?? const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: SizedBox(
+        width: width ?? double.infinity,
+        height: height ?? 52,
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: isLoading ? null : onPressed as void Function()?,
+            borderRadius: BorderRadius.circular(radius),
+            child: Ink(
+              decoration: BoxDecoration(
+                color: transparent ? Colors.transparent : bgColor,
+                borderRadius: BorderRadius.circular(radius),
+                border: transparent
+                    ? Border.all(
+                        color: Theme.of(context).primaryColor,
+                        width: 1.5,
+                      )
+                    : null,
+                boxShadow: transparent || onPressed == null
+                    ? null
+                    : [
+                        BoxShadow(
+                          color: bgColor.withValues(alpha: 0.30),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+              ),
+              child: Center(
+                child: isLoading
+                    ? SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor:
+                              AlwaysStoppedAnimation<Color>(fgColor),
+                        ),
+                      )
+                    : Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (icon != null) ...[
+                            Icon(icon, color: fgColor, size: 18),
+                            const SizedBox(width: 8),
+                          ],
+                          Text(
+                            buttonText,
+                            style: TextStyle(
+                              fontFamily: 'Roboto',
+                              fontSize: fontSize ?? 15,
+                              fontWeight: isBold
+                                  ? FontWeight.w700
+                                  : FontWeight.w500,
+                              color: fgColor,
+                              letterSpacing: 0.3,
+                            ),
+                          ),
+                        ],
+                      ),
+              ),
             ),
           ),
-          const SizedBox(width: Dimensions.paddingSizeSmall),
-
-          Text('loading'.tr, style: robotoMedium.copyWith(color: Colors.white)),
-        ]),
-        ) :
-
-        Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-          icon != null ? Container(
-            padding: const EdgeInsets.only(right: 0),
-            child: Icon(icon, color: transparent ? Theme.of(context).primaryColor : Theme.of(context).cardColor),
-          ) : const SizedBox(),
-          Text(buttonText, textAlign: TextAlign.center,  style: isBold ? robotoBold.copyWith(
-            color: textColor ?? (transparent ? Theme.of(context).primaryColor : Colors.white),
-            fontSize: fontSize ?? Dimensions.fontSizeLarge,
-          ) : robotoRegular.copyWith(
-            color: textColor ?? (transparent ? Theme.of(context).primaryColor : Colors.white),
-            fontSize: fontSize ?? Dimensions.fontSizeLarge,
-          )
-          ),
-        ]),
+        ),
       ),
-    )));
+    );
   }
 }
-// class CustomButton extends StatelessWidget {
-//   final Function? onPressed;
-//   final String? buttonText;
-//   final bool? transparent;
-//   final EdgeInsets? margin;
-//   final double? height;
-//   final double? width;
-//   final double? fontSize;
-//   final double? radius;
-//   final IconData? icon;
-//
-//   const CustomButton({
-//     super.key,
-//     this.onPressed,
-//     this.buttonText = "",
-//     this.transparent = false,
-//     this.margin,
-//     this.width = 100,
-//     this.height = 0,
-//     this.fontSize = 14,
-//     this.radius = 5,
-//     this.icon
-//   });
-//
-//   @override
-//   Widget build(BuildContext context) {
-//     final ButtonStyle flatButtonStyle = TextButton.styleFrom(
-//       backgroundColor: onPressed == null ? Theme.of(context).disabledColor : (transparent ?? false)
-//           ? Colors.transparent : Theme.of(context).primaryColor,
-//       // minimumSize: Size(width ?? Dimensions.WEB_MAX_WIDTH, height ?? 50),
-//       padding: EdgeInsets.zero,
-//       shape: RoundedRectangleBorder(
-//         borderRadius: BorderRadius.circular(radius!),
-//       ),
-//     );
-//
-//     return Center(
-//       child: SizedBox(
-//         // width: width ?? Dimensions.WEB_MAX_WIDTH,
-//         child: Container(
-//           padding: margin ?? EdgeInsets.all(1),
-//           child: TextButton(
-//             onPressed: onPressed  ,
-//             style: flatButtonStyle.copyWith(
-//               minimumSize: MaterialStateProperty.all<Size>(
-//                 Size(double.infinity, 2), // عرض الزر لا نهائي (بحسب الحاوية)
-//               ),
-//               padding: MaterialStateProperty.all<EdgeInsets>(
-//                 EdgeInsets.symmetric(vertical: 16),
-//               ),
-//             ),
-//             child: Text(
-//               buttonText ?? '',
-//               textAlign: TextAlign.center,
-//               style: robotoBold.copyWith(
-//                 color: transparent ?? false
-//                     ? Theme.of(context).primaryColor
-//                     : Theme.of(context).cardColor,
-//                 fontSize: fontSize ?? Dimensions.fontSizeLarge,
-//               ),
-//             ),
-//           ),
-//         ),
-//       ),
-//     );
-//
-//
-//     // return Center(child: SizedBox(width: width ?? Dimensions.WEB_MAX_WIDTH, child: Padding(
-//     //   padding: margin ?? EdgeInsets.all(10),
-//     //   child: TextButton(
-//     //     onPressed: onPressed as VoidCallback,
-//     //     style: flatButtonStyle,
-//     //     child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-//     //       icon != null ? Padding(
-//     //         padding: EdgeInsets.only(right: Dimensions.PADDING_SIZE_EXTRA_SMALL),
-//     //         child: Icon(icon, color: transparent ?? false ? Theme.of(context).primaryColor : Theme.of(context).cardColor),
-//     //       ) : SizedBox(),
-//     //       Text(buttonText ??'', textAlign: TextAlign.center, style: robotoBold.copyWith(
-//     //         color: transparent ?? false ? Theme.of(context).primaryColor : Theme.of(context).cardColor,
-//     //         fontSize: fontSize ?? Dimensions.fontSizeLarge,
-//     //       )),
-//     //     ]),
-//     //   ),
-//     // )));
-//   }
-// }

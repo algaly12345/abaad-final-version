@@ -36,6 +36,9 @@ class ServicesController extends GetxController implements GetxService {
   int? pageSize;
   bool isPaginating = false;
 
+  bool get hasMore => (_servicesList?.length ?? 0) < (pageSize ?? 0);
+  bool get hasMoreMyServices => (_myServicesList?.length ?? 0) < (pageSize ?? 0);
+
   String searchText = '';
   List<int> selectedCategories = [];
   List<int> selectedZones = [];
@@ -127,6 +130,7 @@ class ServicesController extends GetxController implements GetxService {
         }
 
         pageSize = model.totalSize;
+        offset = currentOffset;
       } else {
         if (myServices) {
           _myServicesList ??= [];

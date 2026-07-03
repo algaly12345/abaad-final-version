@@ -19,8 +19,8 @@ class ServicesRepo {
     // لوحة "خدماتي" لها مسار محمي بتسجيل الدخول مستقل عن كتالوج الخدمات العام،
     // ولا يجوز إرسال نفس استعلام الكتالوج العام مع my_services=true لأنه غير مدعوم بعد الآن.
     String uri = myServices
-        ? '/api/v1/services/my-services?page=$offset&per_page=15'
-        : '/api/v1/services?page=$offset&per_page=15';
+        ? '/api/v1/services/my-services?page=$offset&per_page=10'
+        : '/api/v1/services?page=$offset&per_page=10';
 
     if (categoryId != null && categoryId.isNotEmpty) {
       uri += '&category_id=$categoryId';

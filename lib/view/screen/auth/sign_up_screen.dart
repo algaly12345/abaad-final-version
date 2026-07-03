@@ -7,6 +7,7 @@ import 'package:abaad_flutter/helper/responsive_helper.dart';
 import 'package:abaad_flutter/helper/route_helper.dart';
 import 'package:abaad_flutter/util/images.dart';
 import 'package:abaad_flutter/util/styles.dart';
+import 'package:abaad_flutter/view/base/app_dropdown.dart';
 import 'package:abaad_flutter/view/base/custom_button.dart';
 import 'package:abaad_flutter/view/base/custom_snackbar.dart';
 import 'package:abaad_flutter/view/base/web_menu_bar.dart';
@@ -46,7 +47,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
     _emailFocus.dispose();
     _phoneFocus.dispose();
     _unifiedNumberFocus.dispose();
-
     _fullNameController.dispose();
     _emailController.dispose();
     _phoneController.dispose();
@@ -58,316 +58,312 @@ class _SignUpScreenState extends State<SignUpScreen> {
   @override
   Widget build(BuildContext context) {
     final bool isDesktop = ResponsiveHelper.isDesktop(context);
+    final primary = Theme.of(context).primaryColor;
 
     return Scaffold(
+      backgroundColor: const Color(0xFFF4F6F9),
       extendBodyBehindAppBar: true,
       appBar: isDesktop
           ? WebMenuBar()
           : AppBar(
-        leading: IconButton(
-          onPressed: () => Get.back(),
-          icon: const Icon(Icons.arrow_back_ios_rounded),
-        ),
-        elevation: 0,
-        backgroundColor: Colors.transparent,
-      ),
-      body: Stack(
-        children: [
-          Positioned.fill(
-            child: Image.asset(
-              Images.background,
-              fit: BoxFit.cover,
-            ),
-          ),
-          Positioned.fill(
-            child: Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Colors.white.withOpacity(0.78),
-                    Colors.white.withOpacity(0.92),
-                  ],
-                ),
+              backgroundColor: Colors.transparent,
+              elevation: 0,
+              leading: IconButton(
+                onPressed: () => Get.back(),
+                icon: const Icon(Icons.arrow_back_ios_rounded, color: Colors.white),
               ),
             ),
-          ),
-          SafeArea(
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                final double maxCardWidth =
-                constraints.maxWidth > 900 ? 560 : 480;
-                final double horizontalPadding =
-                constraints.maxWidth > 600 ? 24 : 16;
-
-                return Center(
-                  child: SingleChildScrollView(
-                    physics: const BouncingScrollPhysics(),
-                    padding: EdgeInsets.symmetric(
-                      horizontal: horizontalPadding,
-                      vertical: 20,
-                    ),
-                    child: ConstrainedBox(
-                      constraints: BoxConstraints(maxWidth: maxCardWidth),
-                      child: Container(
-                        width: double.infinity,
-                        padding: EdgeInsets.symmetric(
-                          horizontal: constraints.maxWidth > 600 ? 28 : 18,
-                          vertical: constraints.maxWidth > 600 ? 30 : 22,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.96),
-                          borderRadius: BorderRadius.circular(28),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.08),
-                              blurRadius: 24,
-                              offset: const Offset(0, 10),
-                            ),
-                          ],
-                          border: Border.all(
-                            color: Colors.white.withOpacity(0.6),
-                          ),
-                        ),
-                        child: GetBuilder<AuthController>(
-                          builder: (authController) {
-                            return Form(
-                              key: _formKey,
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.stretch,
-                                children: [
-                                  Center(
-                                    child: Container(
-                                      width: constraints.maxWidth > 600 ? 94 : 84,
-                                      height: constraints.maxWidth > 600 ? 94 : 84,
-                                      decoration: BoxDecoration(
-                                        color: const Color(0xFFF5F8FC),
-                                        borderRadius: BorderRadius.circular(24),
-                                      ),
-                                      child: Center(
-                                        child: Image.asset(
-                                          Images.logo,
-                                          width: constraints.maxWidth > 600 ? 58 : 50,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 20),
-                                  Text(
-                                    'إنشاء حساب',
-                                    textAlign: TextAlign.center,
-                                    style: robotoBlack.copyWith(
-                                      fontSize:
-                                      constraints.maxWidth > 600 ? 28 : 24,
-                                      color: const Color(0xFF111827),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    'أكمل البيانات التالية لإنشاء حسابك',
-                                    textAlign: TextAlign.center,
-                                    style: robotoRegular.copyWith(
-                                      fontSize: 14,
-                                      color: const Color(0xFF6B7280),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 28),
-
-                                  _buildLabel('الاسم الكامل'),
-                                  const SizedBox(height: 8),
-                                  _buildTextField(
-                                    controller: _fullNameController,
-                                    focusNode: _firstNameFocus,
-                                    nextFocus: _emailFocus,
-                                    hintText: 'أدخل الاسم الكامل',
-                                    icon: Icons.person_outline_rounded,
-                                    keyboardType: TextInputType.name,
-                                    textInputAction: TextInputAction.next,
-                                  ),
-
-                                  const SizedBox(height: 16),
-
-                                  _buildLabel('البريد الإلكتروني'),
-                                  const SizedBox(height: 8),
-                                  _buildTextField(
-                                    controller: _emailController,
-                                    focusNode: _emailFocus,
-                                    nextFocus: _phoneFocus,
-                                    hintText: 'example@email.com (اختياري)',
-                                    icon: Icons.mail_outline_rounded,
-                                    keyboardType: TextInputType.emailAddress,
-                                    textInputAction: TextInputAction.next,
-                                  ),
-
-                                  const SizedBox(height: 16),
-
-                                  _buildLabel('رقم الجوال'),
-                                  const SizedBox(height: 8),
-                                  _buildPhoneField(),
-
-                                  const SizedBox(height: 16),
-
-                                  _buildLabel('نوع المستخدم'),
-                                  const SizedBox(height: 8),
-                                  _buildDropdownField<String>(
-                                    value: _selectedUserType,
-                                    hint: 'اختر نوع المستخدم',
-                                    items: const [
-                                      DropdownMenuItem(
-                                        value: 'باحث عن عقار',
-                                        child: Text('باحث عن عقار'),
-                                      ),
-                                      DropdownMenuItem(
-                                        value: 'مسوق عقاري',
-                                        child: Text('مسوق عقاري'),
-                                      ),
-                                    ],
-                                    onChanged: (value) {
-                                      setState(() {
-                                        _selectedUserType = value;
-                                      });
-                                    },
-                                  ),
-
-                                  const SizedBox(height: 16),
-
-                                  _buildLabel('نوع التسجيل'),
-                                  const SizedBox(height: 8),
-                                  _buildDropdownField<String>(
-                                    value: _registrationType,
-                                    hint: 'اختر نوع التسجيل',
-                                    items: const [
-                                      DropdownMenuItem(
-                                        value: 'individual',
-                                        child: Text('فرد'),
-                                      ),
-                                      DropdownMenuItem(
-                                        value: 'organization',
-                                        child: Text('منشأة'),
-                                      ),
-                                    ],
-                                    onChanged: (value) {
-                                      setState(() {
-                                        _registrationType = value;
-                                      });
-                                    },
-                                  ),
-
-                                  if (_registrationType == 'organization') ...[
-                                    const SizedBox(height: 16),
-                                    _buildLabel('الرقم الموحد'),
-                                    const SizedBox(height: 8),
-                                    _buildTextField(
-                                      controller: _unifiedNumberController,
-                                      focusNode: _unifiedNumberFocus,
-                                      hintText: 'أدخل الرقم الموحد',
-                                      icon: Icons.badge_outlined,
-                                      keyboardType: TextInputType.number,
-                                      textInputAction: TextInputAction.done,
-                                      inputFormatters: [
-                                        FilteringTextInputFormatter.digitsOnly,
-                                      ],
-                                    ),
-                                  ],
-
-                                  const SizedBox(height: 18),
-
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 14,
-                                      vertical: 12,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFFF9FAFB),
-                                      borderRadius: BorderRadius.circular(16),
-                                      border: Border.all(
-                                        color: const Color(0xFFE5E7EB),
-                                      ),
-                                    ),
-                                    child: ConditionCheckBox(
-                                      authController: authController,
-                                    ),
-                                  ),
-
-                                  const SizedBox(height: 22),
-
-                                  !authController.isLoading
-                                      ? SizedBox(
-                                    height: 54,
-                                    child: CustomButton(
-                                      buttonText: 'إنشاء حساب',
-                                      onPressed: authController.acceptTerms
-                                          ? () => _register(authController)
-                                          : null,
-                                    ),
-                                  )
-                                      : const Center(
-                                    child: CircularProgressIndicator(),
-                                  ),
-
-                                  const SizedBox(height: 12),
-
-                                  SizedBox(
-                                    height: 52,
-                                    child: OutlinedButton(
-                                      onPressed: () => Get.toNamed(
-                                        RouteHelper.getSignInRoute(
-                                          RouteHelper.signUp,
-                                        ),
-                                      ),
-                                      style: OutlinedButton.styleFrom(
-                                        backgroundColor: Colors.white,
-                                        side: const BorderSide(
-                                          color: Color(0xFFE5E7EB),
-                                        ),
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius:
-                                          BorderRadius.circular(16),
-                                        ),
-                                      ),
-                                      child: Text(
-                                        'لديك حساب بالفعل؟ تسجيل الدخول',
-                                        style: robotoMedium.copyWith(
-                                          fontSize: 15,
-                                          color: const Color(0xFF111827),
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            );
-                          },
-                        ),
-                      ),
+      body: GetBuilder<AuthController>(
+        builder: (authController) {
+          return Stack(
+            children: [
+              // Gradient header background
+              Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                height: MediaQuery.of(context).size.height * 0.30,
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        primary,
+                        primary.withValues(alpha: 0.72),
+                      ],
                     ),
                   ),
-                );
-              },
-            ),
-          ),
-        ],
+                ),
+              ),
+
+              SafeArea(
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final maxWidth =
+                        constraints.maxWidth > 700 ? 520.0 : double.infinity;
+
+                    return Center(
+                      child: SingleChildScrollView(
+                        physics: const BouncingScrollPhysics(),
+                        padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
+                        child: ConstrainedBox(
+                          constraints: BoxConstraints(maxWidth: maxWidth),
+                          child: Form(
+                            key: _formKey,
+                            child: Column(
+                              children: [
+                                // ── Logo ─────────────────────────────────
+                                Container(
+                                  width: 76,
+                                  height: 76,
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(20),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withValues(alpha: 0.18),
+                                        blurRadius: 20,
+                                        offset: const Offset(0, 6),
+                                      ),
+                                    ],
+                                  ),
+                                  child: Center(
+                                    child: Image.asset(Images.logo, width: 46),
+                                  ),
+                                ),
+                                const SizedBox(height: 14),
+
+                                Text(
+                                  'sign_up'.tr,
+                                  style: robotoBold.copyWith(
+                                    fontSize: 22,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  'complete_form_data'.tr,
+                                  textAlign: TextAlign.center,
+                                  style: robotoRegular.copyWith(
+                                    fontSize: 13,
+                                    color: Colors.white.withValues(alpha: 0.82),
+                                  ),
+                                ),
+                                const SizedBox(height: 24),
+
+                                // ── Form card ─────────────────────────────
+                                Container(
+                                  padding: const EdgeInsets.all(20),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(24),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withValues(alpha: 0.07),
+                                        blurRadius: 20,
+                                        offset: const Offset(0, 6),
+                                      ),
+                                    ],
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                                    children: [
+                                      // Full name
+                                      _fieldLabel('full_name'.tr),
+                                      const SizedBox(height: 7),
+                                      _textField(
+                                        controller: _fullNameController,
+                                        focusNode: _firstNameFocus,
+                                        nextFocus: _emailFocus,
+                                        hint: 'enter_full_name_hint'.tr,
+                                        icon: Icons.person_outline_rounded,
+                                        primary: primary,
+                                        keyboardType: TextInputType.name,
+                                      ),
+                                      const SizedBox(height: 14),
+
+                                      // Email
+                                      _fieldLabel('email'.tr),
+                                      const SizedBox(height: 7),
+                                      _textField(
+                                        controller: _emailController,
+                                        focusNode: _emailFocus,
+                                        nextFocus: _phoneFocus,
+                                        hint: 'enter_email_optional'.tr,
+                                        icon: Icons.mail_outline_rounded,
+                                        primary: primary,
+                                        keyboardType: TextInputType.emailAddress,
+                                      ),
+                                      const SizedBox(height: 14),
+
+                                      // Phone
+                                      _fieldLabel('phone'.tr),
+                                      const SizedBox(height: 7),
+                                      _buildPhoneField(primary),
+                                      const SizedBox(height: 14),
+
+                                      // User type
+                                      _fieldLabel('user_type'.tr),
+                                      const SizedBox(height: 7),
+                                      AppDropdown<String>(
+                                        value: _selectedUserType,
+                                        hintText: 'please_select_user_type'.tr,
+                                        items: [
+                                          DropdownMenuItem(
+                                            value: 'باحث عن عقار',
+                                            child: Text('property_seeker'.tr),
+                                          ),
+                                          DropdownMenuItem(
+                                            value: 'مسوق عقاري',
+                                            child: Text('real_estate_marketer'.tr),
+                                          ),
+                                        ],
+                                        onChanged: (value) =>
+                                            setState(() => _selectedUserType = value),
+                                      ),
+                                      const SizedBox(height: 14),
+
+                                      // Registration type
+                                      _fieldLabel('registration_type'.tr),
+                                      const SizedBox(height: 7),
+                                      AppDropdown<String>(
+                                        value: _registrationType,
+                                        hintText: 'registration_type'.tr,
+                                        items: [
+                                          DropdownMenuItem(
+                                            value: 'individual',
+                                            child: Text('individual'.tr),
+                                          ),
+                                          DropdownMenuItem(
+                                            value: 'organization',
+                                            child: Text('organization_label'.tr),
+                                          ),
+                                        ],
+                                        onChanged: (value) =>
+                                            setState(() => _registrationType = value),
+                                      ),
+
+                                      // Unified number (organization only)
+                                      if (_registrationType == 'organization') ...[
+                                        const SizedBox(height: 14),
+                                        _fieldLabel('unified_number'.tr),
+                                        const SizedBox(height: 7),
+                                        _textField(
+                                          controller: _unifiedNumberController,
+                                          focusNode: _unifiedNumberFocus,
+                                          hint: 'enter_unified_number'.tr,
+                                          icon: Icons.badge_outlined,
+                                          primary: primary,
+                                          keyboardType: TextInputType.number,
+                                          textInputAction: TextInputAction.done,
+                                          inputFormatters: [
+                                            FilteringTextInputFormatter.digitsOnly,
+                                          ],
+                                        ),
+                                      ],
+
+                                      const SizedBox(height: 18),
+
+                                      // Terms
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 12,
+                                          vertical: 10,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFFF9FAFB),
+                                          borderRadius: BorderRadius.circular(14),
+                                          border: Border.all(
+                                            color: const Color(0xFFE5E7EB),
+                                          ),
+                                        ),
+                                        child: ConditionCheckBox(
+                                          authController: authController,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 20),
+
+                                      // Register button
+                                      authController.isLoading
+                                          ? const Center(
+                                              child: CircularProgressIndicator())
+                                          : CustomButton(
+                                              margin: EdgeInsets.zero,
+                                              height: 52,
+                                              radius: 14,
+                                              buttonText: 'sign_up'.tr,
+                                              onPressed: authController.acceptTerms
+                                                  ? () => _register(authController)
+                                                  : null,
+                                            ),
+                                      const SizedBox(height: 10),
+
+                                      // Sign in link
+                                      SizedBox(
+                                        height: 52,
+                                        child: OutlinedButton(
+                                          onPressed: () => Get.toNamed(
+                                            RouteHelper.getSignInRoute(
+                                              RouteHelper.signUp,
+                                            ),
+                                          ),
+                                          style: OutlinedButton.styleFrom(
+                                            foregroundColor: primary,
+                                            side: BorderSide(
+                                              color: primary.withValues(alpha: 0.45),
+                                            ),
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius: BorderRadius.circular(14),
+                                            ),
+                                          ),
+                                          child: Text(
+                                            'already_have_account'.tr,
+                                            style: robotoMedium.copyWith(
+                                              fontSize: 14,
+                                              color: primary,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
 
-  Widget _buildLabel(String text) {
+  // ── Helpers ──────────────────────────────────────────────────────────────────
+
+  Widget _fieldLabel(String text) {
     return Text(
       text,
       style: robotoMedium.copyWith(
-        fontSize: 14,
-        color: const Color(0xFF111827),
+        fontSize: 13,
+        color: const Color(0xFF374151),
       ),
     );
   }
 
-  Widget _buildTextField({
+  Widget _textField({
     required TextEditingController controller,
     FocusNode? focusNode,
     FocusNode? nextFocus,
-    required String hintText,
+    required String hint,
     required IconData icon,
+    required Color primary,
     TextInputType keyboardType = TextInputType.text,
     TextInputAction textInputAction = TextInputAction.next,
     List<TextInputFormatter>? inputFormatters,
@@ -378,10 +374,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
       keyboardType: keyboardType,
       textInputAction: textInputAction,
       inputFormatters: inputFormatters,
-      style: robotoMedium.copyWith(
-        fontSize: 15,
-        color: const Color(0xFF111827),
-      ),
+      style: robotoMedium.copyWith(fontSize: 15, color: const Color(0xFF1A2340)),
+      cursorColor: primary,
       onFieldSubmitted: (_) {
         if (nextFocus != null) {
           FocusScope.of(context).requestFocus(nextFocus);
@@ -390,277 +384,181 @@ class _SignUpScreenState extends State<SignUpScreen> {
         }
       },
       decoration: InputDecoration(
-        hintText: hintText,
+        hintText: hint,
         hintStyle: robotoRegular.copyWith(
           fontSize: 14,
-          color: const Color(0xFF9CA3AF),
+          color: Colors.grey.shade400,
         ),
-        prefixIcon: Icon(
-          icon,
-          color: const Color(0xFF16A34A),
-          size: 20,
-        ),
+        prefixIcon: Icon(icon, color: primary, size: 20),
         filled: true,
-        fillColor: Colors.white,
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 18,
-        ),
+        fillColor: const Color(0xFFF9FAFB),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(
-            color: Color(0xFFE5E7EB),
-          ),
+          borderRadius: BorderRadius.circular(14),
+          borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(
-            color: Color(0xFFE5E7EB),
-          ),
+          borderRadius: BorderRadius.circular(14),
+          borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(
-            color: Color(0xFF16A34A),
-            width: 1.5,
-          ),
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide(color: primary, width: 1.5),
         ),
         errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(
-            color: Colors.red,
-          ),
+          borderRadius: BorderRadius.circular(14),
+          borderSide: const BorderSide(color: Colors.red),
         ),
         focusedErrorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(
-            color: Colors.red,
-            width: 1.3,
-          ),
+          borderRadius: BorderRadius.circular(14),
+          borderSide: const BorderSide(color: Colors.red, width: 1.3),
         ),
       ),
     );
   }
 
-  Widget _buildPhoneField() {
+  Widget _buildPhoneField(Color primary) {
     return Directionality(
       textDirection: TextDirection.ltr,
-      child: Container(
-        padding: const EdgeInsets.all(6),
-        decoration: BoxDecoration(
-          color: const Color(0xFFF8FAFC),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: const Color(0xFFE5E7EB),
-          ),
-        ),
-        child: Row(
-          children: [
-            Container(
-              height: 58,
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: const Color(0xFFE5E7EB),
-                ),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Image.asset(
-                    Images.saudi_flag,
-                    width: 36,
-                    height: 36,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    '+966',
-                    style: robotoBold.copyWith(
-                      fontSize: 15,
-                      color: const Color(0xFF111827),
-                    ),
-                  ),
-                ],
-              ),
+      child: Row(
+        children: [
+          Container(
+            height: 54,
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF3F4F6),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: const Color(0xFFE5E7EB)),
             ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: TextFormField(
-                controller: _phoneController,
-                focusNode: _phoneFocus,
-                keyboardType: TextInputType.number,
-                textInputAction: TextInputAction.done,
-      
-                // يبدأ من اليمين
-                textAlign: TextAlign.left,
-                textDirection: TextDirection.ltr,
-      
-                style: robotoMedium.copyWith(
-                  fontSize: 16,
-                  color: const Color(0xFF111827),
-                ),
-                cursorColor: const Color(0xFF16A34A),
-                inputFormatters: [
-                  FilteringTextInputFormatter.digitsOnly,
-                  LengthLimitingTextInputFormatter(9),
-                  TextInputFormatter.withFunction((oldValue, newValue) {
-                    final text = newValue.text;
-      
-                    if (text.isEmpty) {
-                      return newValue;
-                    }
-      
-                    if (!text.startsWith('5')) {
-                      showCustomSnackBar('يجب أن يبدأ رقم الجوال بـ 5');
-                      return oldValue;
-                    }
-      
-                    return newValue;
-                  }),
-                ],
-                decoration: InputDecoration(
-                  hintText: '5XXXXXXXX',
-                  hintStyle: robotoRegular.copyWith(
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Image.asset(Images.saudi_flag, width: 26, height: 26),
+                const SizedBox(width: 6),
+                Text(
+                  '+966',
+                  style: robotoBold.copyWith(
                     fontSize: 14,
-                    color: const Color(0xFF9CA3AF),
+                    color: const Color(0xFF1A2340),
                   ),
-                  isDense: true,
-                  filled: true,
-                  fillColor: Colors.white,
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 18,
-                  ),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    borderSide: const BorderSide(
-                      color: Color(0xFFE5E7EB),
-                    ),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    borderSide: const BorderSide(
-                      color: Color(0xFFE5E7EB),
-                    ),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    borderSide: const BorderSide(
-                      color: Color(0xFF16A34A),
-                      width: 1.5,
-                    ),
-                  ),
-                  errorBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    borderSide: const BorderSide(
-                      color: Colors.red,
-                    ),
-                  ),
-                  focusedErrorBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    borderSide: const BorderSide(
-                      color: Colors.red,
-                      width: 1.3,
-                    ),
-                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: TextFormField(
+              controller: _phoneController,
+              focusNode: _phoneFocus,
+              keyboardType: TextInputType.number,
+              textDirection: TextDirection.ltr,
+              textAlign: TextAlign.left,
+              textInputAction: TextInputAction.next,
+              style: robotoMedium.copyWith(
+                fontSize: 16,
+                color: const Color(0xFF1A2340),
+              ),
+              cursorColor: primary,
+              inputFormatters: [
+                FilteringTextInputFormatter.digitsOnly,
+                LengthLimitingTextInputFormatter(9),
+                TextInputFormatter.withFunction((oldValue, newValue) {
+                  if (newValue.text.isNotEmpty && !newValue.text.startsWith('5')) {
+                    showCustomSnackBar('phone_start_5_error'.tr);
+                    return oldValue;
+                  }
+                  return newValue;
+                }),
+              ],
+              onFieldSubmitted: (_) =>
+                  FocusScope.of(context).requestFocus(_unifiedNumberFocus),
+              decoration: InputDecoration(
+                hintText: '5XXXXXXXX',
+                hintStyle: robotoRegular.copyWith(
+                  fontSize: 14,
+                  color: Colors.grey.shade400,
+                ),
+                filled: true,
+                fillColor: const Color(0xFFF9FAFB),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 16,
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: BorderSide(color: primary, width: 1.5),
+                ),
+                errorBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: const BorderSide(color: Colors.red),
+                ),
+                focusedErrorBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: const BorderSide(color: Colors.red, width: 1.3),
                 ),
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildDropdownField<T>({
-    required T? value,
-    required String hint,
-    required List<DropdownMenuItem<T>> items,
-    required void Function(T?) onChanged,
-  }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: const Color(0xFFE5E7EB),
-        ),
-      ),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<T>(
-          value: value,
-          isExpanded: true,
-          borderRadius: BorderRadius.circular(16),
-          dropdownColor: Colors.white,
-          icon: const Icon(Icons.keyboard_arrow_down_rounded),
-          hint: Text(
-            hint,
-            style: robotoRegular.copyWith(
-              fontSize: 14,
-              color: const Color(0xFF9CA3AF),
-            ),
-          ),
-          items: items,
-          onChanged: onChanged,
-        ),
-      ),
-    );
-  }
+  // ── Register logic ───────────────────────────────────────────────────────────
 
   void _register(AuthController authController) async {
     FocusScope.of(context).unfocus();
 
-    String fullName = _fullNameController.text.trim();
-    String email = _emailController.text.trim();
-    String number = _phoneController.text.trim();
-    String referCode = _referCodeController.text.trim();
+    final String fullName = _fullNameController.text.trim();
+    final String email = _emailController.text.trim();
+    final String number = _phoneController.text.trim();
+    final String referCode = _referCodeController.text.trim();
 
     if (fullName.isEmpty) {
-      showCustomSnackBar('الرجاء إدخال الاسم الكامل');
+      showCustomSnackBar('please_enter_full_name'.tr);
       return;
     }
-
     if (number.isEmpty) {
-      showCustomSnackBar('الرجاء إدخال رقم الجوال');
+      showCustomSnackBar('please_enter_phone'.tr);
       return;
     }
-
     if (!number.startsWith('5')) {
-      showCustomSnackBar('يجب أن يبدأ رقم الجوال بـ 5');
+      showCustomSnackBar('phone_start_5_error'.tr);
       return;
     }
-
     if (number.length != 9) {
-      showCustomSnackBar('رقم الجوال يجب أن يكون 9 أرقام');
+      showCustomSnackBar('phone_9_digits_error'.tr);
       return;
     }
-
-    if ((_selectedUserType?.isEmpty ?? true)) {
-      showCustomSnackBar('يرجى اختيار نوع المستخدم');
+    if (_selectedUserType?.isEmpty ?? true) {
+      showCustomSnackBar('please_select_user_type'.tr);
       return;
     }
-
     if (_registrationType == 'organization' &&
         _unifiedNumberController.text.trim().isEmpty) {
-      showCustomSnackBar('الرجاء إدخال الرقم الموحد');
+      showCustomSnackBar('please_enter_unified_number'.tr);
       return;
     }
-
     if (referCode.isNotEmpty && referCode.length != 10) {
-      showCustomSnackBar('كود الإحالة غير صحيح');
+      showCustomSnackBar('referral_code_invalid'.tr);
       return;
     }
 
     final String numberWithCountryCode = '+966$number';
 
-    SignUpBody signUpBody = SignUpBody(
+    final SignUpBody signUpBody = SignUpBody(
       fName: fullName,
       email: email,
       phone: numberWithCountryCode,
-      password: "1234567",
+      password: '1234567',
       refCode: referCode,
       zone_id: 0,
       membershipType: _selectedUserType,
@@ -672,10 +570,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
     authController.registration(signUpBody).then((status) async {
       if (status.isSuccess) {
-        if ((Get.find<SplashController>().configModel?.customerVerification ??
-            false)) {
-          List<int> encoded = utf8.encode("1234567");
-          String data = base64Encode(encoded);
+        if (Get.find<SplashController>().configModel?.customerVerification ?? false) {
+          final List<int> encoded = utf8.encode('1234567');
+          final String data = base64Encode(encoded);
 
           Get.toNamed(
             RouteHelper.getVerificationRoute(

@@ -80,6 +80,8 @@ class AppConstants {
       '/api/v1/provider-subscriptions/store-offer';
   static const String PROVIDER_SUBSCRIPTION_STATUS_PREFIX =
       '/api/v1/provider-subscriptions/';
+  static const String PROVIDER_PERMISSIONS_URI =
+      '/api/v1/provider/permissions';
 
   static const String empty_box = 'assets/image/empty_box.png';
   static const String FACILITIES = "/api/v1/estate/get-facilities";

@@ -156,8 +156,26 @@ import 'package:get/get.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-class DrawerMenu extends StatelessWidget {
+class DrawerMenu extends StatefulWidget {
   const DrawerMenu({super.key});
+
+  @override
+  State<DrawerMenu> createState() => _DrawerMenuState();
+}
+
+class _DrawerMenuState extends State<DrawerMenu> {
+  @override
+  void initState() {
+    super.initState();
+    final userController = Get.find<UserController>();
+    if (Get.find<AuthController>().isLoggedIn() &&
+        userController.userInfoModel == null &&
+        !userController.isLoading) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) userController.getUserInfo();
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -166,9 +184,10 @@ class DrawerMenu extends StatelessWidget {
 
     return GetBuilder<UserController>(
       builder: (userController) {
-        if (isLoggedIn && userController.userInfoModel == null) {
-          return const Center(child: CircularProgressIndicator());
-        }
+        final bool isLoadingUser =
+            isLoggedIn &&
+            userController.isLoading &&
+            userController.userInfoModel == null;
 
         final String userName = isLoggedIn
             ? (userController.userInfoModel?.name ?? "")
@@ -198,6 +217,7 @@ class DrawerMenu extends StatelessWidget {
                         context: context,
                         primaryColor: primaryColor,
                         isLoggedIn: isLoggedIn,
+                        isLoading: isLoadingUser,
                         userName: userName,
                         phone: phone,
                         imageUrl: imageUrl,
@@ -215,14 +235,11 @@ class DrawerMenu extends StatelessWidget {
                         title: 'my_account'.tr,
                         color: Colors.blueAccent,
                         onTap: () {
-                          Get.find<UserController>().getUserInfoByID(
-                            userController.userInfoModel?.id ?? 0,
-                          );
-                          Get.find<UserController>().getEstateByUser(
-                            1,
-                            false,
-                            userController.userInfoModel?.id ?? 0,
-                          );
+                          final int userId = userController.userInfoModel?.id ?? 0;
+                          if (userId > 0) {
+                            Get.find<UserController>().getUserInfoByID(userId);
+                            Get.find<UserController>().getEstateByUser(1, false, userId);
+                          }
                           Get.toNamed(RouteHelper.getProfileRoute());
                         },
                       ),
@@ -361,6 +378,7 @@ class DrawerMenu extends StatelessWidget {
     required BuildContext context,
     required Color primaryColor,
     required bool isLoggedIn,
+    required bool isLoading,
     required String userName,
     required String phone,
     required String imageUrl,
@@ -376,14 +394,14 @@ class DrawerMenu extends StatelessWidget {
         padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: [primaryColor, primaryColor.withOpacity(0.82)],
+            colors: [primaryColor, primaryColor.withValues(alpha: 0.82)],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
           borderRadius: BorderRadius.circular(24),
           boxShadow: [
             BoxShadow(
-              color: primaryColor.withOpacity(0.18),
+              color: primaryColor.withValues(alpha: 0.18),
               blurRadius: 18,
               offset: const Offset(0, 8),
             ),
@@ -397,7 +415,7 @@ class DrawerMenu extends StatelessWidget {
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 border: Border.all(
-                  color: Colors.white.withOpacity(0.7),
+                  color: Colors.white.withValues(alpha: 0.7),
                   width: 2,
                 ),
                 color: Colors.white,
@@ -415,7 +433,11 @@ class DrawerMenu extends StatelessWidget {
             ),
             const SizedBox(width: 14),
             Expanded(
-              child: Column(
+              child: isLoading
+                  ? const Center(
+                      child: CircularProgressIndicator(color: Colors.white),
+                    )
+                  : Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
@@ -434,7 +456,7 @@ class DrawerMenu extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     style: robotoRegular.copyWith(
                       fontSize: 13,
-                      color: Colors.white.withOpacity(0.92),
+                      color: Colors.white.withValues(alpha: 0.92),
                     ),
                   ),
                   const SizedBox(height: 10),
@@ -444,7 +466,7 @@ class DrawerMenu extends StatelessWidget {
                       vertical: 6,
                     ),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.16),
+                      color: Colors.white.withValues(alpha: 0.16),
                       borderRadius: BorderRadius.circular(30),
                     ),
                     child: Text(
@@ -493,7 +515,7 @@ class DrawerMenu extends StatelessWidget {
         borderRadius: BorderRadius.circular(18),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.035),
+            color: Colors.black.withValues(alpha: 0.035),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -506,7 +528,7 @@ class DrawerMenu extends StatelessWidget {
           width: 42,
           height: 42,
           decoration: BoxDecoration(
-            color: color.withOpacity(0.12),
+            color: color.withValues(alpha: 0.12),
             borderRadius: BorderRadius.circular(14),
           ),
           child: Icon(icon, color: color, size: 22),
@@ -536,7 +558,7 @@ class DrawerMenu extends StatelessWidget {
         borderRadius: BorderRadius.circular(22),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 12,
             offset: const Offset(0, 5),
           ),
@@ -607,7 +629,7 @@ class DrawerMenu extends StatelessWidget {
             width: 46,
             height: 46,
             decoration: BoxDecoration(
-              color: color.withOpacity(0.12),
+              color: color.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(14),
             ),
             child: Icon(icon, color: color, size: 22),

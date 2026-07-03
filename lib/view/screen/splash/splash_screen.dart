@@ -257,12 +257,13 @@ import 'package:abaad_flutter/data/model/body/notification_body.dart';
 import 'package:abaad_flutter/data/model/response/estate_model.dart';
 import 'package:abaad_flutter/helper/route_helper.dart';
 import 'package:abaad_flutter/util/app_constants.dart';
-import 'package:abaad_flutter/util/dimensions.dart';
 import 'package:abaad_flutter/util/images.dart';
 import 'package:abaad_flutter/util/styles.dart';
 import 'package:abaad_flutter/view/base/no_internet_screen.dart';
+import 'package:abaad_flutter/view/screen/splash/permission_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 import '../../../controller/wishlist_controller.dart';
 
@@ -324,24 +325,23 @@ class _SplashScreenState extends State<SplashScreen>
 
   void _route() {
     Get.find<SplashController>().getConfigData().then((isSuccess) {
-      if (isSuccess) {
-        _timer = Timer(const Duration(seconds: 2), () async {
+      // Always start the timer — even if config failed, proceed after delay
+      // so the app never gets stuck on the splash screen forever.
+      _timer = Timer(const Duration(seconds: 2), () async {
+        if (isSuccess) {
+          final splashCtrl = Get.find<SplashController>();
           int minimumVersion = 0;
 
           if (GetPlatform.isAndroid) {
-            minimumVersion = Get.find<SplashController>()
-                .configModel
-                ?.appMinimumVersionAndroid ??
-                0;
+            minimumVersion =
+                splashCtrl.configModel?.appMinimumVersionAndroid ?? 0;
           } else if (GetPlatform.isIOS) {
-            minimumVersion = Get.find<SplashController>()
-                .configModel
-                ?.appMinimumVersionIos ??
-                0;
+            minimumVersion =
+                splashCtrl.configModel?.appMinimumVersionIos ?? 0;
           }
 
           final maintenanceMode =
-              Get.find<SplashController>().configModel?.maintenanceMode ?? false;
+              splashCtrl.configModel?.maintenanceMode ?? false;
 
           if (AppConstants.APP_VERSION < minimumVersion || maintenanceMode) {
             Get.offNamed(
@@ -349,15 +349,47 @@ class _SplashScreenState extends State<SplashScreen>
                 AppConstants.APP_VERSION < minimumVersion,
               ),
             );
-          } else {
-            openApp();
+            return;
           }
-        });
-      }
+        }
+
+        openApp();
+      });
     });
   }
 
   void openApp() async {
+    final allGranted = await _allPermissionsGranted();
+    if (!allGranted && mounted) {
+      Get.off(
+        () => PermissionScreen(onDone: _navigateToApp),
+        transition: Transition.fadeIn,
+        duration: const Duration(milliseconds: 400),
+      );
+      return;
+    }
+    _navigateToApp();
+  }
+
+  Future<bool> _allPermissionsGranted() async {
+    try {
+      final permissions = [
+        Permission.locationWhenInUse,
+        Permission.camera,
+        Permission.photos,
+        Permission.notification,
+      ];
+      for (final p in permissions) {
+        if (!(await p.status).isGranted) return false;
+      }
+      return true;
+    } catch (_) {
+      // Plugin not available on this platform — skip permission screen
+      return true;
+    }
+  }
+
+  void _navigateToApp() async {
     if (Get.find<AuthController>().isLoggedIn()) {
       await Get.find<WishListController>().getWishList();
 
@@ -407,9 +439,9 @@ class _SplashScreenState extends State<SplashScreen>
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
                       colors: [
-                        Colors.black.withOpacity(0.25),
-                        Colors.black.withOpacity(0.45),
-                        Theme.of(context).primaryColor.withOpacity(0.20),
+                        Colors.black.withValues(alpha: 0.25),
+                        Colors.black.withValues(alpha: 0.45),
+                        Theme.of(context).primaryColor.withValues(alpha: 0.20),
                       ],
                     ),
                   ),
@@ -436,15 +468,15 @@ class _SplashScreenState extends State<SplashScreen>
                                 vertical: 30,
                               ),
                               decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.14),
+                                color: Colors.white.withValues(alpha: 0.14),
                                 borderRadius: BorderRadius.circular(28),
                                 border: Border.all(
-                                  color: Colors.white.withOpacity(0.18),
+                                  color: Colors.white.withValues(alpha: 0.18),
                                   width: 1.2,
                                 ),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: Colors.black.withOpacity(0.18),
+                                    color: Colors.black.withValues(alpha: 0.18),
                                     blurRadius: 24,
                                     offset: const Offset(0, 10),
                                   ),
@@ -456,13 +488,13 @@ class _SplashScreenState extends State<SplashScreen>
                                   Container(
                                     padding: const EdgeInsets.all(18),
                                     decoration: BoxDecoration(
-                                      color: Colors.white.withOpacity(0.95),
+                                      color: Colors.white.withValues(alpha: 0.95),
                                       shape: BoxShape.circle,
                                       boxShadow: [
                                         BoxShadow(
                                           color: Theme.of(context)
                                               .primaryColor
-                                              .withOpacity(0.18),
+                                              .withValues(alpha: 0.18),
                                           blurRadius: 22,
                                           spreadRadius: 2,
                                         ),
@@ -497,7 +529,7 @@ class _SplashScreenState extends State<SplashScreen>
                                     style: robotoRegular.copyWith(
                                       fontSize: 16,
                                       height: 1.6,
-                                      color: Colors.white.withOpacity(0.92),
+                                      color: Colors.white.withValues(alpha: 0.92),
                                     ),
                                   ),
 
@@ -524,7 +556,7 @@ class _SplashScreenState extends State<SplashScreen>
                                     "Loading...".tr,
                                     style: robotoRegular.copyWith(
                                       fontSize: 13,
-                                      color: Colors.white.withOpacity(0.82),
+                                      color: Colors.white.withValues(alpha: 0.82),
                                     ),
                                   ),
                                 ],
@@ -547,7 +579,7 @@ class _SplashScreenState extends State<SplashScreen>
                     "Powered by Abaad",
                     style: robotoRegular.copyWith(
                       fontSize: 12,
-                      color: Colors.white.withOpacity(0.75),
+                      color: Colors.white.withValues(alpha: 0.75),
                     ),
                   ),
                 ),

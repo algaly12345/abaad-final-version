@@ -10,7 +10,7 @@ class UserRepo {
   UserRepo({required this.apiClient});
 
   Future<Response> getUserInfo() async {
-    return await apiClient.getData(AppConstants.CUSTOMER_INFO_URI);
+    return await apiClient.getData(AppConstants.CUSTOMER_INFO_URI, handleError: false);
   }
 
 

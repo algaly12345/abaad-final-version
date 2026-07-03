@@ -1,4 +1,5 @@
 import 'package:abaad_flutter/controller/location_controller.dart';
+import 'package:abaad_flutter/controller/provider_permission_controller.dart';
 import 'package:abaad_flutter/controller/splash_controller.dart';
 import 'package:abaad_flutter/data/api/api_checker.dart';
 import 'package:abaad_flutter/data/model/body/business_plan_body.dart';
@@ -275,6 +276,10 @@ class AuthController extends GetxController implements GetxService {
   }
 
   bool clearSharedData() {
+    // مسح صلاحيات مزود الخدمة عند تسجيل الخروج
+    try {
+      Get.find<ProviderPermissionController>().clearPermissions();
+    } catch (_) {}
     return authRepo.clearSharedData();
   }
 

@@ -3,6 +3,7 @@ import 'dart:async';
 // import 'package:abaad_chatbot_ui/abaad_chatbot_ui.dart';
 //import 'package:abaad_chatbot_ui/abaad_chatbot_ui.dart';
 import 'package:abaad_flutter/controller/auth_controller.dart';
+import 'package:abaad_flutter/controller/provider_permission_controller.dart';
 import 'package:abaad_flutter/controller/banner_controller.dart';
 import 'package:abaad_flutter/controller/category_controller.dart';
 import 'package:abaad_flutter/controller/user_controller.dart';
@@ -61,6 +62,7 @@ class DashboardScreen extends StatefulWidget {
 
     if (Get.find<AuthController>().isLoggedIn()) {
       Get.find<UserController>().getUserInfo();
+      Get.find<ProviderPermissionController>().loadPermissions();
     }
   }
 

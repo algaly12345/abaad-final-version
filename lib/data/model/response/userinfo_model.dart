@@ -177,7 +177,7 @@ class Userinfo {
     identity = json['identity'];
     image = json['image'];
     commercialRegisterionNo = json['commercial_registerion_no'];
-    userId = json['user_id'];
+    userId = json['user_id']?.toString();
     advertiserNo = json['advertiser_no'];
     membershipType = json['membership_type'];
     identityType = json['identity_type'];

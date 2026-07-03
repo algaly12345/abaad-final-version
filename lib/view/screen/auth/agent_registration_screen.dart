@@ -8,6 +8,7 @@ import 'package:abaad_flutter/util/styles.dart';
 import 'package:abaad_flutter/view/base/custom_app_bar.dart';
 import 'package:abaad_flutter/view/base/custom_button.dart';
 import 'package:abaad_flutter/view/base/custom_snackbar.dart';
+import 'package:abaad_flutter/view/base/app_dropdown.dart';
 import 'package:abaad_flutter/view/base/custom_text_field.dart';
 import 'package:abaad_flutter/view/base/not_logged_in_screen.dart';
 import 'package:flutter/material.dart';
@@ -78,56 +79,22 @@ class _AgentRegistrationScreenState extends State<AgentRegistrationScreen> {
                         ),
                         const SizedBox(
                             height: Dimensions.PADDING_SIZE_EXTRA_SMALL),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: Dimensions.PADDING_SIZE_SMALL),
-                          decoration: BoxDecoration(
-                            color: Theme
-                                .of(context)
-                                .cardColor,
-                            borderRadius: BorderRadius.circular(
-                                Dimensions.RADIUS_SMALL),
-                            boxShadow: [
-                              BoxShadow(
-                                  color: Colors.grey[Get.isDarkMode ? 800 : 200]!,
-                                  spreadRadius: 2,
-                                  blurRadius: 5,
-                                  offset: Offset(0, 5)
-                              )
-                            ],
-                          ),
-                          child: DropdownButton<String>(
-                            focusColor: Colors.white,
-                            value: _documentTypeValue,
-                            isExpanded: true,
-                            underline: SizedBox(),
-                            //elevation: 5,
-                            style: robotoRegular.copyWith(
-                                fontSize: Dimensions.fontSizeLarge,
-                                color: Colors.black),
-                            iconEnabledColor: Colors.black,
-                            items: <String>[
-                              'هوية وطنية',
-                              'سجل تجاري',
-                            ].map<DropdownMenuItem<String>>((String value) {
-                              return DropdownMenuItem<String>(
-                                value: value,
-                                child: Text(value, style: const TextStyle(
-                                    color: Colors.black),),
-                              );
-                            }).toList(),
-                            hint: Text(
-                              "select_document_type".tr,
-                              style: robotoRegular.copyWith(
-                                  fontSize: Dimensions.fontSizeLarge,
-                                  color: Colors.black),
-                            ),
-                            onChanged: (String? value) {
-                              setState(() {
-                                _documentTypeValue = value ?? "";
-                              });
-                            },
-                          ),
+                        AppDropdown<String>(
+                          value: _documentTypeValue.isEmpty
+                              ? null
+                              : _documentTypeValue,
+                          hintText: 'select_document_type'.tr,
+                          leadingIcon: Icons.badge_outlined,
+                          items: const [
+                            DropdownMenuItem(
+                                value: 'هوية وطنية',
+                                child: Text('هوية وطنية')),
+                            DropdownMenuItem(
+                                value: 'سجل تجاري',
+                                child: Text('سجل تجاري')),
+                          ],
+                          onChanged: (value) =>
+                              setState(() => _documentTypeValue = value ?? ''),
                         ),
                       ]),
                   SizedBox(height: Dimensions.PADDING_SIZE_LARGE),

@@ -145,13 +145,17 @@ class ServiceOfferController extends GetxController implements GetxService {
   }
 
   void pickImage() async {
-    final XFile? image = await ImagePicker().pickImage(
-      source: ImageSource.gallery,
-      imageQuality: 80,
-    );
-    if (image != null) {
-      _pickedImage = image;
-      update();
+    try {
+      final XFile? image = await ImagePicker().pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 80,
+      );
+      if (image != null) {
+        _pickedImage = image;
+        update();
+      }
+    } catch (e) {
+      showCustomSnackBar('فشل اختيار الصورة، تحقق من الصلاحيات');
     }
   }
 

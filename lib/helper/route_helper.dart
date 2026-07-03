@@ -33,6 +33,7 @@ import 'package:abaad_flutter/view/screen/notification/notification_screen.dart'
 import 'package:abaad_flutter/view/screen/onboard/on_boarding_page.dart';
 import 'package:abaad_flutter/view/screen/profile/edit_dilog.dart';
 import 'package:abaad_flutter/view/screen/profile/profile_screen.dart';
+import 'package:abaad_flutter/view/screen/settings/settings_screen.dart';
 import 'package:abaad_flutter/view/screen/profile/update_profile_screen.dart';
 import 'package:abaad_flutter/view/screen/provider/add_property_service_offer_screen.dart';
 import 'package:abaad_flutter/view/screen/provider/service_offer_payment_screen.dart';
@@ -90,7 +91,9 @@ class RouteHelper {
   static const String serviceOfferPayment = '/service-offer-payment';
   static const String servicesCatalog = '/services-catalog';
   static const String myServices = '/my-services';
+  static const String settings = '/settings';
 
+  static String getSettingsRoute() => settings;
   static String getServiceProviderRoute() => serviceProvider;
   static String getAddServiceOfferRoute() => addServiceOffer;
   static String getServiceOfferPaymentRoute() => serviceOfferPayment;
@@ -295,6 +298,7 @@ class RouteHelper {
       page: () => UpdateScreen(isUpdate: Get.parameters['update'] == 'true'),
     ),
     GetPage(name: profile, page: () => ProfileScreen()),
+    GetPage(name: settings, page: () => const SettingsScreen()),
     GetPage(name: updateProfile, page: () => UpdateProfileScreen()),
     GetPage(
       name: categories,
@@ -505,19 +509,22 @@ class RouteHelper {
   static String getMyServicesRoute() => myServices;
 
   static getRoute(Widget? navigateTo, {bool byPuss = false}) {
-    int? minimumVersion = 0;
+    final configModel = Get.find<SplashController>().configModel;
+    if (configModel == null) return navigateTo;
+
+    int minimumVersion = 0;
     if (GetPlatform.isAndroid) {
-      minimumVersion =
-          Get.find<SplashController>().configModel!.appMinimumVersionAndroid;
+      minimumVersion = configModel.appMinimumVersionAndroid ?? 0;
     } else if (GetPlatform.isIOS) {
-      minimumVersion =
-          Get.find<SplashController>().configModel!.appMinimumVersionIos;
+      minimumVersion = configModel.appMinimumVersionIos ?? 0;
     }
 
-    return AppConstants.APP_VERSION < minimumVersion!
-        ? UpdateScreen(isUpdate: true)
-        : Get.find<SplashController>().configModel!.maintenanceMode!
-        ? UpdateScreen(isUpdate: false)
-        : navigateTo;
+    if (AppConstants.APP_VERSION < minimumVersion) {
+      return UpdateScreen(isUpdate: true);
+    }
+    if (configModel.maintenanceMode == true) {
+      return UpdateScreen(isUpdate: false);
+    }
+    return navigateTo;
   }
 }

@@ -39,7 +39,9 @@ import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:get/get.dart';
 
+import 'package:abaad_flutter/controller/provider_permission_controller.dart';
 import 'package:abaad_flutter/controller/service_offer_controller.dart';
+import 'package:abaad_flutter/data/repository/provider_permission_repo.dart';
 import 'package:abaad_flutter/data/repository/service_offer_repo.dart';
 
 Future<Map<String, Map<String, String>>> init() async {
@@ -111,6 +113,9 @@ Future<Map<String, Map<String, String>>> init() async {
 
   Get.lazyPut(() => ServicesRepo(apiClient: Get.find()));
   Get.lazyPut(() => ServicesController(servicesRepo: Get.find()));
+
+  Get.lazyPut(() => ProviderPermissionRepo(apiClient: Get.find()));
+  Get.lazyPut(() => ProviderPermissionController(repo: Get.find()));
 
   // Retrieving localized data
   Map<String, Map<String, String>> languages = {};

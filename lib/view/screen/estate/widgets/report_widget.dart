@@ -4,6 +4,7 @@ import 'package:abaad_flutter/controller/user_controller.dart';
 import 'package:abaad_flutter/util/dimensions.dart';
 import 'package:abaad_flutter/util/styles.dart';
 import 'package:abaad_flutter/view/base/custom_button.dart';
+import 'package:abaad_flutter/view/base/app_dropdown.dart';
 import 'package:abaad_flutter/view/base/my_text_field.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -192,67 +193,19 @@ class _ReportWidgetState extends State<ReportWidget>
                         const SizedBox(height: 8),
 
                         // Dropdown
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 14,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: isDark
-                                ? const Color(0xFF2A2A3C)
-                                : Colors.grey[50],
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: _documentTypeValue != null
-                                  ? theme.primaryColor.withOpacity(0.5)
-                                  : (isDark
-                                  ? Colors.white12
-                                  : Colors.grey[200]!),
-                              width: 1.5,
-                            ),
-                          ),
-                          child: DropdownButton<String>(
-                            dropdownColor:
-                            isDark ? const Color(0xFF2A2A3C) : Colors.white,
-                            value: _documentTypeValue,
-                            isExpanded: true,
-                            underline: const SizedBox(),
-                            style: robotoRegular.copyWith(
-                              fontSize: Dimensions.fontSizeDefault,
-                              color: isDark ? Colors.white : Colors.black87,
-                            ),
-                            iconEnabledColor: theme.primaryColor,
-                            icon: Icon(
-                              Icons.keyboard_arrow_down_rounded,
-                              color: theme.primaryColor,
-                            ),
-                            items: reasonItems
-                                .map<DropdownMenuItem<String>>((item) {
-                              return DropdownMenuItem<String>(
-                                value: item['key'],
-                                child: Text(
-                                  item['label']!,
-                                  style: robotoRegular.copyWith(
-                                    color: isDark
-                                        ? Colors.white
-                                        : Colors.black87,
-                                  ),
-                                ),
-                              );
-                            }).toList(),
-                            hint: Text(
-                              'please_select_reason'.tr,
-                              style: robotoRegular.copyWith(
-                                fontSize: Dimensions.fontSizeDefault,
-                                color: Colors.grey[400],
-                              ),
-                            ),
-                            onChanged: (String? value) {
-                              setState(() {
-                                _documentTypeValue = value;
-                              });
-                            },
-                          ),
+                        AppDropdown<String>(
+                          value: _documentTypeValue,
+                          hintText: 'please_select_reason'.tr,
+                          leadingIcon: Icons.flag_outlined,
+                          items: reasonItems
+                              .map<DropdownMenuItem<String>>((item) =>
+                                  DropdownMenuItem<String>(
+                                    value: item['key'],
+                                    child: Text(item['label']!),
+                                  ))
+                              .toList(),
+                          onChanged: (value) =>
+                              setState(() => _documentTypeValue = value),
                         ),
 
                         const SizedBox(height: 16),

@@ -1,23 +1,23 @@
-// import 'package:abaad_chatbot_ui/abaad_chatbot_ui.dart';
-// import 'package:abaad_flutter/view/base/details_dilog.dart';
+﻿// import 'package:abaad_chatbot_ui/abaad_chatbot_ui.dart';
+// import 'package:abaad_flutter/shared/widgets/details_dilog.dart';
 // import 'package:flutter/material.dart';
 // import 'dart:async';
 // import 'dart:io';
 //
-// import 'package:abaad_flutter/controller/auth_controller.dart';
-// import 'package:abaad_flutter/controller/localization_controller.dart';
-// import 'package:abaad_flutter/controller/location_controller.dart';
-// import 'package:abaad_flutter/controller/splash_controller.dart';
-// import 'package:abaad_flutter/controller/theme_controller.dart';
-// import 'package:abaad_flutter/controller/wishlist_controller.dart';
-// import 'package:abaad_flutter/data/model/body/notification_body.dart';
-// import 'package:abaad_flutter/helper/notification_helper.dart';
-// import 'package:abaad_flutter/helper/responsive_helper.dart';
-// import 'package:abaad_flutter/helper/route_helper.dart';
-// import 'package:abaad_flutter/theme/dark_theme.dart';
-// import 'package:abaad_flutter/theme/light_theme.dart';
-// import 'package:abaad_flutter/util/app_constants.dart';
-// import 'package:abaad_flutter/util/messages.dart';
+// import 'package:abaad_flutter/features/auth/controller/auth_controller.dart';
+// import 'package:abaad_flutter/shared/controllers/localization_controller.dart';
+// import 'package:abaad_flutter/features/map/controller/location_controller.dart';
+// import 'package:abaad_flutter/shared/controllers/splash_controller.dart';
+// import 'package:abaad_flutter/shared/controllers/theme_controller.dart';
+// import 'package:abaad_flutter/features/favourite/controller/wishlist_controller.dart';
+// import 'package:abaad_flutter/features/notification/data/models/notification_body.dart';
+// import 'package:abaad_flutter/shared/helpers/notification_helper.dart';
+// import 'package:abaad_flutter/shared/helpers/responsive_helper.dart';
+// import 'package:abaad_flutter/core/routes/route_helper.dart';
+// import 'package:abaad_flutter/shared/theme/dark_theme.dart';
+// import 'package:abaad_flutter/shared/theme/light_theme.dart';
+// import 'package:abaad_flutter/shared/utils/app_constants.dart';
+// import 'package:abaad_flutter/shared/utils/messages.dart';
 // import 'package:flutter/gestures.dart';
 // import 'package:flutter/services.dart';
 // import 'package:get/get.dart';
@@ -272,33 +272,33 @@
 // }
 
 //import 'package:abaad_chatbot_ui/abaad_chatbot_ui.dart';
-import 'package:abaad_flutter/view/base/details_dilog.dart';
+import 'package:abaad_flutter/shared/widgets/details_dilog.dart';
 import 'package:flutter/material.dart';
 import 'dart:io';
 
-import 'package:abaad_flutter/controller/auth_controller.dart';
-import 'package:abaad_flutter/controller/localization_controller.dart';
-import 'package:abaad_flutter/controller/location_controller.dart';
-import 'package:abaad_flutter/controller/splash_controller.dart';
-import 'package:abaad_flutter/controller/theme_controller.dart';
-import 'package:abaad_flutter/controller/wishlist_controller.dart';
-import 'package:abaad_flutter/data/model/body/notification_body.dart';
-import 'package:abaad_flutter/helper/notification_helper.dart';
-import 'package:abaad_flutter/helper/responsive_helper.dart';
-import 'package:abaad_flutter/helper/route_helper.dart';
-import 'package:abaad_flutter/theme/dark_theme.dart';
-import 'package:abaad_flutter/theme/light_theme.dart';
-import 'package:abaad_flutter/util/app_constants.dart';
-import 'package:abaad_flutter/util/messages.dart';
+import 'package:abaad_flutter/features/auth/controller/auth_controller.dart';
+import 'package:abaad_flutter/shared/controllers/localization_controller.dart';
+import 'package:abaad_flutter/features/map/controller/location_controller.dart';
+import 'package:abaad_flutter/shared/controllers/splash_controller.dart';
+import 'package:abaad_flutter/shared/controllers/theme_controller.dart';
+import 'package:abaad_flutter/features/favourite/controller/wishlist_controller.dart';
+import 'package:abaad_flutter/features/notification/data/models/notification_body.dart';
+import 'package:abaad_flutter/shared/helpers/notification_helper.dart';
+import 'package:abaad_flutter/shared/helpers/responsive_helper.dart';
+import 'package:abaad_flutter/core/routes/route_helper.dart';
+import 'package:abaad_flutter/shared/theme/dark_theme.dart';
+import 'package:abaad_flutter/shared/theme/light_theme.dart';
+import 'package:abaad_flutter/shared/utils/app_constants.dart';
+import 'package:abaad_flutter/shared/utils/messages.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_strategy/url_strategy.dart';
 
-import 'controller/estate_controller.dart';
-import 'data/model/response/estate_model.dart';
-import 'helper/get_di.dart' as di;
+import 'package:abaad_flutter/features/estate/controller/estate_controller.dart';
+import 'package:abaad_flutter/shared/data/models/estate_model.dart';
+import 'package:abaad_flutter/core/di/get_di.dart' as di;
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();

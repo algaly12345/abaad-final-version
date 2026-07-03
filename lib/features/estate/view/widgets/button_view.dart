@@ -1,0 +1,47 @@
+﻿import 'package:abaad_flutter/shared/utils/styles.dart';
+import 'package:flutter/material.dart';
+
+import 'estate_view.dart';
+
+class RadioItem extends StatelessWidget {
+  final RadioModel _item;
+  const RadioItem(this._item, {super.key});
+  @override
+  Widget build(BuildContext context) {
+    return  Container(
+      padding: EdgeInsets.all(4.0),
+      decoration:  BoxDecoration(
+        color: _item.isSelected
+            ?  Theme.of(context).primaryColor
+            : Colors.transparent,
+        border:  Border.all(
+            width: 1.0,
+            color: _item.isSelected
+                ? Theme.of(context).primaryColor
+                : Colors.grey),
+        borderRadius: const BorderRadius.all(Radius.circular(5.0)),
+      ),
+      margin:  EdgeInsets.all(2.0),
+      child:  Row(
+     mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: <Widget>[
+
+           Container(
+
+            child:  Text(_item.buttonText,style: robotoBlack.copyWith(fontSize: 13, color: _item.isSelected
+                ? Theme.of(context).colorScheme.surface
+                : Colors.grey)),
+          ),
+          SizedBox(
+            height: 50.0,
+            width: 50.0,
+
+            child:  Center(
+              child:  Image.asset(_item.text,height: 24,width: 24),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}

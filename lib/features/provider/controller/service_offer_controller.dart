@@ -3,6 +3,7 @@ import 'package:abaad_flutter/features/provider/data/repositories/service_offer_
 import 'package:abaad_flutter/shared/widgets/custom_snackbar.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 class ServiceOfferController extends GetxController implements GetxService {
   final ServiceOfferRepo serviceOfferRepo;
@@ -146,6 +147,20 @@ class ServiceOfferController extends GetxController implements GetxService {
 
   void pickImage() async {
     try {
+      PermissionStatus status = await Permission.photos.status;
+      if (!status.isGranted && !status.isLimited) {
+        status = await Permission.photos.request();
+      }
+      if (status.isPermanentlyDenied) {
+        showCustomSnackBar('permission_permanently_denied_msg'.tr);
+        await openAppSettings();
+        return;
+      }
+      if (!status.isGranted && !status.isLimited) {
+        showCustomSnackBar('فشل اختيار الصورة، تحقق من الصلاحيات');
+        return;
+      }
+
       final XFile? image = await ImagePicker().pickImage(
         source: ImageSource.gallery,
         imageQuality: 80,

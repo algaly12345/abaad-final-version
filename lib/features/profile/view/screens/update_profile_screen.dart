@@ -17,8 +17,8 @@ import 'package:abaad_flutter/shared/widgets/web_menu_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-import '../../base/custom_app_bar.dart';
-import 'widget/profile_bg_widget_update.dart';
+import 'package:abaad_flutter/shared/widgets/custom_app_bar.dart';
+import '../widgets/profile_bg_widget_update.dart';
 
 class UpdateProfileScreen extends StatefulWidget {
   const UpdateProfileScreen({super.key});

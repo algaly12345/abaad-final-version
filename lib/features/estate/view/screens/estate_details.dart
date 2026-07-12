@@ -28,8 +28,8 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import 'widgets/estate_view.dart';
-import 'widgets/report_widget.dart';
+import '../widgets/estate_view.dart';
+import '../widgets/report_widget.dart';
 
 class EstateDetails extends StatefulWidget {
   final Estate estate;

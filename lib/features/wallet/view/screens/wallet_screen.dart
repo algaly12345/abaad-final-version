@@ -15,7 +15,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:shimmer_animation/shimmer_animation.dart';
 
-import 'widget/wallet_bottom_sheet.dart';
+import '../widgets/wallet_bottom_sheet.dart';
 
 class WalletScreen extends StatefulWidget {
   final bool fromWallet;

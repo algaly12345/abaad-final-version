@@ -46,9 +46,9 @@ import 'package:abaad_flutter/features/wallet/view/screens/wallet_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-import '../controller/location_controller.dart';
-import '../util/app_constants.dart';
-import '../view/screen/estate/success_screen.dart';
+import 'package:abaad_flutter/features/map/controller/location_controller.dart';
+import 'package:abaad_flutter/shared/utils/app_constants.dart';
+import 'package:abaad_flutter/features/estate/view/screens/success_screen.dart';
 
 class RouteHelper {
   static const String initial = '/';

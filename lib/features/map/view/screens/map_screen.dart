@@ -1635,9 +1635,9 @@ import 'package:abaad_flutter/shared/utils/images.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import 'widget/location_search_dialog.dart';
-import 'widget/permission_dialog.dart';
-import 'widget/service_provider.dart';
+import '../widgets/location_search_dialog.dart';
+import '../widgets/permission_dialog.dart';
+import '../widgets/service_provider.dart';
 
 class MapScreen extends StatefulWidget {
   ZoneModel mainCategory;

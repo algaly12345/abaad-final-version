@@ -10,6 +10,7 @@ import 'package:abaad_flutter/features/profile/controller/user_controller.dart';
 import 'package:abaad_flutter/features/zones/controller/zone_controller.dart';
 import 'package:abaad_flutter/shared/helpers/responsive_helper.dart';
 import 'package:abaad_flutter/core/routes/route_helper.dart';
+import 'package:abaad_flutter/shared/utils/app_constants.dart';
 import 'package:abaad_flutter/shared/utils/dimensions.dart';
 import 'package:abaad_flutter/shared/utils/images.dart';
 import 'package:abaad_flutter/shared/widgets/custom_button.dart';
@@ -32,10 +33,12 @@ import 'package:abaad_flutter/features/zones/view/screens/zones_screen.dart';
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 //import 'package:firebase_dynamic_links/firebase_dynamic_links.dart';
 
-import 'widget/bottom_sheet_guide.dart';
+import '../widgets/bottom_sheet_guide.dart';
 
 class DashboardScreen extends StatefulWidget {
   final bool fromSignUp;
@@ -85,6 +88,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   void initState() {
     super.initState();
     DashboardScreen.loadData(true);
+    _requestAppPermissions();
     int offset = 1;
     @override
     void initState() {
@@ -509,6 +513,30 @@ class _DashboardScreenState extends State<DashboardScreen> {
       _pageController!.jumpToPage(pageIndex);
       _pageIndex = pageIndex;
     });
+  }
+
+  // يطلب أذونات النظام مباشرة (نوافذ Android/iOS الأصلية) مرة واحدة فقط عند
+  // أول فتح للتطبيق. إن رفض المستخدم إذنًا دون اختيار "عدم السؤال مجددًا"،
+  // لن يُعاد سؤاله تلقائيًا في كل فتح — سيُطلب الإذن المحدد عند نقطة
+  // استخدامه الفعلية (مثل اختيار صورة) بدل إزعاجه هنا في كل مرة.
+  Future<void> _requestAppPermissions() async {
+    try {
+      final prefs = Get.find<SharedPreferences>();
+      final alreadyRequested =
+          prefs.getBool(AppConstants.STARTUP_PERMISSIONS_REQUESTED) ?? false;
+      if (alreadyRequested) return;
+
+      await [
+        Permission.locationWhenInUse,
+        Permission.camera,
+        Permission.photos,
+        Permission.notification,
+      ].request();
+
+      await prefs.setBool(AppConstants.STARTUP_PERMISSIONS_REQUESTED, true);
+    } catch (_) {
+      // المكوّن غير متاح على هذه المنصة (مثل الويب) — تجاهل بصمت.
+    }
   }
 }
 

@@ -1,52 +1,12 @@
-﻿import 'package:abaad_flutter/features/provider/controller/provider_permission_controller.dart';
+import 'package:abaad_flutter/features/provider/controller/provider_permission_controller.dart';
+import 'package:abaad_flutter/core/routes/route_helper.dart';
 import 'package:abaad_flutter/shared/utils/styles.dart';
-import 'package:abaad_flutter/features/services/view/screens/my_services_screen.dart';
 import 'package:abaad_flutter/features/services/view/screens/services_catalog_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-class ServicesHubScreen extends StatefulWidget {
+class ServicesHubScreen extends StatelessWidget {
   const ServicesHubScreen({super.key});
-
-  @override
-  State<ServicesHubScreen> createState() => _ServicesHubScreenState();
-}
-
-class _ServicesHubScreenState extends State<ServicesHubScreen>
-    with SingleTickerProviderStateMixin {
-  late TabController _tabController;
-  bool _wasProvider = false;
-
-  @override
-  void initState() {
-    super.initState();
-    final isProvider =
-        Get.find<ProviderPermissionController>().isProvider;
-    _wasProvider = isProvider;
-    _tabController = TabController(
-      length: isProvider ? 2 : 1,
-      vsync: this,
-    );
-  }
-
-  @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
-  }
-
-  // يُعيد بناء الـ TabController إذا تغيّرت حالة "مزود الخدمة"
-  void _rebuildIfNeeded(bool isProvider) {
-    if (_wasProvider != isProvider) {
-      _wasProvider = isProvider;
-      _tabController.dispose();
-      _tabController = TabController(
-        length: isProvider ? 2 : 1,
-        vsync: this,
-      );
-      setState(() {});
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -54,41 +14,43 @@ class _ServicesHubScreenState extends State<ServicesHubScreen>
 
     return GetBuilder<ProviderPermissionController>(
       builder: (pc) {
-        _rebuildIfNeeded(pc.isProvider);
-        final isProvider = pc.isProvider;
-
         return Scaffold(
           backgroundColor: const Color(0xFFF4F6F9),
           appBar: AppBar(
-            backgroundColor: primary,
+            backgroundColor: Colors.transparent,
             foregroundColor: Colors.white,
             elevation: 0,
-            centerTitle: true,
-            title: Text(
-              'service'.tr,
-              style: robotoBold.copyWith(fontSize: 17, color: Colors.white),
+            centerTitle: false,
+            toolbarHeight: 64,
+            flexibleSpace: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [primary, primary.withValues(alpha: 0.85)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+              ),
             ),
-            bottom: TabBar(
-              controller: _tabController,
-              labelColor: Colors.white,
-              unselectedLabelColor: Colors.white.withValues(alpha: 0.6),
-              indicatorColor: Colors.white,
-              indicatorWeight: 3,
-              labelStyle: robotoMedium.copyWith(fontSize: 14),
-              unselectedLabelStyle: robotoRegular.copyWith(fontSize: 14),
-              tabs: [
-                Tab(text: 'all_services'.tr),
-                if (isProvider) Tab(text: 'my_services'.tr),
-              ],
+            title: ServicesAppBarTitle(
+              title: 'services'.tr,
+              subtitle: 'أفضل العروض والخصومات الحصرية',
             ),
+            actions: const [ServicesAppBarActions()],
           ),
-          body: TabBarView(
-            controller: _tabController,
-            children: [
-              const ServicesCatalogScreen(showAppBar: false),
-              if (isProvider) const MyServicesScreen(showAppBar: false),
-            ],
-          ),
+          body: const ServicesCatalogScreen(showAppBar: false),
+          floatingActionButton: pc.isProvider
+              ? FloatingActionButton.extended(
+                  backgroundColor: primary,
+                  foregroundColor: Colors.white,
+                  elevation: 4,
+                  onPressed: () =>
+                      Get.toNamed(RouteHelper.getMyServicesRoute()),
+                  icon: const Icon(Icons.dashboard_customize_rounded),
+                  label: Text('خدماتي',
+                      style: robotoBold.copyWith(
+                          color: Colors.white, fontSize: 13)),
+                )
+              : null,
         );
       },
     );

@@ -13,7 +13,7 @@ import 'package:get/get.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:http/http.dart' as http;
 
-import '../../../../controller/splash_controller.dart';
+import 'package:abaad_flutter/shared/controllers/splash_controller.dart';
 
 class NearByView extends StatefulWidget {
   final Estate esate;

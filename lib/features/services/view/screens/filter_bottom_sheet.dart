@@ -1,10 +1,12 @@
-﻿import 'package:abaad_flutter/features/services/controller/services_controller.dart';
+import 'package:abaad_flutter/features/services/controller/services_controller.dart';
+import 'package:abaad_flutter/features/services/view/screens/services_catalog_screen.dart'
+    show serviceCategoryIcon;
 import 'package:abaad_flutter/shared/utils/styles.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 class FilterBottomSheet extends StatelessWidget {
-  const FilterBottomSheet({Key? key}) : super(key: key);
+  const FilterBottomSheet({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -15,42 +17,40 @@ class FilterBottomSheet extends StatelessWidget {
         final activeCount = _activeCount(controller);
 
         return Container(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(context).size.height * 0.88,
+          ),
           decoration: const BoxDecoration(
-            color: Color(0xFFF4F6F9),
-            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // ─── Handle + Header ───────────────────────────────────────
-              _buildHeader(context, primary, controller, activeCount),
+              _buildHeader(context, primary, activeCount),
 
               // ─── Scrollable content ────────────────────────────────────
               Flexible(
                 child: SingleChildScrollView(
-                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+                  padding: const EdgeInsets.only(bottom: 20),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       // نوع العرض
                       _Section(
-                        icon: Icons.local_offer_outlined,
                         title: 'offer_type'.tr,
-                        primary: primary,
-                        child: _ToggleRow(
+                        child: _SegmentedRow(
                           options: ServicesController.offerTypeOptions,
                           selected: controller.selectedOfferType,
                           primary: primary,
                           onSelect: controller.setOfferType,
                         ),
                       ),
-                      const SizedBox(height: 16),
+                      const _Divider(),
 
                       // ترتيب حسب
                       _Section(
-                        icon: Icons.sort_rounded,
                         title: 'sort_by'.tr,
-                        primary: primary,
                         child: _ChipGrid(
                           options: ServicesController.sortOptions,
                           selected: {controller.sortBy},
@@ -62,32 +62,13 @@ class FilterBottomSheet extends StatelessWidget {
                       // نوع الخدمة
                       if ((controller.filtersData?.serviceTypes ?? [])
                           .isNotEmpty) ...[
-                        const SizedBox(height: 16),
+                        const _Divider(),
                         _Section(
-                          icon: Icons.category_outlined,
                           title: 'service_type'.tr,
-                          primary: primary,
-                          child: _ChipGrid(
-                            options: (controller.filtersData!.serviceTypes!)
-                                .map((e) => e.name ?? '')
-                                .toList(),
-                            selected: controller.selectedServiceTypes
-                                .map((id) {
-                                  final match = controller
-                                      .filtersData!.serviceTypes!
-                                      .firstWhereOrNull((e) => e.id == id);
-                                  return match?.name ?? '';
-                                })
-                                .where((n) => n.isNotEmpty)
-                                .toSet(),
+                          subtitle: 'اختر واحدًا أو أكثر لتضييق النتائج',
+                          child: _ServiceTypeGrid(
+                            controller: controller,
                             primary: primary,
-                            onTap: (name) {
-                              final type = controller.filtersData!.serviceTypes!
-                                  .firstWhereOrNull((e) => e.name == name);
-                              if (type?.id != null) {
-                                controller.toggleServiceType(type!.id!);
-                              }
-                            },
                           ),
                         ),
                       ],
@@ -95,11 +76,9 @@ class FilterBottomSheet extends StatelessWidget {
                       // مزود الخدمة
                       if ((controller.filtersData?.providers ?? [])
                           .isNotEmpty) ...[
-                        const SizedBox(height: 16),
+                        const _Divider(),
                         _Section(
-                          icon: Icons.storefront_outlined,
                           title: 'service_provider'.tr,
-                          primary: primary,
                           child: _ProviderChips(
                             controller: controller,
                             primary: primary,
@@ -107,7 +86,7 @@ class FilterBottomSheet extends StatelessWidget {
                         ),
                       ],
 
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 8),
                     ],
                   ),
                 ),
@@ -122,22 +101,18 @@ class FilterBottomSheet extends StatelessWidget {
     );
   }
 
-  Widget _buildHeader(BuildContext context, Color primary,
-      ServicesController controller, int activeCount) {
+  Widget _buildHeader(BuildContext context, Color primary, int activeCount) {
     return Container(
       decoration: const BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-        boxShadow: [
-          BoxShadow(
-              color: Color(0x0A000000), blurRadius: 6, offset: Offset(0, 2)),
-        ],
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        border: Border(bottom: BorderSide(color: Color(0xFFF0F2F5), width: 1)),
       ),
       child: Column(
         children: [
-          const SizedBox(height: 12),
+          const SizedBox(height: 10),
           Container(
-            width: 44,
+            width: 40,
             height: 4,
             decoration: BoxDecoration(
               color: Colors.grey.shade300,
@@ -145,40 +120,9 @@ class FilterBottomSheet extends StatelessWidget {
             ),
           ),
           Padding(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+            padding: const EdgeInsets.fromLTRB(20, 14, 12, 14),
             child: Row(
               children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: primary.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Icon(Icons.tune_rounded, color: primary, size: 20),
-                ),
-                const SizedBox(width: 12),
-                Text(
-                  'filter_services'.tr,
-                  style: robotoBold.copyWith(fontSize: 17, color: const Color(0xFF1A2340)),
-                ),
-                if (activeCount > 0) ...[
-                  const SizedBox(width: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 8, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: primary,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
-                      '$activeCount',
-                      style: robotoBold.copyWith(
-                          color: Colors.white, fontSize: 11),
-                    ),
-                  ),
-                ],
-                const Spacer(),
                 GestureDetector(
                   onTap: () => Get.back(),
                   child: Container(
@@ -191,6 +135,30 @@ class FilterBottomSheet extends StatelessWidget {
                         color: Colors.grey.shade600, size: 20),
                   ),
                 ),
+                const Spacer(),
+                Text(
+                  'filter_services'.tr,
+                  style: robotoBold.copyWith(
+                      fontSize: 17, color: const Color(0xFF1A2340)),
+                ),
+                if (activeCount > 0) ...[
+                  const SizedBox(width: 8),
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: primary,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      '$activeCount',
+                      style: robotoBold.copyWith(
+                          color: Colors.white, fontSize: 11),
+                    ),
+                  ),
+                ],
+                const Spacer(),
+                const SizedBox(width: 32),
               ],
             ),
           ),
@@ -204,53 +172,52 @@ class FilterBottomSheet extends StatelessWidget {
     return Container(
       padding: EdgeInsets.fromLTRB(
         20,
-        12,
+        14,
         20,
-        12 + MediaQuery.of(context).padding.bottom,
+        14 + MediaQuery.of(context).padding.bottom,
       ),
       decoration: const BoxDecoration(
         color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-              color: Color(0x0F000000), blurRadius: 10, offset: Offset(0, -3)),
-        ],
+        border: Border(top: BorderSide(color: Color(0xFFF0F2F5), width: 1)),
       ),
       child: Row(
         children: [
           if (activeCount > 0)
             Expanded(
               flex: 2,
-              child: OutlinedButton.icon(
+              child: OutlinedButton(
                 onPressed: () => controller.clearFilters(),
-                icon: const Icon(Icons.refresh_rounded, size: 16),
-                label: Text('clear_all'.tr),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: Colors.grey.shade700,
-                  side: BorderSide(color: Colors.grey.shade300),
+                  side: BorderSide(color: Colors.grey.shade300, width: 1.4),
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14)),
+                      borderRadius: BorderRadius.circular(12)),
+                ),
+                child: Text(
+                  'إعادة تعيين',
+                  style: robotoBold.copyWith(fontSize: 13.5),
                 ),
               ),
             ),
           if (activeCount > 0) const SizedBox(width: 12),
           Expanded(
             flex: 3,
-            child: ElevatedButton.icon(
+            child: ElevatedButton(
               onPressed: () => controller.applyFilters(),
-              icon: const Icon(Icons.check_rounded, size: 16),
-              label: Text(
-                activeCount > 0
-                    ? '${'apply_filters'.tr} ($activeCount)'
-                    : 'apply_filters'.tr,
-              ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: primary,
                 foregroundColor: Colors.white,
                 elevation: 0,
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14)),
+                    borderRadius: BorderRadius.circular(12)),
+              ),
+              child: Text(
+                activeCount > 0
+                    ? '${'apply_filters'.tr} ($activeCount)'
+                    : 'apply_filters'.tr,
+                style: robotoBold.copyWith(fontSize: 14.5, color: Colors.white),
               ),
             ),
           ),
@@ -271,72 +238,66 @@ class FilterBottomSheet extends StatelessWidget {
   }
 }
 
-// ─── Section wrapper ──────────────────────────────────────────────────────────
+// ─── Thin section divider ──────────────────────────────────────────────────────
 
-class _Section extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final Color primary;
-  final Widget child;
-
-  const _Section({
-    required this.icon,
-    required this.title,
-    required this.primary,
-    required this.child,
-  });
+class _Divider extends StatelessWidget {
+  const _Divider();
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.04),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Icon(icon, color: primary, size: 18),
-                  const SizedBox(width: 8),
-                  Text(
-                    title,
-                    style: robotoMedium.copyWith(
-                        fontSize: 14, color: const Color(0xFF1A2340)),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 14),
-              child,
-            ],
-          ),
-        ),
-      ],
+    return const Padding(
+      padding: EdgeInsets.symmetric(vertical: 18),
+      child: Divider(height: 1, thickness: 1, color: Color(0xFFF0F2F5)),
     );
   }
 }
 
-// ─── Toggle Row (radio style) ─────────────────────────────────────────────────
+// ─── Section wrapper (flat, no card) ───────────────────────────────────────────
 
-class _ToggleRow extends StatelessWidget {
+class _Section extends StatelessWidget {
+  final String title;
+  final String? subtitle;
+  final Widget child;
+
+  const _Section({required this.title, this.subtitle, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: robotoBold.copyWith(
+                fontSize: 15.5, color: const Color(0xFF1A2340)),
+          ),
+          if (subtitle != null) ...[
+            const SizedBox(height: 3),
+            Text(
+              subtitle!,
+              style: robotoRegular.copyWith(
+                  fontSize: 12, color: Colors.grey.shade500),
+            ),
+          ],
+          const SizedBox(height: 12),
+          child,
+        ],
+      ),
+    );
+  }
+}
+
+// ─── Segmented row (equal-width, soft-tint selection) ─────────────────────────
+
+class _SegmentedRow extends StatelessWidget {
   final List<String> options;
   final String selected;
   final Color primary;
   final ValueChanged<String> onSelect;
 
-  const _ToggleRow({
+  const _SegmentedRow({
     required this.options,
     required this.selected,
     required this.primary,
@@ -353,27 +314,22 @@ class _ToggleRow extends StatelessWidget {
             onTap: () => onSelect(opt),
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 180),
-              margin: EdgeInsets.only(
-                right: opt != options.last ? 8 : 0,
-              ),
-              padding: const EdgeInsets.symmetric(vertical: 10),
+              margin: EdgeInsets.only(left: opt != options.last ? 10 : 0),
+              padding: const EdgeInsets.symmetric(vertical: 12),
               decoration: BoxDecoration(
-                color: isSelected ? primary : Colors.grey.shade50,
+                color: isSelected ? primary.withValues(alpha: 0.08) : Colors.white,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: isSelected
-                      ? primary
-                      : Colors.grey.shade200,
-                  width: 1.5,
+                  color: isSelected ? primary : const Color(0xFFE2E6EC),
+                  width: isSelected ? 1.6 : 1.2,
                 ),
               ),
               child: Center(
                 child: Text(
                   opt,
-                  style: (isSelected ? robotoBold : robotoRegular).copyWith(
-                    fontSize: 12,
-                    color:
-                        isSelected ? Colors.white : Colors.grey.shade700,
+                  style: (isSelected ? robotoBold : robotoMedium).copyWith(
+                    fontSize: 13,
+                    color: isSelected ? primary : Colors.grey.shade700,
                   ),
                 ),
               ),
@@ -385,7 +341,7 @@ class _ToggleRow extends StatelessWidget {
   }
 }
 
-// ─── Chip Grid (multi-select) ─────────────────────────────────────────────────
+// ─── Chip Grid (multi-select, soft-tint) ───────────────────────────────────────
 
 class _ChipGrid extends StatelessWidget {
   final List<String> options;
@@ -403,31 +359,98 @@ class _ChipGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Wrap(
-      spacing: 8,
-      runSpacing: 8,
+      spacing: 10,
+      runSpacing: 10,
       children: options.map((opt) {
         final isSelected = selected.contains(opt);
         return GestureDetector(
           onTap: () => onTap(opt),
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 180),
-            padding:
-                const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             decoration: BoxDecoration(
-              color: isSelected
-                  ? primary.withValues(alpha: 0.1)
-                  : Colors.grey.shade50,
-              borderRadius: BorderRadius.circular(22),
+              color: isSelected ? primary.withValues(alpha: 0.08) : Colors.white,
+              borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: isSelected ? primary : Colors.grey.shade200,
-                width: 1.5,
+                color: isSelected ? primary : const Color(0xFFE2E6EC),
+                width: isSelected ? 1.6 : 1.2,
               ),
             ),
             child: Text(
               opt,
-              style: (isSelected ? robotoMedium : robotoRegular).copyWith(
-                fontSize: 12,
+              style: (isSelected ? robotoBold : robotoMedium).copyWith(
+                fontSize: 12.5,
                 color: isSelected ? primary : Colors.grey.shade700,
+              ),
+            ),
+          ),
+        );
+      }).toList(),
+    );
+  }
+}
+
+// ─── Service-type icon grid (matches the icon-card look used across the app) ──
+
+class _ServiceTypeGrid extends StatelessWidget {
+  final ServicesController controller;
+  final Color primary;
+
+  const _ServiceTypeGrid({required this.controller, required this.primary});
+
+  @override
+  Widget build(BuildContext context) {
+    final types = controller.filtersData!.serviceTypes!;
+    // عرض بطاقة يسمح بسطرين من النص لتفادي قصّ الأسماء الطويلة
+    final cardWidth = (MediaQuery.of(context).size.width - 40 - 20) / 3;
+
+    return Wrap(
+      spacing: 10,
+      runSpacing: 10,
+      children: types.map((type) {
+        final label = type.name ?? '';
+        final isSelected = controller.selectedServiceTypes.contains(type.id);
+        return SizedBox(
+          width: cardWidth,
+          child: GestureDetector(
+            onTap: () {
+              if (type.id != null) controller.toggleServiceType(type.id!);
+            },
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 180),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 6, vertical: 12),
+              constraints: const BoxConstraints(minHeight: 92),
+              decoration: BoxDecoration(
+                color:
+                    isSelected ? primary.withValues(alpha: 0.08) : Colors.white,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                  color: isSelected ? primary : const Color(0xFFE2E6EC),
+                  width: isSelected ? 1.6 : 1.2,
+                ),
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    serviceCategoryIcon(label),
+                    color: isSelected ? primary : Colors.grey.shade500,
+                    size: 22,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    label,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
+                    style: (isSelected ? robotoBold : robotoMedium).copyWith(
+                      fontSize: 11,
+                      height: 1.25,
+                      color: isSelected ? primary : Colors.grey.shade700,
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
@@ -443,15 +466,14 @@ class _ProviderChips extends StatelessWidget {
   final ServicesController controller;
   final Color primary;
 
-  const _ProviderChips(
-      {required this.controller, required this.primary});
+  const _ProviderChips({required this.controller, required this.primary});
 
   @override
   Widget build(BuildContext context) {
     final providers = controller.filtersData!.providers!;
     return Wrap(
-      spacing: 8,
-      runSpacing: 8,
+      spacing: 10,
+      runSpacing: 10,
       children: providers.map((p) {
         final isSelected = controller.selectedProviders.contains(p.id);
         return GestureDetector(
@@ -460,16 +482,13 @@ class _ProviderChips extends StatelessWidget {
           },
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 180),
-            padding:
-                const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
-              color: isSelected
-                  ? primary.withValues(alpha: 0.1)
-                  : Colors.grey.shade50,
+              color: isSelected ? primary.withValues(alpha: 0.08) : Colors.white,
               borderRadius: BorderRadius.circular(22),
               border: Border.all(
-                color: isSelected ? primary : Colors.grey.shade200,
-                width: 1.5,
+                color: isSelected ? primary : const Color(0xFFE2E6EC),
+                width: isSelected ? 1.6 : 1.2,
               ),
             ),
             child: Row(
@@ -483,21 +502,17 @@ class _ProviderChips extends StatelessWidget {
                   backgroundImage: (p.image != null && p.image!.isNotEmpty)
                       ? NetworkImage(p.image!)
                       : null,
-                  child:
-                      (p.image == null || p.image!.isEmpty)
-                          ? Icon(Icons.storefront_rounded,
-                              size: 12,
-                              color: isSelected
-                                  ? primary
-                                  : Colors.grey.shade500)
-                          : null,
+                  child: (p.image == null || p.image!.isEmpty)
+                      ? Icon(Icons.storefront_rounded,
+                          size: 12,
+                          color: isSelected ? primary : Colors.grey.shade500)
+                      : null,
                 ),
                 const SizedBox(width: 6),
                 Text(
                   p.name ?? '',
-                  style: (isSelected ? robotoMedium : robotoRegular)
-                      .copyWith(
-                    fontSize: 12,
+                  style: (isSelected ? robotoBold : robotoMedium).copyWith(
+                    fontSize: 12.5,
                     color: isSelected ? primary : Colors.grey.shade700,
                   ),
                 ),

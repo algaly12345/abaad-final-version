@@ -4,6 +4,7 @@ import 'package:abaad_flutter/core/api/api_checker.dart';
 import 'package:abaad_flutter/features/provider/data/models/service_offer_model.dart';
 import 'package:abaad_flutter/features/services/data/repositories/services_repo.dart';
 import 'package:abaad_flutter/shared/widgets/custom_snackbar.dart';
+import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
 
 class ServicesController extends GetxController implements GetxService {
@@ -40,6 +41,8 @@ class ServicesController extends GetxController implements GetxService {
   bool get hasMoreMyServices => (_myServicesList?.length ?? 0) < (pageSize ?? 0);
 
   String searchText = '';
+  final TextEditingController searchController = TextEditingController();
+  bool isSearchExpanded = false;
   List<int> selectedCategories = [];
   List<int> selectedZones = [];
   List<int> selectedServiceTypes = [];
@@ -225,6 +228,22 @@ class ServicesController extends GetxController implements GetxService {
     });
   }
 
+  void openSearch() {
+    isSearchExpanded = true;
+    update();
+  }
+
+  void closeSearch() {
+    isSearchExpanded = false;
+    if (searchController.text.isNotEmpty) {
+      searchController.clear();
+      searchText = '';
+      getServicesList(1, reload: true);
+    } else {
+      update();
+    }
+  }
+
   void toggleCategory(int id) {
     if (selectedCategories.contains(id)) {
       selectedCategories.remove(id);
@@ -283,6 +302,8 @@ class ServicesController extends GetxController implements GetxService {
     selectedProviders.clear();
     selectedOfferType = 'الكل';
     sortBy = 'الأحدث';
+    searchText = '';
+    searchController.clear();
     update();
     getServicesList(1, reload: true);
   }
@@ -290,6 +311,7 @@ class ServicesController extends GetxController implements GetxService {
   @override
   void onClose() {
     _debounce?.cancel();
+    searchController.dispose();
     super.onClose();
   }
 }

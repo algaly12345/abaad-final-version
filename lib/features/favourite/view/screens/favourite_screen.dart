@@ -7,7 +7,7 @@ import 'package:abaad_flutter/shared/widgets/not_logged_in_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-import '../../base/details_dilog.dart';
+import 'package:abaad_flutter/shared/widgets/details_dilog.dart';
 
 
 class FavouriteScreen extends StatefulWidget {

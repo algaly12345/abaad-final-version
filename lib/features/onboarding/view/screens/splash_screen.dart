@@ -260,12 +260,10 @@ import 'package:abaad_flutter/shared/utils/app_constants.dart';
 import 'package:abaad_flutter/shared/utils/images.dart';
 import 'package:abaad_flutter/shared/utils/styles.dart';
 import 'package:abaad_flutter/shared/widgets/no_internet_screen.dart';
-import 'package:abaad_flutter/features/onboarding/view/screens/permission_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:permission_handler/permission_handler.dart';
 
-import '../../../controller/wishlist_controller.dart';
+import 'package:abaad_flutter/features/favourite/controller/wishlist_controller.dart';
 
 class SplashScreen extends StatefulWidget {
   final NotificationBody body;
@@ -359,34 +357,7 @@ class _SplashScreenState extends State<SplashScreen>
   }
 
   void openApp() async {
-    final allGranted = await _allPermissionsGranted();
-    if (!allGranted && mounted) {
-      Get.off(
-        () => PermissionScreen(onDone: _navigateToApp),
-        transition: Transition.fadeIn,
-        duration: const Duration(milliseconds: 400),
-      );
-      return;
-    }
     _navigateToApp();
-  }
-
-  Future<bool> _allPermissionsGranted() async {
-    try {
-      final permissions = [
-        Permission.locationWhenInUse,
-        Permission.camera,
-        Permission.photos,
-        Permission.notification,
-      ];
-      for (final p in permissions) {
-        if (!(await p.status).isGranted) return false;
-      }
-      return true;
-    } catch (_) {
-      // Plugin not available on this platform — skip permission screen
-      return true;
-    }
   }
 
   void _navigateToApp() async {

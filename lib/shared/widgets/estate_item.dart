@@ -552,8 +552,8 @@ import 'package:abaad_flutter/shared/widgets/view_image_dilog.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-import '../../helper/route_helper.dart';
-import '../screen/profile/edit_dilog.dart';
+import 'package:abaad_flutter/core/routes/route_helper.dart';
+import 'package:abaad_flutter/features/profile/view/screens/edit_dilog.dart';
 
 class EstateItem extends StatelessWidget {
   final Estate? estate;

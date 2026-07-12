@@ -14,7 +14,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
-import 'widget/location_search_dialog.dart';
+import '../widgets/location_search_dialog.dart';
 
 class PickMapScreen extends StatefulWidget {
   final bool fromSignUp;

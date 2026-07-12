@@ -95,7 +95,7 @@ class CustomButton extends StatelessWidget {
                           Text(
                             buttonText,
                             style: TextStyle(
-                              fontFamily: 'Roboto',
+                              fontFamily: 'Tajawal',
                               fontSize: fontSize ?? 15,
                               fontWeight: isBold
                                   ? FontWeight.w700

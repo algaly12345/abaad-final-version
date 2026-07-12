@@ -438,8 +438,8 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../../../util/images.dart';
-import '../../base/details_dilog.dart';
+import 'package:abaad_flutter/shared/utils/images.dart';
+import 'package:abaad_flutter/shared/widgets/details_dilog.dart';
 
 class AgentProfileScreen extends StatefulWidget {
   final Userinfo? userInfo;

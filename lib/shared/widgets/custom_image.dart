@@ -13,11 +13,20 @@ class CustomImage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final url = image ?? "";
+    if (url.trim().isEmpty || url.trim().endsWith('/')) {
+      return Container(
+        color: Theme.of(context).cardColor,
+        child: Image.asset(placeholder ?? Images.placeholder,
+            height: height, width: width, fit: fit),
+      );
+    }
+
     return Container(
       color: Theme.of(context).cardColor,
       child: CachedNetworkImage(
         color: colors,
-        imageUrl: image ?? "", height: height, width: width, fit: fit,
+        imageUrl: url, height: height, width: width, fit: fit,
         placeholder: (context, url) => Image.asset(Images.placeholder, height: height, width: width, fit: fit),
         errorWidget: (context, url, error) => Image.asset(placeholder ?? "", height: height, width: width, fit: fit),
       ),

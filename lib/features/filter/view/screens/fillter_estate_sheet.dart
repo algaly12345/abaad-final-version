@@ -941,8 +941,8 @@ import 'package:abaad_flutter/features/filter/view/widgets/slider_view.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../../../data/model/response/district_model.dart';
-import 'widgets/popular_filter_list.dart';
+import 'package:abaad_flutter/features/estate/data/models/district_model.dart';
+import '../widgets/popular_filter_list.dart';
 
 class FiltersScreen extends StatefulWidget {
   const FiltersScreen({super.key});

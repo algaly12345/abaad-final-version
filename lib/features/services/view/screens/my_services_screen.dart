@@ -11,8 +11,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 class MyServicesScreen extends StatefulWidget {
-  final bool showAppBar;
-  const MyServicesScreen({super.key, this.showAppBar = true});
+  const MyServicesScreen({super.key});
 
   @override
   State<MyServicesScreen> createState() => _MyServicesScreenState();
@@ -108,9 +107,9 @@ class _MyServicesScreenState extends State<MyServicesScreen>
 
     final tabBar = TabBar(
       controller: _tabController,
-      labelColor: primary,
-      unselectedLabelColor: Colors.grey.shade500,
-      indicatorColor: primary,
+      labelColor: Colors.white,
+      unselectedLabelColor: Colors.white.withValues(alpha: 0.65),
+      indicatorColor: Colors.white,
       indicatorWeight: 3,
       labelStyle: robotoMedium.copyWith(fontSize: 13),
       unselectedLabelStyle: robotoRegular.copyWith(fontSize: 13),
@@ -136,33 +135,6 @@ class _MyServicesScreenState extends State<MyServicesScreen>
                 style: robotoMedium.copyWith(fontSize: 13)),
           )
         : null;
-
-    if (!widget.showAppBar) {
-      return ColoredBox(
-        color: const Color(0xFFF4F6F9),
-        child: Stack(
-          children: [
-            Column(
-              children: [
-                // Tab bar
-                Container(
-                  color: Colors.white,
-                  child: tabBar,
-                ),
-                // Content
-                Expanded(child: content),
-              ],
-            ),
-            if (fab != null)
-              Positioned(
-                bottom: 20,
-                left: 20,
-                child: fab,
-              ),
-          ],
-        ),
-      );
-    }
 
     return Scaffold(
       backgroundColor: const Color(0xFFF4F6F9),

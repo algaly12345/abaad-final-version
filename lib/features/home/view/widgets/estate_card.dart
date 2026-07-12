@@ -167,7 +167,7 @@ class PropertyCard extends StatelessWidget {
       child: Text(
         label,
         style: const TextStyle(
-          fontFamily: 'Roboto',
+          fontFamily: 'Tajawal',
           fontSize: 11,
           fontWeight: FontWeight.w600,
           color: Colors.white,
@@ -198,7 +198,7 @@ class PropertyCard extends StatelessWidget {
           const Text(
             "3D",
             style: TextStyle(
-              fontFamily: 'Roboto',
+              fontFamily: 'Tajawal',
               fontSize: 11,
               fontWeight: FontWeight.w700,
               color: Colors.white,
@@ -228,7 +228,7 @@ class PropertyCard extends StatelessWidget {
                         ? formatPrice(estate.totalPrice ?? "0")
                         : formatPrice(estate.price ?? "0"),
                     style: TextStyle(
-                      fontFamily: 'Roboto',
+                      fontFamily: 'Tajawal',
                       fontSize: 20,
                       fontWeight: FontWeight.w800,
                       color: Theme.of(context).primaryColor,
@@ -238,7 +238,7 @@ class PropertyCard extends StatelessWidget {
                   Text(
                     "currency".tr,
                     style: TextStyle(
-                      fontFamily: 'Roboto',
+                      fontFamily: 'Tajawal',
                       fontSize: 12,
                       fontWeight: FontWeight.w400,
                       color: Colors.grey[500],
@@ -255,7 +255,7 @@ class PropertyCard extends StatelessWidget {
                   Text(
                     "${estate.view ?? 0}",
                     style: TextStyle(
-                      fontFamily: 'Roboto',
+                      fontFamily: 'Tajawal',
                       fontSize: 12,
                       color: Colors.grey[500],
                     ),
@@ -269,7 +269,7 @@ class PropertyCard extends StatelessWidget {
           Text(
             estate.title ?? "",
             style: const TextStyle(
-              fontFamily: 'Roboto',
+              fontFamily: 'Tajawal',
               fontSize: 15,
               fontWeight: FontWeight.w600,
               color: Color(0xFF1A1A2E),
@@ -288,7 +288,7 @@ class PropertyCard extends StatelessWidget {
                 child: Text(
                   estate.title ?? "",
                   style: TextStyle(
-                    fontFamily: 'Roboto',
+                    fontFamily: 'Tajawal',
                     fontSize: 12,
                     color: Colors.grey[500],
                   ),
@@ -311,7 +311,7 @@ class PropertyCard extends StatelessWidget {
               Text(
                 "رقم الإعلان: ",
                 style: TextStyle(
-                  fontFamily: 'Roboto',
+                  fontFamily: 'Tajawal',
                   fontSize: 11,
                   color: Colors.grey[500],
                 ),
@@ -319,7 +319,7 @@ class PropertyCard extends StatelessWidget {
               Text(
                 estate.adLicenseNumber ?? "",
                 style: TextStyle(
-                  fontFamily: 'Roboto',
+                  fontFamily: 'Tajawal',
                   fontSize: 11,
                   fontWeight: FontWeight.w600,
                   color: Theme.of(context).primaryColor,
@@ -336,7 +336,7 @@ class PropertyCard extends StatelessWidget {
               child: Text(
                 estate.shortDescription!,
                 style: TextStyle(
-                  fontFamily: 'Roboto',
+                  fontFamily: 'Tajawal',
                   fontSize: 12,
                   color: Colors.grey[600],
                 ),
@@ -392,7 +392,7 @@ class PropertyCard extends StatelessWidget {
           Text(
             label,
             style: TextStyle(
-              fontFamily: 'Roboto',
+              fontFamily: 'Tajawal',
               fontSize: 11,
               fontWeight: FontWeight.w600,
               color: Theme.of(context).primaryColor,

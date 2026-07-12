@@ -15,7 +15,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 
-import 'widget/condition_check_box.dart';
+import '../widgets/condition_check_box.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});

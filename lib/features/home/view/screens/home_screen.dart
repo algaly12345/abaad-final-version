@@ -717,7 +717,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         Text(
                           "عقارات متاحة",
                           style: TextStyle(
-                            fontFamily: 'Roboto',
+                            fontFamily: 'Tajawal',
                             fontSize: 11,
                             color: Colors.grey[500],
                           ),
@@ -727,7 +727,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               ? selectedZoneName!
                               : "جميع المناطق",
                           style: TextStyle(
-                            fontFamily: 'Roboto',
+                            fontFamily: 'Tajawal',
                             fontSize: 16,
                             fontWeight: FontWeight.w700,
                             color: Theme.of(context).primaryColor,

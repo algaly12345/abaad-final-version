@@ -7,7 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:url_launcher/url_launcher_string.dart';
 
-import 'widget/support_button.dart';
+import '../widgets/support_button.dart';
 
 class SupportScreen extends StatelessWidget {
   const SupportScreen({super.key});

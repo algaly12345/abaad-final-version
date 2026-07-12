@@ -253,7 +253,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:http/http.dart' as http;
 import 'package:progress_dialog_null_safe/progress_dialog_null_safe.dart';
 
-import '../../../../helper/route_helper.dart';
+import 'package:abaad_flutter/core/routes/route_helper.dart';
 
 class PlanImagesTab extends StatefulWidget {
   final int estateId;

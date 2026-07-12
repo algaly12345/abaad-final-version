@@ -49,6 +49,87 @@ dependencies:
   shared_preferences: ^2.5.5
   google_maps_flutter: ^2.6.0
   permission_handler: any
+  intl: any
+  http_parser: any
+  path: any
+
+  # NOTE: the packages below were previously declared only under
+  # dependency_overrides. Flutter's native plugin registrant generator
+  # (GeneratedPluginRegistrant) only wires up native platform code for
+  # packages listed under `dependencies`/`dev_dependencies` — an
+  # override-only entry resolves fine for Dart imports but never gets
+  # native registration, which is why image_picker (and everything else
+  # here) threw MissingPluginException at runtime. The version pins below
+  # stay in dependency_overrides too, so resolution is unaffected.
+  cupertino_icons: any
+  get: any
+  file_picker: any
+  connectivity_plus: any
+  url_strategy: any
+  http: any
+  path_provider: any
+  image_picker: any
+  phone_number: any
+  country_code_picker: any
+  geolocator: any
+  provider: any
+  modal_bottom_sheet: any
+  flutter_google_street_view: any
+  custom_map_markers: any
+  flutter_hex_color: any
+  cached_network_image: any
+  flip_card: any
+  flutter_riverpod: any
+  image_stack: any
+  custom_info_window: any
+  flutter_rating_stars: any
+  clippy_flutter: any
+  carousel_slider: any
+  shimmer_animation: any
+  pointer_interceptor: any
+  card_swiper: any
+  multiselect: any
+  clipboard: any
+  geocoding: any
+  geocode: any
+  flutter_inappwebview: any
+  video_player: any
+  google_places_flutter: any
+  animated_text_kit: any
+  universal_html: any
+  flutter_widget_from_html_core: any
+  share_plus: any
+  url_launcher: any
+  any_link_preview: any
+  tutorial_coach_mark: any
+  webview_flutter: any
+  progress_dialog_null_safe: any
+  camera: any
+  multi_select_flutter: any
+  flutter_polyline_points: any
+  awesome_dialog: any
+  flutter_bloc: any
+  flutter_typeahead: any
+  universal_platform: any
+  pin_code_fields: any
+  html: any
+  collection: any
+  # app_links stays override-only: only referenced in commented-out code in
+  # main.dart, and its native module hardcodes an outdated compileSdk that
+  # breaks the build once actually compiled. Not worth fixing for dead code.
+  firebase_messaging: any
+  camera_web: any
+  connectivity_for_web: any
+  flutter_keyboard_visibility_web: any
+  geolocator_web: any
+  image_picker_for_web: any
+  share_plus_web: any
+  shared_preferences_web: any
+  url_launcher_web: any
+  video_player_web: any
+  qr_flutter: any
+  dropdown_search: any
+  rive: any
 
 dependency_overrides:
 
@@ -224,13 +305,19 @@ flutter:
     #- assets/map/
 
   fonts:
-    - family: Roboto
+    - family: Tajawal
       fonts:
-        - asset: assets/font/Roboto-Regular.ttf
+        - asset: assets/font/Tajawal-ExtraLight.ttf
+          weight: 200
+        - asset: assets/font/Tajawal-Light.ttf
+          weight: 300
+        - asset: assets/font/Tajawal-Regular.ttf
           weight: 400
-        - asset: assets/font/Roboto-Medium.ttf
+        - asset: assets/font/Tajawal-Medium.ttf
           weight: 500
-        - asset: assets/font/Roboto-Bold.ttf
+        - asset: assets/font/Tajawal-Bold.ttf
           weight: 700
-        - asset: assets/font/Roboto-Black.ttf
+        - asset: assets/font/Tajawal-ExtraBold.ttf
+          weight: 800
+        - asset: assets/font/Tajawal-Black.ttf
           weight: 900

@@ -10,7 +10,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../../../../util/images.dart';
+import 'package:abaad_flutter/shared/utils/images.dart';
 class ServiceProviderItem extends StatelessWidget {
   final Estate estate;
 

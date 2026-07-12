@@ -53,14 +53,11 @@ class WishListController extends GetxController implements GetxService {
     _wishRestList = [];
     _wishRestIdList = [];
     Response? response = await wishListRepo?.getWishList();
-   // //print("omeromeromeromeomromer${response.body["estate"]}");
-    if (response?.statusCode == 200) {
+    if (response?.statusCode == 200 && response?.body is List) {
       update();
 
-
-      response?.body['estate'].forEach((restaurant) async {
+      response?.body.forEach((restaurant) async {
         //Estate restaurant = Estate();
-        //print("omeromeromeromeomromer${response.body['estate']}");
         try{
           restaurant = Estate.fromJson(restaurant);
         }catch(e){

@@ -14,7 +14,7 @@ class AppConstants {
 
   // فعّل هذا للاختبار المحلي
 
-  static const String BASE_URL = "http://192.168.1.131";
+  static const String BASE_URL = "http://10.111.206.145";
 
   // static const String BASE_URL = 'https://baad.arabengksa.com';
   static const String LAND_SERVICE_URL =
@@ -23,6 +23,8 @@ class AppConstants {
   static const String REGISTER_URI = '/api/v1/auth/register';
   static const String THEME = 'theme';
   static const String TOKEN = 'abaad_token';
+  static const String STARTUP_PERMISSIONS_REQUESTED =
+      'startup_permissions_requested';
   static const String COUNTRY_CODE = 'country_code';
   static const String LANGUAGE_CODE = 'language_code';
   // static const String ZONE_ID = 'zoneId';
@@ -80,8 +82,7 @@ class AppConstants {
       '/api/v1/provider-subscriptions/store-offer';
   static const String PROVIDER_SUBSCRIPTION_STATUS_PREFIX =
       '/api/v1/provider-subscriptions/';
-  static const String PROVIDER_PERMISSIONS_URI =
-      '/api/v1/provider/permissions';
+  static const String PROVIDER_PERMISSIONS_URI = '/api/v1/provider/permissions';
 
   static const String empty_box = 'assets/image/empty_box.png';
   static const String FACILITIES = "/api/v1/estate/get-facilities";

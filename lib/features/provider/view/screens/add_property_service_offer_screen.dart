@@ -932,7 +932,8 @@ class _Step1ServiceInfo extends StatelessWidget {
                     _OfferTypeCard(
                       controller: controller,
                       type: 'price',
-                      icon: Icons.attach_money_rounded,
+                      icon: Icons.sell_outlined,
+                      useRiyalIcon: true,
                       title: 'سعر مباشر',
                       sub: 'سعر ثابت ومحدد',
                       primary: primary,
@@ -1556,6 +1557,7 @@ class _OfferTypeCard extends StatelessWidget {
   final ServiceOfferController controller;
   final String type;
   final IconData icon;
+  final bool useRiyalIcon;
   final String title;
   final String sub;
   final Color primary;
@@ -1563,6 +1565,7 @@ class _OfferTypeCard extends StatelessWidget {
     required this.controller,
     required this.type,
     required this.icon,
+    this.useRiyalIcon = false,
     required this.title,
     required this.sub,
     required this.primary,
@@ -1588,9 +1591,16 @@ class _OfferTypeCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(icon,
-                  size: 20,
-                  color: selected ? primary : Colors.grey.shade400),
+              useRiyalIcon
+                  ? Image.asset(
+                      'assets/image/riyals.png',
+                      width: 20,
+                      height: 20,
+                      color: selected ? primary : Colors.grey.shade400,
+                    )
+                  : Icon(icon,
+                      size: 20,
+                      color: selected ? primary : Colors.grey.shade400),
               const SizedBox(height: 8),
               Text(title,
                   style: robotoBold.copyWith(

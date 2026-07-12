@@ -33,7 +33,7 @@ import 'package:webview_flutter/webview_flutter.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
-import '../../base/custom_app_bar.dart';
+import 'package:abaad_flutter/shared/widgets/custom_app_bar.dart';
 
 class EditDialog extends StatefulWidget {
   Estate? estate;

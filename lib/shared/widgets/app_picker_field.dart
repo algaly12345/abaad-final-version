@@ -1,4 +1,4 @@
-import 'package:abaad_flutter/core/utils/styles.dart';
+import 'package:abaad_flutter/shared/utils/styles.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 

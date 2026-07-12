@@ -9,8 +9,8 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../../util/app_constants.dart';
-import '../../util/images.dart';
+import 'package:abaad_flutter/shared/utils/app_constants.dart';
+import 'package:abaad_flutter/shared/utils/images.dart';
 
 class OfferList extends StatefulWidget {
   final Estate? estate;

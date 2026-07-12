@@ -14,7 +14,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 
-import 'widget/condition_check_box.dart';
+import '../widgets/condition_check_box.dart';
 
 class SignInScreen extends StatefulWidget {
   final bool exitFromApp;
@@ -78,7 +78,10 @@ class _SignInScreenState extends State<SignInScreen> {
                     ? null
                     : IconButton(
                         onPressed: () => Get.back(),
-                        icon: const Icon(Icons.arrow_back_ios_rounded, color: Colors.white),
+                        icon: const Icon(
+                          Icons.arrow_back_ios_rounded,
+                          color: Colors.white,
+                        ),
                       ),
               ),
         body: GetBuilder<AuthController>(
@@ -96,10 +99,7 @@ class _SignInScreenState extends State<SignInScreen> {
                       gradient: LinearGradient(
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
-                        colors: [
-                          primary,
-                          primary.withValues(alpha: 0.72),
-                        ],
+                        colors: [primary, primary.withValues(alpha: 0.72)],
                       ),
                     ),
                   ),
@@ -108,8 +108,9 @@ class _SignInScreenState extends State<SignInScreen> {
                 SafeArea(
                   child: LayoutBuilder(
                     builder: (context, constraints) {
-                      final maxWidth =
-                          constraints.maxWidth > 700 ? 460.0 : double.infinity;
+                      final maxWidth = constraints.maxWidth > 700
+                          ? 460.0
+                          : double.infinity;
 
                       return Center(
                         child: SingleChildScrollView(
@@ -130,14 +131,19 @@ class _SignInScreenState extends State<SignInScreen> {
                                       borderRadius: BorderRadius.circular(22),
                                       boxShadow: [
                                         BoxShadow(
-                                          color: Colors.black.withValues(alpha: 0.18),
+                                          color: Colors.black.withValues(
+                                            alpha: 0.18,
+                                          ),
                                           blurRadius: 22,
                                           offset: const Offset(0, 8),
                                         ),
                                       ],
                                     ),
                                     child: Center(
-                                      child: Image.asset(Images.logo, width: 52),
+                                      child: Image.asset(
+                                        Images.logo,
+                                        width: 52,
+                                      ),
                                     ),
                                   ),
                                   const SizedBox(height: 16),
@@ -156,7 +162,9 @@ class _SignInScreenState extends State<SignInScreen> {
                                     textAlign: TextAlign.center,
                                     style: robotoRegular.copyWith(
                                       fontSize: 13,
-                                      color: Colors.white.withValues(alpha: 0.82),
+                                      color: Colors.white.withValues(
+                                        alpha: 0.82,
+                                      ),
                                     ),
                                   ),
                                   const SizedBox(height: 28),
@@ -169,14 +177,17 @@ class _SignInScreenState extends State<SignInScreen> {
                                       borderRadius: BorderRadius.circular(24),
                                       boxShadow: [
                                         BoxShadow(
-                                          color: Colors.black.withValues(alpha: 0.08),
+                                          color: Colors.black.withValues(
+                                            alpha: 0.08,
+                                          ),
                                           blurRadius: 24,
                                           offset: const Offset(0, 8),
                                         ),
                                       ],
                                     ),
                                     child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.stretch,
                                       children: [
                                         // Label
                                         Text(
@@ -193,7 +204,9 @@ class _SignInScreenState extends State<SignInScreen> {
                                         const SizedBox(height: 18),
 
                                         // Terms
-                                        ConditionCheckBox(authController: authController),
+                                        ConditionCheckBox(
+                                          authController: authController,
+                                        ),
                                         const SizedBox(height: 20),
 
                                         // Login button
@@ -219,10 +232,13 @@ class _SignInScreenState extends State<SignInScreen> {
                                             style: OutlinedButton.styleFrom(
                                               foregroundColor: primary,
                                               side: BorderSide(
-                                                color: primary.withValues(alpha: 0.45),
+                                                color: primary.withValues(
+                                                  alpha: 0.45,
+                                                ),
                                               ),
                                               shape: RoundedRectangleBorder(
-                                                borderRadius: BorderRadius.circular(14),
+                                                borderRadius:
+                                                    BorderRadius.circular(14),
                                               ),
                                             ),
                                             child: Text(
@@ -245,24 +261,30 @@ class _SignInScreenState extends State<SignInScreen> {
                                     style: TextButton.styleFrom(
                                       minimumSize: const Size(1, 44),
                                     ),
-                                    onPressed: () => Navigator.pushReplacementNamed(
-                                      context,
-                                      RouteHelper.getInitialRoute(),
-                                    ),
+                                    onPressed: () =>
+                                        Navigator.pushReplacementNamed(
+                                          context,
+                                          RouteHelper.getInitialRoute(),
+                                        ),
                                     child: Row(
-                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
                                       children: [
                                         Icon(
                                           Icons.person_outline_rounded,
                                           size: 18,
-                                          color: primary.withValues(alpha: 0.75),
+                                          color: primary.withValues(
+                                            alpha: 0.75,
+                                          ),
                                         ),
                                         const SizedBox(width: 6),
                                         Text(
                                           'continue_as_guest'.tr,
                                           style: robotoMedium.copyWith(
                                             fontSize: 14,
-                                            color: primary.withValues(alpha: 0.9),
+                                            color: primary.withValues(
+                                              alpha: 0.9,
+                                            ),
                                           ),
                                         ),
                                       ],
@@ -398,7 +420,7 @@ class _SignInScreenState extends State<SignInScreen> {
     final String phone = _phoneController.text.trim();
     final String fullPhone = '+966$phone';
 
-    authController.login(fullPhone, '556769800').then((status) {
+    authController.login(fullPhone, 'string').then((status) {
       if (status.isSuccess) {
         final String token = status.token ?? status.message;
 
@@ -407,7 +429,7 @@ class _SignInScreenState extends State<SignInScreen> {
           return;
         }
 
-        final List<int> encoded = utf8.encode('556769800');
+        final List<int> encoded = utf8.encode('string');
         final String data = base64Encode(encoded);
 
         Get.toNamed(

@@ -35,7 +35,9 @@ import 'package:abaad_flutter/features/profile/view/screens/edit_dilog.dart';
 import 'package:abaad_flutter/features/profile/view/screens/profile_screen.dart';
 import 'package:abaad_flutter/features/settings/view/screens/settings_screen.dart';
 import 'package:abaad_flutter/features/profile/view/screens/update_profile_screen.dart';
+import 'package:abaad_flutter/features/profile/controller/user_controller.dart';
 import 'package:abaad_flutter/features/provider/view/screens/add_property_service_offer_screen.dart';
+import 'package:abaad_flutter/features/provider/view/screens/provider_upgrade_screen.dart';
 import 'package:abaad_flutter/features/provider/view/screens/service_offer_payment_screen.dart';
 import 'package:abaad_flutter/features/services/view/screens/my_services_screen.dart';
 import 'package:abaad_flutter/features/services/view/screens/services_catalog_screen.dart';
@@ -231,7 +233,12 @@ class RouteHelper {
     GetPage(name: agent, page: () => AgentRegistrationScreen()),
     GetPage(
       name: serviceProvider,
-      page: () => const AddPropertyServiceOfferScreen(),
+      page: () {
+        final userType = Get.find<UserController>().userInfoModel?.userType;
+        return userType == 'provider'
+            ? const AddPropertyServiceOfferScreen()
+            : const ProviderUpgradeScreen();
+      },
     ),
     GetPage(
       name: addServiceOffer,

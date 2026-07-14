@@ -27,9 +27,12 @@ class ServiceOffer {
   String? offerType;
   String? servicePrice;
   double? discount;
+  String? discountType; // 'percentage' أو 'fixed'
+  String? formattedDiscount; // جاهز من الباكند: "10 %" أو "25.00 ريال"
   String? expiryDate;
   bool? isExpired;
   String? status;
+  String? rejectionReason;
   // معرّف مقدّم الخدمة الذي أنشأ العرض (owner_id من الباكند) - يُستخدم لمقارنة الملكية
   int? ownerId;
   ServiceTypeData? serviceType;
@@ -46,9 +49,12 @@ class ServiceOffer {
     this.offerType,
     this.servicePrice,
     this.discount,
+    this.discountType,
+    this.formattedDiscount,
     this.expiryDate,
     this.isExpired,
     this.status,
+    this.rejectionReason,
     this.ownerId,
     this.serviceType,
     this.categories,
@@ -67,9 +73,12 @@ class ServiceOffer {
     discount = json['discount'] != null
         ? double.tryParse(json['discount'].toString())
         : null;
+    discountType = json['discount_type'];
+    formattedDiscount = json['formatted_discount'];
     expiryDate = json['expiry_date'];
     isExpired = json['is_expired'] ?? false;
     status = json['status'];
+    rejectionReason = json['rejection_reason'];
     ownerId = json['owner_id'] != null
         ? int.tryParse(json['owner_id'].toString())
         : null;

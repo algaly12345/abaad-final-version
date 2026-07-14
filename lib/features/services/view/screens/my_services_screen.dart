@@ -24,7 +24,7 @@ class _MyServicesScreenState extends State<MyServicesScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: 4, vsync: this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (Get.find<AuthController>().isLoggedIn()) {
         Get.find<ServicesController>().getServicesList(
@@ -68,6 +68,7 @@ class _MyServicesScreenState extends State<MyServicesScreen>
             .where((e) => e.status == 'accept' && !(e.isExpired ?? false))
             .toList();
         final pending = all.where((e) => e.status == 'pending').toList();
+        final rejected = all.where((e) => e.status == 'rejected').toList();
         final expired = all
             .where(
                 (e) => e.status == 'cancelled' || (e.isExpired ?? false))
@@ -93,9 +94,17 @@ class _MyServicesScreenState extends State<MyServicesScreen>
               emptyIcon: Icons.hourglass_empty_rounded,
             ),
             _ServicesList(
-              services: expired,
+              services: rejected,
               primary: primary,
               statusColor: Colors.red.shade600,
+              statusLabel: 'rejected_status'.tr,
+              emptyMessage: 'no_rejected_offers'.tr,
+              emptyIcon: Icons.block_rounded,
+            ),
+            _ServicesList(
+              services: expired,
+              primary: primary,
+              statusColor: Colors.grey.shade600,
               statusLabel: 'expired_status'.tr,
               emptyMessage: 'no_expired_offers'.tr,
               emptyIcon: Icons.cancel_outlined,
@@ -113,9 +122,11 @@ class _MyServicesScreenState extends State<MyServicesScreen>
       indicatorWeight: 3,
       labelStyle: robotoMedium.copyWith(fontSize: 13),
       unselectedLabelStyle: robotoRegular.copyWith(fontSize: 13),
+      isScrollable: true,
       tabs: [
         Tab(text: 'active_status'.tr),
         Tab(text: 'under_review'.tr),
+        Tab(text: 'rejected_status'.tr),
         Tab(text: 'expired_status'.tr),
       ],
     );
@@ -212,8 +223,9 @@ class _ServiceCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final canToggle =
-        service.status != 'cancelled' && service.id != null;
+    final canToggle = service.status != 'cancelled' &&
+        service.status != 'rejected' &&
+        service.id != null;
     final isActive = service.status == 'accept';
 
     return GestureDetector(
@@ -291,10 +303,40 @@ class _ServiceCard extends StatelessWidget {
                       const SizedBox(height: 4),
                       Text(
                         service.offerType == 'discount'
-                            ? '${service.discount}% خصم'
-                            : '${service.servicePrice} ر.س',
+                            ? '${service.formattedDiscount ?? '${service.discount}%'}  ${'discount_label'.tr}'
+                            : '${service.servicePrice} ${'currency_sar'.tr}',
                         style: robotoMedium.copyWith(
                             fontSize: 12, color: primary),
+                      ),
+                    ],
+                    if (service.status == 'rejected' &&
+                        (service.rejectionReason ?? '').isNotEmpty) ...[
+                      const SizedBox(height: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 5),
+                        decoration: BoxDecoration(
+                          color: Colors.red.withValues(alpha: 0.08),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Icon(Icons.info_outline_rounded,
+                                size: 12, color: Colors.red.shade400),
+                            const SizedBox(width: 4),
+                            Expanded(
+                              child: Text(
+                                service.rejectionReason!,
+                                style: robotoRegular.copyWith(
+                                    fontSize: 11,
+                                    color: Colors.red.shade600),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ],
                   ],

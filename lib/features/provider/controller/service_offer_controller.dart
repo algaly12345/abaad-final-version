@@ -1,6 +1,7 @@
 ﻿import 'package:abaad_flutter/features/provider/data/models/service_offer_setup_model.dart';
 import 'package:abaad_flutter/features/provider/data/repositories/service_offer_repo.dart';
 import 'package:abaad_flutter/shared/widgets/custom_snackbar.dart';
+import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -12,6 +13,35 @@ class ServiceOfferController extends GetxController implements GetxService {
   bool _isLoading = false;
   bool _isPriceLoading = false;
   bool _isSubmitting = false;
+
+  // بيانات "ترقية مزود الخدمة" (فرد/منشأة) — تُجمع في ProviderUpgradeScreen
+  // قبل بدء معالج إنشاء العرض، وتُرسل معه معاً في storeOffer().
+  String? _entityType; // 'individual' | 'organization'
+  // نوع رقم المنشأة (يظهر فقط لو entityType == 'organization'): كل خيار له
+  // شكل تحقق مختلف، فلا نفقد شرط أي منهما بدمجهما بحقل واحد بلا تمييز.
+  String? _organizationIdType; // 'commercial' | 'unified'
+  final TextEditingController identityNumberController =
+      TextEditingController();
+  final TextEditingController freelanceMembershipController =
+      TextEditingController();
+  final TextEditingController commercialRegistrationController =
+      TextEditingController();
+
+  String? get entityType => _entityType;
+  String? get organizationIdType => _organizationIdType;
+
+  void setEntityType(String type) {
+    _entityType = type;
+    _organizationIdType = null;
+    commercialRegistrationController.clear();
+    update();
+  }
+
+  void setOrganizationIdType(String type) {
+    _organizationIdType = type;
+    commercialRegistrationController.clear();
+    update();
+  }
 
   List<ServiceTypeModel> _serviceTypes = [];
   List<OfferCategoryModel> _categories = [];
@@ -239,6 +269,51 @@ class ServiceOfferController extends GetxController implements GetxService {
       showCustomSnackBar('يجب اختيار منطقة واحدة على الأقل');
       return null;
     }
+    if (_entityType == null) {
+      showCustomSnackBar('اختر فرد أو منشأة');
+      return null;
+    }
+    if (_entityType == 'individual') {
+      if (identityNumberController.text.trim().isEmpty) {
+        showCustomSnackBar('رقم الهوية الوطنية مطلوب');
+        return null;
+      }
+      final freelanceNumber = freelanceMembershipController.text.trim();
+      if (freelanceNumber.isEmpty) {
+        showCustomSnackBar('رقم وثيقة العمل الحر مطلوب');
+        return null;
+      }
+      if (!RegExp(r'^FL-\d+$').hasMatch(freelanceNumber)) {
+        showCustomSnackBar(
+          'رقم وثيقة العمل الحر يجب أن يبدأ بـ FL- متبوعاً بأرقام (مثال: FL-240629681)',
+        );
+        return null;
+      }
+    } else if (_entityType == 'organization') {
+      if (_organizationIdType == null) {
+        showCustomSnackBar('اختر رقم السجل التجاري أو الرقم الموحد');
+        return null;
+      }
+      final registrationNumber = commercialRegistrationController.text.trim();
+      if (registrationNumber.isEmpty) {
+        showCustomSnackBar(
+          _organizationIdType == 'unified'
+              ? 'الرقم الموحد مطلوب'
+              : 'رقم السجل التجاري مطلوب',
+        );
+        return null;
+      }
+      final isUnified = _organizationIdType == 'unified';
+      final regex = isUnified ? RegExp(r'^70\d{8}$') : RegExp(r'^\d{10}$');
+      if (!regex.hasMatch(registrationNumber)) {
+        showCustomSnackBar(
+          isUnified
+              ? 'الرقم الموحد يجب أن يتكون من 10 أرقام ويبدأ بـ 70'
+              : 'رقم السجل التجاري يجب أن يتكون من 10 أرقام',
+        );
+        return null;
+      }
+    }
 
     _isSubmitting = true;
     update();
@@ -255,6 +330,19 @@ class ServiceOfferController extends GetxController implements GetxService {
       categories: _selectedCategoryIds.toList(),
       zones: _selectedZoneIds.toList(),
       image: _pickedImage!,
+      entityType: _entityType!,
+      identityNumber: _entityType == 'individual'
+          ? identityNumberController.text.trim()
+          : null,
+      freelanceMembershipNumber: _entityType == 'individual'
+          ? freelanceMembershipController.text.trim()
+          : null,
+      commercialRegistrationNo: _entityType == 'organization'
+          ? commercialRegistrationController.text.trim()
+          : null,
+      organizationIdType: _entityType == 'organization'
+          ? _organizationIdType
+          : null,
     );
 
     _isSubmitting = false;
@@ -290,6 +378,11 @@ class ServiceOfferController extends GetxController implements GetxService {
     _offerType = 'discount';
     _pickedImage = null;
     _priceCalculation = null;
+    _entityType = null;
+    _organizationIdType = null;
+    identityNumberController.clear();
+    freelanceMembershipController.clear();
+    commercialRegistrationController.clear();
     update();
   }
 }

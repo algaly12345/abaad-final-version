@@ -1,11 +1,42 @@
-﻿import 'package:abaad_flutter/features/services/controller/services_controller.dart';
+import 'package:abaad_flutter/features/services/controller/services_controller.dart';
 import 'package:abaad_flutter/features/provider/data/models/service_offer_model.dart';
+import 'package:abaad_flutter/shared/helpers/date_converter.dart';
 import 'package:abaad_flutter/shared/utils/styles.dart';
 import 'package:abaad_flutter/shared/widgets/custom_image.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+// ─── Date helpers ──────────────────────────────────────────────────────────────
+
+String? _safeFormatDate(String? raw) {
+  if (raw == null || raw.isEmpty) return null;
+  try {
+    return DateConverter.stringToLocalDateOnly(raw.split('T').first);
+  } catch (_) {
+    try {
+      return DateConverter.isoStringToLocalDateOnly(raw);
+    } catch (_) {
+      return raw.split('T').first;
+    }
+  }
+}
+
+String _ensureScheme(String url) {
+  if (url.startsWith('http://') || url.startsWith('https://')) return url;
+  return 'https://$url';
+}
+
+Future<void> _launch(String url) async {
+  final uri = Uri.parse(url);
+  if (await canLaunchUrl(uri)) {
+    await launchUrl(uri, mode: LaunchMode.externalApplication);
+  }
+}
+
+/// شاشة تفاصيل الخدمة، بنفس نمط "بيوت" المستخدم في تفاصيل العقار: صورة
+/// بملء الشاشة خلف صفحة قابلة للسحب (DraggableScrollableSheet) تحوي السعر
+/// والتفاصيل ومزود الخدمة، وشريط تواصل ثابت (واتساب/اتصال) أسفل الشاشة.
 class ServiceDetailsScreen extends StatefulWidget {
   final int serviceId;
 
@@ -24,19 +55,9 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
     });
   }
 
-  Future<void> _launch(String url) async {
-    final uri = Uri.parse(url);
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
-    final primary = Theme.of(context).primaryColor;
-
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F6F9),
       body: GetBuilder<ServicesController>(
         builder: (controller) {
           if (controller.isDetailsLoading || controller.serviceDetails == null) {
@@ -47,81 +68,63 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
           final provider = (service.providers?.isNotEmpty ?? false)
               ? service.providers!.first
               : null;
-          final isDiscount = service.offerType == 'discount';
 
-          return CustomScrollView(
-            slivers: [
-              // ── Collapsible image app bar ────────────────────────────────
-              SliverAppBar(
-                expandedHeight: 280,
-                pinned: true,
-                backgroundColor: primary,
-                foregroundColor: Colors.white,
-                flexibleSpace: FlexibleSpaceBar(
-                  background: Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      CustomImage(
-                        image: service.image ?? '',
-                        fit: BoxFit.cover,
-                        width: double.infinity,
-                        height: double.infinity,
-                      ),
-                      // Gradient overlay
-                      DecoratedBox(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                            colors: [
-                              Colors.black.withValues(alpha: 0.25),
-                              Colors.black.withValues(alpha: 0.6),
-                            ],
+          return Stack(
+            children: [
+              Positioned.fill(child: _ServiceFullScreenImage(service: service)),
+              DraggableScrollableSheet(
+                initialChildSize: 0.55,
+                minChildSize: 0.55,
+                maxChildSize: 0.93,
+                builder: (context, scrollController) {
+                  return ClipRRect(
+                    borderRadius: const BorderRadius.vertical(
+                      top: Radius.circular(24),
+                    ),
+                    child: Container(
+                      color: Colors.white,
+                      child: CustomScrollView(
+                        controller: scrollController,
+                        slivers: [
+                          SliverToBoxAdapter(
+                            child: Column(
+                              children: [
+                                const SizedBox(height: 8),
+                                Container(
+                                  width: 36,
+                                  height: 4,
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey.shade300,
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                ),
+                                const SizedBox(height: 10),
+                                _DetailsCard(service: service),
+                                if (provider != null) ...[
+                                  Divider(
+                                    height: 1,
+                                    thickness: 6,
+                                    color: Colors.grey.shade100,
+                                  ),
+                                  _ProviderCard(provider: provider),
+                                ],
+                                const SizedBox(height: 90),
+                              ],
+                            ),
                           ),
-                        ),
+                        ],
                       ),
-                      // Price badge
-                      Positioned(
-                        bottom: 20,
-                        right: 20,
-                        child: _PriceBadge(
-                          isDiscount: isDiscount,
-                          discount: service.discount,
-                          price: service.servicePrice,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                    ),
+                  );
+                },
               ),
-
-              // ── Body ────────────────────────────────────────────────────
-              SliverToBoxAdapter(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Main card
-                    _DetailsCard(service: service, primary: primary),
-                    const SizedBox(height: 12),
-
-                    // Provider card
-                    if (provider != null)
-                      _ProviderCard(
-                          provider: provider,
-                          primary: primary,
-                          onCall: () =>
-                              _launch('tel:${provider.phone}'),
-                          onWhatsApp: () => _launch(
-                              'https://wa.me/${provider.phone?.replaceAll('+', '').replaceAll(' ', '')}'),
-                          onTwitter: (provider.twitter?.isNotEmpty ?? false)
-                              ? () => _launch(
-                                  'https://twitter.com/${provider.twitter}')
-                              : null),
-
-                    const SizedBox(height: 30),
-                  ],
+              if (provider?.phone != null && provider!.phone!.isNotEmpty)
+                Positioned(
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  child: _ContactBar(phone: provider.phone!),
                 ),
-              ),
             ],
           );
         },
@@ -130,43 +133,119 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
   }
 }
 
-// ─── Price badge ──────────────────────────────────────────────────────────────
+// ─── صورة الخدمة بملء الشاشة (صورة واحدة، لا يوجد معرض متعدد) ────────────────
 
-class _PriceBadge extends StatelessWidget {
-  final bool isDiscount;
-  final dynamic discount;
-  final dynamic price;
+class _ServiceFullScreenImage extends StatelessWidget {
+  final ServiceOffer service;
 
-  const _PriceBadge(
-      {required this.isDiscount, required this.discount, required this.price});
+  const _ServiceFullScreenImage({required this.service});
+
+  void _openFullScreen(BuildContext context) {
+    final imageUrl = service.image ?? '';
+    if (imageUrl.isEmpty) return;
+    Navigator.of(context).push(
+      PageRouteBuilder(
+        opaque: false,
+        barrierColor: Colors.black,
+        pageBuilder: (context, animation, secondaryAnimation) {
+          return FadeTransition(
+            opacity: animation,
+            child: _FullScreenImageViewer(imageUrl: imageUrl),
+          );
+        },
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-      decoration: BoxDecoration(
-        color: isDiscount ? Colors.red.shade600 : Colors.green.shade600,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.3),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        GestureDetector(
+          onTap: () => _openFullScreen(context),
+          child: CustomImage(
+            image: service.image ?? '',
+            fit: BoxFit.cover,
+            width: double.infinity,
+            height: double.infinity,
           ),
-        ],
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
+        ),
+        Positioned(
+          top: 0,
+          left: 0,
+          right: 0,
+          child: Container(
+            height: 130,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Colors.black.withValues(alpha: 0.4),
+                  Colors.transparent,
+                ],
+              ),
+            ),
+          ),
+        ),
+        Positioned(
+          top: 0,
+          left: 0,
+          right: 0,
+          child: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+              child: Align(
+                alignment: Alignment.topLeft,
+                child: _CircleIconButton(
+                  icon: Icons.arrow_back_ios_new_rounded,
+                  onTap: () => Get.back(),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// عارض صورة بملء الشاشة مع تكبير/تصغير بالإصبع (Pinch to zoom)، يُفتح عند
+/// الضغط على صورة الخدمة. خلفية سوداء + زر إغلاق عائم.
+class _FullScreenImageViewer extends StatelessWidget {
+  final String imageUrl;
+
+  const _FullScreenImageViewer({required this.imageUrl});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      body: Stack(
         children: [
-          Icon(
-            isDiscount ? Icons.local_offer_outlined : Icons.payments_outlined,
-            color: Colors.white,
-            size: 16,
+          Center(
+            child: InteractiveViewer(
+              minScale: 0.8,
+              maxScale: 4,
+              child: CustomImage(
+                image: imageUrl,
+                fit: BoxFit.contain,
+                width: double.infinity,
+              ),
+            ),
           ),
-          const SizedBox(width: 6),
-          Text(
-            isDiscount ? '$discount%  خصم' : '$price ر.س',
-            style: robotoBold.copyWith(color: Colors.white, fontSize: 15),
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.all(14),
+              child: Align(
+                alignment: Alignment.topLeft,
+                child: _CircleIconButton(
+                  icon: Icons.arrow_back_ios_new_rounded,
+                  onTap: () => Navigator.of(context).pop(),
+                ),
+              ),
+            ),
           ),
         ],
       ),
@@ -174,41 +253,73 @@ class _PriceBadge extends StatelessWidget {
   }
 }
 
-// ─── Details card ─────────────────────────────────────────────────────────────
+class _CircleIconButton extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback onTap;
 
-class _DetailsCard extends StatelessWidget {
-  final ServiceOffer service;
-  final Color primary;
-
-  const _DetailsCard({required this.service, required this.primary});
+  const _CircleIconButton({required this.icon, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.06),
-            blurRadius: 14,
-            offset: const Offset(0, 5),
-          ),
-        ],
+    return Material(
+      color: Colors.white.withValues(alpha: 0.92),
+      shape: const CircleBorder(),
+      child: InkWell(
+        customBorder: const CircleBorder(),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(9),
+          child: Icon(icon, size: 19, color: Colors.black87),
+        ),
       ),
+    );
+  }
+}
+
+// ─── بطاقة التفاصيل: السعر/الخصم + النوع/الفئات + الوصف + المناطق + معلومات إضافية ─
+
+class _DetailsCard extends StatelessWidget {
+  final ServiceOffer service;
+
+  const _DetailsCard({required this.service});
+
+  @override
+  Widget build(BuildContext context) {
+    final primary = Theme.of(context).primaryColor;
+    final isDiscount = service.offerType == 'discount';
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 14),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Title
+          Row(
+            children: [
+              Icon(
+                isDiscount ? Icons.local_offer_outlined : Icons.payments_outlined,
+                color: isDiscount ? Colors.red.shade600 : Colors.green.shade600,
+                size: 20,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                isDiscount
+                    ? '${service.formattedDiscount ?? '${service.discount}%'}  ${'discount_label'.tr}'
+                    : '${service.servicePrice} ${'currency_sar'.tr}',
+                style: robotoBold.copyWith(
+                  fontSize: 18,
+                  color: isDiscount ? Colors.red.shade600 : Colors.green.shade600,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+
           Text(
             service.title ?? '',
-            style: robotoBold.copyWith(fontSize: 20, color: const Color(0xFF1A2340)),
+            style: robotoBold.copyWith(fontSize: 18, color: const Color(0xFF1A2340)),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 10),
 
-          // Type & category chips
           Wrap(
             spacing: 8,
             runSpacing: 8,
@@ -230,24 +341,23 @@ class _DetailsCard extends StatelessWidget {
 
           if (service.description != null &&
               service.description!.isNotEmpty) ...[
-            const SizedBox(height: 20),
-            _SectionHeader(title: 'تفاصيل الخدمة', primary: primary),
-            const SizedBox(height: 10),
+            const SizedBox(height: 14),
+            _SectionHeader(title: 'service_details'.tr, primary: primary),
+            const SizedBox(height: 8),
             Text(
               service.description!,
               style: robotoRegular.copyWith(
                 fontSize: 14,
                 color: Colors.grey.shade700,
-                height: 1.65,
+                height: 1.55,
               ),
             ),
           ],
 
-          // Zones
           if (service.zones != null && service.zones!.isNotEmpty) ...[
-            const SizedBox(height: 20),
-            _SectionHeader(title: 'المناطق المشمولة', primary: primary),
-            const SizedBox(height: 10),
+            const SizedBox(height: 14),
+            _SectionHeader(title: 'covered_zones'.tr, primary: primary),
+            const SizedBox(height: 8),
             Wrap(
               spacing: 8,
               runSpacing: 6,
@@ -260,53 +370,158 @@ class _DetailsCard extends StatelessWidget {
                   .toList(),
             ),
           ],
+
+          const SizedBox(height: 14),
+          _SectionHeader(title: 'additional_info'.tr, primary: primary),
+          const SizedBox(height: 8),
+          _InfoGrid(service: service),
         ],
       ),
     );
   }
 }
 
-// ─── Provider card ────────────────────────────────────────────────────────────
+// ─── Additional info grid (dates + validity) ─────────────────────────────────
 
-class _ProviderCard extends StatelessWidget {
-  final ProviderData provider;
-  final Color primary;
-  final VoidCallback onCall;
-  final VoidCallback onWhatsApp;
-  final VoidCallback? onTwitter;
+class _InfoGrid extends StatelessWidget {
+  final ServiceOffer service;
 
-  const _ProviderCard({
-    required this.provider,
-    required this.primary,
-    required this.onCall,
-    required this.onWhatsApp,
-    this.onTwitter,
+  const _InfoGrid({required this.service});
+
+  @override
+  Widget build(BuildContext context) {
+    final createdAt = _safeFormatDate(service.createdAt);
+    final expiryDate = _safeFormatDate(service.expiryDate);
+    final isExpired = service.isExpired ?? false;
+
+    return Column(
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: _InfoTile(
+                icon: Icons.event_available_rounded,
+                label: 'date_added'.tr,
+                value: createdAt ?? '—',
+                color: Colors.blueGrey.shade600,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: _InfoTile(
+                icon: isExpired
+                    ? Icons.event_busy_rounded
+                    : Icons.schedule_rounded,
+                label: 'end_date'.tr,
+                value: expiryDate ?? '—',
+                color: isExpired ? Colors.red.shade600 : Colors.orange.shade700,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          decoration: BoxDecoration(
+            color: (isExpired ? Colors.red : Colors.green).withValues(alpha: 0.08),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: (isExpired ? Colors.red : Colors.green).withValues(alpha: 0.25),
+            ),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                isExpired ? Icons.cancel_rounded : Icons.check_circle_rounded,
+                size: 18,
+                color: isExpired ? Colors.red.shade600 : Colors.green.shade600,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                isExpired ? 'offer_expired_message'.tr : 'offer_active_message'.tr,
+                style: robotoBold.copyWith(
+                  fontSize: 13,
+                  color: isExpired ? Colors.red.shade700 : Colors.green.shade700,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _InfoTile extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
+  final Color color;
+
+  const _InfoTile({
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.color,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.06),
-            blurRadius: 14,
-            offset: const Offset(0, 5),
-          ),
-        ],
+        color: color.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: color.withValues(alpha: 0.18)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _SectionHeader(title: 'مزود الخدمة', primary: primary),
-          const SizedBox(height: 14),
+          Icon(icon, size: 18, color: color),
+          const SizedBox(height: 8),
+          Text(
+            label,
+            style: robotoRegular.copyWith(fontSize: 11, color: Colors.grey.shade600),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            value,
+            style: robotoBold.copyWith(fontSize: 13, color: const Color(0xFF1A2340)),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─── بطاقة مزود الخدمة (بدون واتساب/اتصال — انتقلا للشريط الثابت أسفل الشاشة) ──
+
+class _ProviderCard extends StatelessWidget {
+  final ProviderData provider;
+
+  const _ProviderCard({required this.provider});
+
+  @override
+  Widget build(BuildContext context) {
+    final primary = Theme.of(context).primaryColor;
+    final hasSecondaryChannels = (provider.twitter?.isNotEmpty ?? false) ||
+        (provider.instagram?.isNotEmpty ?? false) ||
+        (provider.snapchat?.isNotEmpty ?? false) ||
+        (provider.tiktok?.isNotEmpty ?? false) ||
+        (provider.website?.isNotEmpty ?? false);
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _SectionHeader(title: 'service_provider'.tr, primary: primary),
+          const SizedBox(height: 12),
           Row(
             children: [
-              // Avatar
               Container(
                 width: 56,
                 height: 56,
@@ -351,35 +566,143 @@ class _ProviderCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 16),
-          // Action buttons
-          Row(
-            children: [
-              _ContactBtn(
-                label: 'اتصال',
-                icon: Icons.call_rounded,
-                color: Colors.blue.shade600,
-                onTap: onCall,
-              ),
-              const SizedBox(width: 10),
-              _ContactBtn(
-                label: 'واتساب',
-                icon: Icons.chat_rounded,
-                color: Colors.green.shade600,
-                onTap: onWhatsApp,
-              ),
-              if (onTwitter != null) ...[
-                const SizedBox(width: 10),
-                _ContactBtn(
-                  label: 'تويتر',
-                  icon: Icons.public_rounded,
-                  color: Colors.lightBlue.shade600,
-                  onTap: onTwitter!,
-                ),
+          if (hasSecondaryChannels) ...[
+            const SizedBox(height: 16),
+            Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              children: [
+                if (provider.twitter != null && provider.twitter!.isNotEmpty)
+                  _ContactBtn(
+                    label: 'twitter_x_label'.tr,
+                    icon: Icons.alternate_email_rounded,
+                    color: Colors.black87,
+                    onTap: () => _launch('https://twitter.com/${provider.twitter}'),
+                  ),
+                if (provider.instagram != null && provider.instagram!.isNotEmpty)
+                  _ContactBtn(
+                    label: 'instagram_label'.tr,
+                    icon: Icons.camera_alt_rounded,
+                    color: Colors.pink.shade600,
+                    onTap: () => _launch('https://instagram.com/${provider.instagram}'),
+                  ),
+                if (provider.snapchat != null && provider.snapchat!.isNotEmpty)
+                  _ContactBtn(
+                    label: 'snapchat_label'.tr,
+                    icon: Icons.camera_rounded,
+                    color: Colors.amber.shade800,
+                    onTap: () => _launch('https://www.snapchat.com/add/${provider.snapchat}'),
+                  ),
+                if (provider.tiktok != null && provider.tiktok!.isNotEmpty)
+                  _ContactBtn(
+                    label: 'tiktok_label'.tr,
+                    icon: Icons.music_note_rounded,
+                    color: Colors.teal.shade700,
+                    onTap: () => _launch('https://www.tiktok.com/@${provider.tiktok}'),
+                  ),
+                if (provider.website != null && provider.website!.isNotEmpty)
+                  _ContactBtn(
+                    label: 'website_label'.tr,
+                    icon: Icons.language_rounded,
+                    color: Colors.indigo.shade600,
+                    onTap: () => _launch(_ensureScheme(provider.website!)),
+                  ),
               ],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+// ─── شريط التواصل الثابت أسفل الشاشة (واتساب/اتصال) ───────────────────────────
+
+class _ContactBar extends StatelessWidget {
+  final String phone;
+
+  const _ContactBar({required this.phone});
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      top: false,
+      child: Container(
+        margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(18),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.12),
+              blurRadius: 16,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            _ContactBarButton(
+              label: 'whatsapp'.tr,
+              icon: Icons.chat_rounded,
+              color: Colors.green.shade600,
+              onTap: () => _launch(
+                'https://wa.me/${phone.replaceAll('+', '').replaceAll(' ', '')}',
+              ),
+            ),
+            const SizedBox(width: 8),
+            _ContactBarButton(
+              label: 'call'.tr,
+              icon: Icons.call_rounded,
+              color: Colors.blue.shade600,
+              onTap: () => _launch('tel:$phone'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ContactBarButton extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _ContactBarButton({
+    required this.label,
+    required this.icon,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.08),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: color.withValues(alpha: 0.25)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, color: color, size: 21),
+              const SizedBox(height: 3),
+              Text(
+                label,
+                style: robotoMedium.copyWith(fontSize: 12, color: color),
+              ),
             ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -462,27 +785,28 @@ class _ContactBtn extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Expanded(
-      child: GestureDetector(
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 10),
-          decoration: BoxDecoration(
-            color: color.withValues(alpha: 0.08),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: color.withValues(alpha: 0.25)),
-          ),
-          child: Column(
-            children: [
-              Icon(icon, color: color, size: 22),
-              const SizedBox(height: 4),
-              Text(
-                label,
-                style:
-                    robotoMedium.copyWith(fontSize: 11, color: color),
-              ),
-            ],
-          ),
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 78,
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: color.withValues(alpha: 0.25)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, color: color, size: 22),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: robotoMedium.copyWith(fontSize: 11, color: color),
+            ),
+          ],
         ),
       ),
     );

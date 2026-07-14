@@ -1,3 +1,4 @@
+import 'package:abaad_flutter/features/auth/controller/auth_controller.dart';
 import 'package:abaad_flutter/features/provider/controller/provider_permission_controller.dart';
 import 'package:abaad_flutter/core/routes/route_helper.dart';
 import 'package:abaad_flutter/shared/utils/styles.dart';
@@ -35,7 +36,18 @@ class ServicesHubScreen extends StatelessWidget {
               title: 'services'.tr,
               subtitle: 'أفضل العروض والخصومات الحصرية',
             ),
-            actions: const [ServicesAppBarActions()],
+            actions: [
+              // نقطة وصول دائمة لحالة طلباتي/خدماتي، بغض النظر عن كونه
+              // مزود خدمة فعلياً أو لسه بانتظار موافقة الأدمن — بعكس زر
+              // "خدماتي" العائم اللي يظهر فقط لمزودي الخدمة المعتمدين.
+              if (Get.find<AuthController>().isLoggedIn())
+                IconButton(
+                  tooltip: 'my_applications'.tr,
+                  icon: const Icon(Icons.assignment_outlined, color: Colors.white),
+                  onPressed: () => Get.toNamed(RouteHelper.getMyServicesRoute()),
+                ),
+              const ServicesAppBarActions(),
+            ],
           ),
           body: const ServicesCatalogScreen(showAppBar: false),
           floatingActionButton: pc.isProvider
@@ -50,7 +62,17 @@ class ServicesHubScreen extends StatelessWidget {
                       style: robotoBold.copyWith(
                           color: Colors.white, fontSize: 13)),
                 )
-              : null,
+              : FloatingActionButton.extended(
+                  backgroundColor: primary,
+                  foregroundColor: Colors.white,
+                  elevation: 4,
+                  onPressed: () =>
+                      Get.toNamed(RouteHelper.getServiceProviderRoute()),
+                  icon: const Icon(Icons.handshake_outlined),
+                  label: Text('صير مزود خدمة',
+                      style: robotoBold.copyWith(
+                          color: Colors.white, fontSize: 13)),
+                ),
         );
       },
     );

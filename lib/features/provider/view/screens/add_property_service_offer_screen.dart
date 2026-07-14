@@ -28,8 +28,16 @@ class _AddPropertyServiceOfferScreenState
   @override
   void initState() {
     super.initState();
-    Get.find<ServiceOfferController>().resetAll();
-    Get.find<ServiceOfferController>().loadSetupData();
+    // تأجيل النداء لما بعد إطار البناء الحالي: هذه الشاشة تُفتح غالباً فوق
+    // شاشة سابقة (ProviderUpgradeScreen) ما زالت مثبّتة أثناء انتقال الراوت،
+    // ونداء update() هنا بشكل متزامن أثناء initState() قد يصطدم بـ
+    // GetBuilder<ServiceOfferController> الخاص بتلك الشاشة وهو لسه قيد
+    // البناء لنفس الإطار، فيسبب خطأ "setState()/markNeedsBuild() called
+    // during build".
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Get.find<ServiceOfferController>().resetAll();
+      Get.find<ServiceOfferController>().loadSetupData();
+    });
   }
 
   @override

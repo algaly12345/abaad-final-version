@@ -380,7 +380,11 @@ class UserController extends GetxController implements GetxService {
   //
   //
 
-  Future<void> validateNafath(String idNumber, BuildContext context) async {
+  Future<void> validateNafath(
+    String idNumber,
+    BuildContext context, {
+    VoidCallback? onVerified,
+  }) async {
     _isLoading = true;
     update();
     try {
@@ -396,7 +400,13 @@ class UserController extends GetxController implements GetxService {
         Get.snackbar('Success', 'تم إنشاء طلب التحقق بنجاح');
 
         // عرض الديالوج المخصص مع إرسال الطلب تلقائيًا
-        showVerificationDialogAuto(context, idNumber, transId!, random.value);
+        showVerificationDialogAuto(
+          context,
+          idNumber,
+          transId!,
+          random.value,
+          onVerified: onVerified,
+        );
       } else if (response?.statusCode == 400) {
         final errorMessage = response?.body['message']['message'].toString();
         if (errorMessage != null &&
@@ -424,8 +434,9 @@ class UserController extends GetxController implements GetxService {
   Future<bool> checkRequestStatus(
     String nationalId,
     String transId,
-    String random,
-  ) async {
+    String random, {
+    VoidCallback? onVerified,
+  }) async {
     final response = await userRepo?.checkRequestStatus(
       nationalId,
       transId,
@@ -433,8 +444,14 @@ class UserController extends GetxController implements GetxService {
     );
 
     if (response?.statusCode == 200) {
-      Get.offAllNamed(RouteHelper.getInitialRoute());
-      showCustomSnackBar('registration_successful'.tr, isError: false);
+      if (onVerified != null) {
+        // استدعاء مخصص (مثلاً من شاشة ترقية مزود الخدمة) بدل التنقل الافتراضي
+        // للشاشة الرئيسية، حتى يكمل المستخدم نفس التدفق الذي بدأ منه.
+        onVerified();
+      } else {
+        Get.offAllNamed(RouteHelper.getInitialRoute());
+        showCustomSnackBar('registration_successful'.tr, isError: false);
+      }
       return true;
     } else {
       final errorMessage = response?.body['message']['message'].toString();
@@ -466,8 +483,9 @@ class UserController extends GetxController implements GetxService {
     BuildContext context,
     String idNumber,
     String transId,
-    String random,
-  ) {
+    String random, {
+    VoidCallback? onVerified,
+  }) {
     int countdown = 60; // الوقت بالثواني
     Timer? timerCountdown;
     Timer? timerRequest;
@@ -502,6 +520,7 @@ class UserController extends GetxController implements GetxService {
                   idNumber,
                   transId,
                   random,
+                  onVerified: onVerified,
                 );
                 if (success) {
                   t.cancel();

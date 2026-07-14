@@ -69,7 +69,7 @@ class _ServiceOfferPaymentScreenState extends State<ServiceOfferPaymentScreen> {
         title: Text(isPaid ? 'تم الدفع بنجاح' : 'تعذر تأكيد الدفع'),
         content: Text(
           isPaid
-              ? 'تم تفعيل اشتراكك بنجاح، وسيظهر العرض داخل العقار قريبًا.'
+              ? 'تم الدفع بنجاح. طلبك الآن قيد المراجعة من الإدارة، وستصلك رسالة عند الموافقة على عرضك وتفعيل حسابك كمزود خدمة.'
               : 'لم نتمكن من تأكيد عملية الدفع، يمكنك المحاولة مرة أخرى من قائمة اشتراكاتي.',
           style: robotoRegular.copyWith(fontSize: 13),
         ),

@@ -1,11 +1,25 @@
 import 'package:abaad_flutter/features/services/controller/services_controller.dart';
 import 'package:abaad_flutter/features/provider/data/models/service_offer_model.dart';
+import 'package:abaad_flutter/shared/helpers/date_converter.dart';
 import 'package:abaad_flutter/shared/utils/styles.dart';
 import 'package:abaad_flutter/shared/widgets/custom_image.dart';
 import 'package:abaad_flutter/features/services/view/screens/filter_bottom_sheet.dart';
 import 'package:abaad_flutter/features/services/view/screens/service_details_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+
+String? _cardFormatDate(String? raw) {
+  if (raw == null || raw.isEmpty) return null;
+  try {
+    return DateConverter.stringToLocalDateOnly(raw.split('T').first);
+  } catch (_) {
+    try {
+      return DateConverter.isoStringToLocalDateOnly(raw);
+    } catch (_) {
+      return raw.split('T').first;
+    }
+  }
+}
 
 class ServicesCatalogScreen extends StatefulWidget {
   final bool showAppBar;
@@ -772,7 +786,7 @@ class _ServiceCard extends StatelessWidget {
                           const SizedBox(width: 4),
                           Text(
                             isDiscount
-                                ? '${service.discount}%  خصم'
+                                ? '${service.formattedDiscount ?? '${service.discount}%'}  خصم'
                                 : '${service.servicePrice} ر.س',
                             style: robotoBold.copyWith(
                                 color: Colors.white, fontSize: 11),
@@ -838,7 +852,9 @@ class _ServiceCard extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                       ),
                     ],
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 10),
+                    _CardMetaRow(service: service),
+                    const SizedBox(height: 10),
                     Container(
                       padding: const EdgeInsets.symmetric(
                           horizontal: 4, vertical: 4),
@@ -882,6 +898,81 @@ class _ServiceCard extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+// ─── Card meta row: عدد المناطق/الفئات + صلاحية العرض ─────────────────────────
+
+class _CardMetaRow extends StatelessWidget {
+  final ServiceOffer service;
+
+  const _CardMetaRow({required this.service});
+
+  @override
+  Widget build(BuildContext context) {
+    final zonesCount = service.zones?.length ?? 0;
+    final categoriesCount = service.categories?.length ?? 0;
+    final isExpired = service.isExpired ?? false;
+    final expiryText = _cardFormatDate(service.expiryDate);
+
+    final chips = <Widget>[];
+    if (zonesCount > 0) {
+      chips.add(_MetaChip(
+        icon: Icons.location_on_outlined,
+        label: zonesCount == 1
+            ? (service.zones!.first.nameAr ?? service.zones!.first.name ?? 'منطقة واحدة')
+            : '$zonesCount مناطق',
+        color: Colors.teal.shade600,
+      ));
+    }
+    if (categoriesCount > 0) {
+      chips.add(_MetaChip(
+        icon: Icons.label_outline_rounded,
+        label: '$categoriesCount ${categoriesCount == 1 ? 'فئة' : 'فئات'}',
+        color: Colors.orange.shade700,
+      ));
+    }
+    if (expiryText != null) {
+      chips.add(_MetaChip(
+        icon: isExpired ? Icons.event_busy_rounded : Icons.schedule_rounded,
+        label: isExpired ? 'منتهي' : 'ينتهي $expiryText',
+        color: isExpired ? Colors.red.shade600 : Colors.blueGrey.shade500,
+      ));
+    }
+
+    if (chips.isEmpty) return const SizedBox.shrink();
+
+    return Wrap(spacing: 8, runSpacing: 6, children: chips);
+  }
+}
+
+class _MetaChip extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color color;
+
+  const _MetaChip({required this.icon, required this.label, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 12, color: color),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: robotoMedium.copyWith(fontSize: 10.5, color: color),
+          ),
+        ],
       ),
     );
   }

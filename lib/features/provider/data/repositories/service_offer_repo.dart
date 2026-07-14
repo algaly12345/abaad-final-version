@@ -37,6 +37,11 @@ class ServiceOfferRepo {
     required List<int> categories,
     required List<int> zones,
     required XFile image,
+    required String entityType, // 'individual' أو 'organization'
+    String? identityNumber,
+    String? freelanceMembershipNumber,
+    String? commercialRegistrationNo,
+    String? organizationIdType, // 'commercial' أو 'unified'
   }) async {
     Map<String, String> fields = {
       'title': title,
@@ -45,10 +50,21 @@ class ServiceOfferRepo {
       'description': description,
       'service_plan_id': servicePlanId.toString(),
       'subscription_duration': subscriptionDuration.toString(),
+      'entity_type': entityType,
     };
 
     if (servicePrice != null) fields['service_price'] = servicePrice;
     if (discount != null) fields['discount'] = discount;
+    if (identityNumber != null) fields['identity_number'] = identityNumber;
+    if (freelanceMembershipNumber != null) {
+      fields['freelance_membership_number'] = freelanceMembershipNumber;
+    }
+    if (commercialRegistrationNo != null) {
+      fields['commercial_registration_no'] = commercialRegistrationNo;
+    }
+    if (organizationIdType != null) {
+      fields['organization_id_type'] = organizationIdType;
+    }
 
     for (int i = 0; i < categories.length; i++) {
       fields['categories[$i]'] = categories[i].toString();

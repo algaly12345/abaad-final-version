@@ -255,6 +255,10 @@ class _ServicesCatalogScreenState extends State<ServicesCatalogScreen> {
       elevation: 0,
       centerTitle: false,
       toolbarHeight: 64,
+      // أثناء توسّع حقل البحث، زر الإغلاق (X) هو الطريق الوحيد المطلوب للخروج
+      // من وضع البحث — سهم الرجوع التلقائي كان يظهر بجانبه ويسرق عرضًا ثمينًا
+      // من الحقل، وهذا بالضبط سبب ازدحام النص وتقلّص حجمه في الشريط الضيّق.
+      automaticallyImplyLeading: !_searchExpanded,
       flexibleSpace: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
@@ -348,23 +352,34 @@ class _ExpandedSearchField extends StatelessWidget {
     // داكنة يضمن وضوحًا ثابتًا في كل الظروف، مطابقةً لنمط شرائط البحث العائمة
     // في التطبيقات العالمية (خرائط جوجل، كريم، وغيرها).
     return Container(
-      height: 44,
-      padding: const EdgeInsets.symmetric(horizontal: 14),
+      height: 52,
+      padding: const EdgeInsets.symmetric(horizontal: 8),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(26),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.15),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
+            color: Colors.black.withValues(alpha: 0.18),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
           ),
         ],
       ),
       child: Row(
         children: [
-          Icon(Icons.search_rounded, color: primary, size: 20),
-          const SizedBox(width: 8),
+          // أيقونة البحث داخل شارة دائرية بلون التطبيق — تمنح الحقل ثقلاً
+          // بصريًا وهوية مميزة بدل أيقونة مجرّدة عائمة كما كانت سابقًا.
+          Container(
+            width: 34,
+            height: 34,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: primary.withValues(alpha: 0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(Icons.search_rounded, color: primary, size: 20),
+          ),
+          const SizedBox(width: 10),
           Expanded(
             child: TextField(
               controller: controller.searchController,
@@ -372,12 +387,12 @@ class _ExpandedSearchField extends StatelessWidget {
               autofocus: true,
               onChanged: controller.searchServices,
               textAlignVertical: TextAlignVertical.center,
-              style: robotoMedium.copyWith(
-                  fontSize: 14, color: const Color(0xFF1A2340)),
+              style: robotoBold.copyWith(
+                  fontSize: 16, color: const Color(0xFF1A2340)),
               decoration: InputDecoration(
-                hintText: 'ابحث بالموقع، اسم الإعلان، أو نوع الخدمة',
+                hintText: 'ابحث بالاسم، الموقع، أو نوع الخدمة',
                 hintStyle: robotoRegular.copyWith(
-                    color: Colors.grey.shade500, fontSize: 13),
+                    color: Colors.grey.shade500, fontSize: 14.5),
                 border: InputBorder.none,
                 isDense: true,
                 contentPadding: EdgeInsets.zero,
@@ -393,11 +408,21 @@ class _ExpandedSearchField extends StatelessWidget {
                   controller.searchController.clear();
                   controller.searchServices('');
                 },
-                child: Icon(Icons.cancel_rounded,
-                    size: 18, color: Colors.grey.shade400),
+                child: Container(
+                  width: 26,
+                  height: 26,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade200,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(Icons.close_rounded,
+                      size: 15, color: Colors.grey.shade600),
+                ),
               );
             },
           ),
+          const SizedBox(width: 6),
         ],
       ),
     );

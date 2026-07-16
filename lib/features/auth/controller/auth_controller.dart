@@ -7,6 +7,7 @@ import 'package:abaad_flutter/features/auth/data/models/signup_body.dart';
 import 'package:abaad_flutter/features/estate/data/models/package_model.dart';
 import 'package:abaad_flutter/shared/data/models/response_model.dart';
 import 'package:abaad_flutter/features/profile/data/models/userinfo_model.dart';
+import 'package:abaad_flutter/features/profile/controller/user_controller.dart';
 import 'package:abaad_flutter/features/zones/data/models/zone_model.dart';
 import 'package:abaad_flutter/features/zones/data/models/zone_response_model.dart';
 import 'package:abaad_flutter/features/auth/data/repositories/auth_repo.dart';
@@ -279,6 +280,10 @@ class AuthController extends GetxController implements GetxService {
     // مسح صلاحيات مزود الخدمة عند تسجيل الخروج
     try {
       Get.find<ProviderPermissionController>().clearPermissions();
+    } catch (_) {}
+    // مسح بيانات المستخدم (userType وغيرها) حتى لا تبقى عالقة للزائر/الحساب التالي
+    try {
+      Get.find<UserController>().clearUserInfo();
     } catch (_) {}
     return authRepo.clearSharedData();
   }

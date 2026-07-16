@@ -288,6 +288,15 @@ class ServicesController extends GetxController implements GetxService {
       selectedZones.remove(id);
     } else {
       selectedZones.add(id);
+      // اختيار منطقة يدويًا يُلغي "الأقرب مني" تلقائيًا — الاثنان مصدران
+      // متعارضان لنفس فلتر الموقع، فلا يصح تفعيلهما معًا.
+      if (nearMeActive) {
+        nearMeActive = false;
+        userLat = null;
+        userLng = null;
+        radiusOption = 'city';
+        if (sortBy == 'الأقرب مني') sortBy = 'الأحدث';
+      }
     }
     update();
   }
@@ -363,6 +372,9 @@ class ServicesController extends GetxController implements GetxService {
     nearMeActive = true;
     nearMeAutoDenied = false;
     sortBy = 'الأقرب مني';
+    // بالعكس أيضًا: تفعيل "الأقرب مني" يُلغي أي مناطق مختارة يدويًا، لنفس
+    // سبب توحيد فلتر الموقع بمصدر واحد فقط في كل لحظة.
+    selectedZones.clear();
     update();
     await getServicesList(1, reload: true, silentReload: true);
   }

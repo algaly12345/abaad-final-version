@@ -222,6 +222,15 @@ class UserController extends GetxController implements GetxService {
     _userInfoModel?.userinfo = user;
   }
 
+  /// يمسح بيانات المستخدم المخزّنة بالذاكرة عند تسجيل الخروج — بدونها تبقى
+  /// آخر قيمة لـ userType (مثلاً "provider") عالقة لأن UserController
+  /// Singleton، فتظهر عناصر خاصة بمزوّد الخدمة لزائر/حساب مختلف بعد الخروج.
+  void clearUserInfo() {
+    _userInfoModel = null;
+    _agentInfoModel = null;
+    update();
+  }
+
   @override
   void onInit() async {
     super.onInit();

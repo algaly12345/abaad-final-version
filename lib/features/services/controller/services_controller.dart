@@ -118,18 +118,24 @@ class ServicesController extends GetxController implements GetxService {
 
   Timer? _debounce;
 
+  // [silentReload]: يُستخدم عند إعادة تحميل القائمة استجابةً لتحديث خلفي
+  // (مثال: تحديد "الأقرب مني" بعد أن كانت القائمة الافتراضية معروضة بالفعل)
+  // — يُبقي القائمة الحالية ظاهرة بدل مسحها فورًا وإظهار الهيكل العظمي من
+  // جديد، فلا تختفي النتائج المعروضة لحظيًا لمجرد أن طلبًا أدق وصل لاحقًا؛
+  // البيانات الجديدة تستبدل القديمة دفعة واحدة فور وصول الاستجابة فقط.
   Future<void> getServicesList(
     int currentOffset, {
     bool reload = false,
     bool myServices = false,
+    bool silentReload = false,
   }) async {
     if (reload) {
       offset = 1;
       if (myServices) {
-        _myServicesList = null;
+        if (!silentReload) _myServicesList = null;
         _isMyServicesLoading = true;
       } else {
-        _servicesList = null;
+        if (!silentReload) _servicesList = null;
         _isLoading = true;
       }
       update();
@@ -358,7 +364,7 @@ class ServicesController extends GetxController implements GetxService {
     nearMeAutoDenied = false;
     sortBy = 'الأقرب مني';
     update();
-    await getServicesList(1, reload: true);
+    await getServicesList(1, reload: true, silentReload: true);
   }
 
   void disableNearMe() {
@@ -368,14 +374,14 @@ class ServicesController extends GetxController implements GetxService {
     radiusOption = 'city';
     sortBy = 'الأحدث';
     update();
-    getServicesList(1, reload: true);
+    getServicesList(1, reload: true, silentReload: true);
   }
 
   void setRadiusOption(String value) {
     radiusOption = value;
     update();
     if (nearMeActive) {
-      getServicesList(1, reload: true);
+      getServicesList(1, reload: true, silentReload: true);
     }
   }
 

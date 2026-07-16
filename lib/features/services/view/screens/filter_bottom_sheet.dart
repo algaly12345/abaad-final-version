@@ -72,13 +72,16 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
                       // (TypeFilterSheet)، لكن "نوع العقار" بقي هنا في
                       // الفلاتر المتقدمة — مطابقةً لموضعه في التطبيق المرجعي.
 
-                      // بانتظار وصول بيانات الفلاتر (نوع العقار/مزود الخدمة/
-                      // حدود السعر) — مؤشر تحميل صريح بدل اختفاء الأقسام
-                      // بصمت وكأنها غير موجودة أصلًا.
-                      if (controller.filtersData == null) const _LoadingHint(),
-
-                      // نوع العقار
-                      if ((controller.filtersData?.categories ?? [])
+                      // نوع العقار — بانتظار وصول filtersData يُعرض هيكل تحميل
+                      // بنفس أبعاد الشبكة الفعلية بدل اختفاء القسم بالكامل، كي
+                      // لا تقفز الأبعاد ولا يبدو القسم كأنه غير موجود أصلًا.
+                      if (controller.filtersData == null) ...[
+                        _Section(
+                          title: 'property_type'.tr,
+                          child: const _WrapGridSkeleton(count: 4),
+                        ),
+                        const _Divider(),
+                      ] else if ((controller.filtersData?.categories ?? [])
                           .isNotEmpty) ...[
                         _Section(
                           title: 'property_type'.tr,
@@ -94,15 +97,23 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
                       // نطاق السعر
                       _Section(
                         title: 'نطاق السعر',
-                        child: _PriceRangeSection(
-                          controller: controller,
-                          primary: primary,
-                        ),
+                        child: controller.filtersData == null
+                            ? const _PriceRangeSkeleton()
+                            : _PriceRangeSection(
+                                controller: controller,
+                                primary: primary,
+                              ),
                       ),
                       const _Divider(),
 
                       // مزود الخدمة
-                      if ((controller.filtersData?.providers ?? [])
+                      if (controller.filtersData == null) ...[
+                        _Section(
+                          title: 'service_provider'.tr,
+                          child: const _ChipRowSkeleton(),
+                        ),
+                        const _Divider(),
+                      ] else if ((controller.filtersData?.providers ?? [])
                           .isNotEmpty) ...[
                         _Section(
                           title: 'service_provider'.tr,
@@ -306,36 +317,129 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
   }
 }
 
-// ─── مؤشر تحميل موحّد: يظهر بدل الاختفاء الصامت للأقسام عندما لا تكون
-// filtersData قد وصلت بعد (شبكة بطيئة/ضغط سريع على الزر قبل اكتمال
-// getFilters) — حتى لا تبدو الورقة فارغة بلا تفسير ─────────────────────────
+// ─── هياكل تحميل بنفس أبعاد كل قسم من أقسام الفلاتر المتقدمة (نوع العقار/
+// نطاق السعر/مزود الخدمة) — تحل محل مؤشر دوّار عام واحد يظهر وسط الورقة
+// بينما الأقسام نفسها تختفي بصمت، فلا تقفز الأبعاد لحظة وصول filtersData
+// ولا تبدو الورقة فارغة بلا تفسير أثناء الانتظار ───────────────────────────
 
-class _LoadingHint extends StatelessWidget {
-  const _LoadingHint();
+class _WrapGridSkeleton extends StatelessWidget {
+  final int count;
+
+  const _WrapGridSkeleton({this.count = 4});
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 32),
-      child: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            SizedBox(
-              width: 22,
-              height: 22,
-              child: CircularProgressIndicator(
-                strokeWidth: 2.4,
-                color: Theme.of(context).primaryColor,
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    final baseColor =
+        dark ? Colors.white.withValues(alpha: 0.08) : const Color(0xFFEEF0F5);
+    final cardWidth = (MediaQuery.of(context).size.width - 40 - 30) / 4;
+
+    return Shimmer(
+      duration: const Duration(milliseconds: 1400),
+      interval: const Duration(milliseconds: 350),
+      color: dark ? Colors.white : Theme.of(context).primaryColor,
+      colorOpacity: dark ? 0.16 : 0.3,
+      child: Wrap(
+        spacing: 10,
+        runSpacing: 10,
+        children: List.generate(count, (i) {
+          return Container(
+            width: cardWidth,
+            height: 96,
+            decoration: BoxDecoration(
+              color: baseColor,
+              borderRadius: BorderRadius.circular(16),
+            ),
+          );
+        }),
+      ),
+    );
+  }
+}
+
+class _ChipRowSkeleton extends StatelessWidget {
+  const _ChipRowSkeleton();
+
+  static const List<double> _widths = [86, 112, 70, 96, 74];
+
+  @override
+  Widget build(BuildContext context) {
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    final baseColor =
+        dark ? Colors.white.withValues(alpha: 0.08) : const Color(0xFFEEF0F5);
+
+    return Shimmer(
+      duration: const Duration(milliseconds: 1400),
+      interval: const Duration(milliseconds: 350),
+      color: dark ? Colors.white : Theme.of(context).primaryColor,
+      colorOpacity: dark ? 0.16 : 0.3,
+      child: Wrap(
+        spacing: 10,
+        runSpacing: 10,
+        children: _widths.map((w) {
+          return Container(
+            width: w,
+            height: 30,
+            decoration: BoxDecoration(
+              color: baseColor,
+              borderRadius: BorderRadius.circular(20),
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+}
+
+class _PriceRangeSkeleton extends StatelessWidget {
+  const _PriceRangeSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    final baseColor =
+        dark ? Colors.white.withValues(alpha: 0.08) : const Color(0xFFEEF0F5);
+
+    return Shimmer(
+      duration: const Duration(milliseconds: 1400),
+      interval: const Duration(milliseconds: 350),
+      color: dark ? Colors.white : Theme.of(context).primaryColor,
+      colorOpacity: dark ? 0.16 : 0.3,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            height: 4,
+            margin: const EdgeInsets.symmetric(vertical: 9),
+            decoration: BoxDecoration(
+              color: baseColor,
+              borderRadius: BorderRadius.circular(4),
+            ),
+          ),
+          Row(
+            children: [
+              Expanded(
+                child: Container(
+                  height: 46,
+                  decoration: BoxDecoration(
+                    color: baseColor,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
               ),
-            ),
-            const SizedBox(height: 10),
-            Text(
-              'جارٍ التحميل...',
-              style: robotoRegular.copyWith(fontSize: 12.5, color: Colors.grey.shade500),
-            ),
-          ],
-        ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Container(
+                  height: 46,
+                  decoration: BoxDecoration(
+                    color: baseColor,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -989,7 +1093,9 @@ class PriceFilterSheet extends StatelessWidget {
             controller.getServicesList(1, reload: true);
           },
           childBuilder: (context, scrollController) =>
-              _PriceRangeSection(controller: controller, primary: primary),
+              controller.filtersData == null
+                  ? const _PriceRangeSkeleton()
+                  : _PriceRangeSection(controller: controller, primary: primary),
         );
       },
     );

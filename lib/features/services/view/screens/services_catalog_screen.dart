@@ -147,9 +147,13 @@ class _ServicesCatalogScreenState extends State<ServicesCatalogScreen> {
           slivers: [
             if (!controller.nearMeActive && controller.nearMeAutoDenied)
               const SliverToBoxAdapter(child: _NearMeHint()),
+            // يظهر أثناء أي إعادة تحميل متعلقة بـ"الأقرب مني" — سواء كانت
+            // القائمة لا تزال فارغة (أول تحميل) أو معروضة بالفعل من نتيجة
+            // افتراضية سابقة (silentReload لا يمسحها)، بدل اختفاء القائمة
+            // المعروضة فجأة إلى هيكل عظمي فارغ لمجرد وصول موقع GPS لاحقًا.
+            if (controller.nearMeActive && controller.isLoading)
+              const SliverToBoxAdapter(child: _NearbySearchingBanner()),
             if (controller.servicesList == null) ...[
-              if (controller.nearMeActive)
-                const SliverToBoxAdapter(child: _NearbySearchingBanner()),
               SliverPadding(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -191,19 +195,34 @@ class _ServicesCatalogScreenState extends State<ServicesCatalogScreen> {
                         );
                       }
                       return controller.hasMore
-                          ? const Padding(
-                              padding: EdgeInsets.symmetric(vertical: 20),
-                              child:
-                                  Center(child: CircularProgressIndicator()),
-                            )
-                          : const Padding(
-                              padding:
-                                  EdgeInsets.only(bottom: 20, top: 8),
+                          ? Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 24),
                               child: Center(
-                                child: Text(
-                                  'تم عرض جميع الخدمات',
-                                  style: TextStyle(
-                                      color: Colors.grey, fontSize: 13),
+                                child: SizedBox(
+                                  width: 22,
+                                  height: 22,
+                                  child: CircularProgressIndicator(
+                                      strokeWidth: 2.4, color: primary),
+                                ),
+                              ),
+                            )
+                          : Padding(
+                              padding:
+                                  const EdgeInsets.only(bottom: 24, top: 10),
+                              child: Center(
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(Icons.check_circle_rounded,
+                                        size: 15, color: Colors.grey.shade400),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      'تم عرض جميع الخدمات',
+                                      style: robotoMedium.copyWith(
+                                          color: _secondaryText(context),
+                                          fontSize: 12.5),
+                                    ),
+                                  ],
                                 ),
                               ),
                             );
@@ -322,16 +341,29 @@ class _ExpandedSearchField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final primary = Theme.of(context).primaryColor;
+    // خلفية بيضاء صلبة بدل تراكب شفاف على تدرّج الشريط العلوي — التراكب
+    // الشفاف كان يعطي تباينًا هشًا (نص/تلميح أبيض على خلفية شبه شفافة قد
+    // يبدو شبه غير مرئي حسب سطوع الشاشة)، بينما صندوق أبيض صلب بنص/أيقونات
+    // داكنة يضمن وضوحًا ثابتًا في كل الظروف، مطابقةً لنمط شرائط البحث العائمة
+    // في التطبيقات العالمية (خرائط جوجل، كريم، وغيرها).
     return Container(
-      height: 42,
-      padding: const EdgeInsets.symmetric(horizontal: 12),
+      height: 44,
+      padding: const EdgeInsets.symmetric(horizontal: 14),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.16),
-        borderRadius: BorderRadius.circular(12),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(22),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.15),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Row(
         children: [
-          const Icon(Icons.search_rounded, color: Colors.white, size: 19),
+          Icon(Icons.search_rounded, color: primary, size: 20),
           const SizedBox(width: 8),
           Expanded(
             child: TextField(
@@ -340,11 +372,12 @@ class _ExpandedSearchField extends StatelessWidget {
               autofocus: true,
               onChanged: controller.searchServices,
               textAlignVertical: TextAlignVertical.center,
-              style: robotoMedium.copyWith(fontSize: 14, color: Colors.white),
+              style: robotoMedium.copyWith(
+                  fontSize: 14, color: const Color(0xFF1A2340)),
               decoration: InputDecoration(
                 hintText: 'ابحث بالموقع، اسم الإعلان، أو نوع الخدمة',
                 hintStyle: robotoRegular.copyWith(
-                    color: Colors.white.withValues(alpha: 0.7), fontSize: 13),
+                    color: Colors.grey.shade500, fontSize: 13),
                 border: InputBorder.none,
                 isDense: true,
                 contentPadding: EdgeInsets.zero,
@@ -360,8 +393,8 @@ class _ExpandedSearchField extends StatelessWidget {
                   controller.searchController.clear();
                   controller.searchServices('');
                 },
-                child: const Icon(Icons.close_rounded,
-                    size: 17, color: Colors.white70),
+                child: Icon(Icons.cancel_rounded,
+                    size: 18, color: Colors.grey.shade400),
               );
             },
           ),

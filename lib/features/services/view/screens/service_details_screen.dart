@@ -7,7 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-// ─── Date helpers ──────────────────────────────────────────────────────────────
+// ─── Helpers ────────────────────────────────────────────────────────────────
 
 String? _safeFormatDate(String? raw) {
   if (raw == null || raw.isEmpty) return null;
@@ -34,9 +34,40 @@ Future<void> _launch(String url) async {
   }
 }
 
-/// شاشة تفاصيل الخدمة، بنفس نمط "بيوت" المستخدم في تفاصيل العقار: صورة
-/// بملء الشاشة خلف صفحة قابلة للسحب (DraggableScrollableSheet) تحوي السعر
-/// والتفاصيل ومزود الخدمة، وشريط تواصل ثابت (واتساب/اتصال) أسفل الشاشة.
+String _cleanPhoneForWhatsapp(String phone) =>
+    phone.replaceAll('+', '').replaceAll(' ', '');
+
+// أول منطقة تغطية تملك إحداثيات — تقريب معقول لعدم وجود إحداثي مقر مستقل
+// لمزود الخدمة نفسه (نفس منطق _ServiceActionButtons في شاشة القائمة).
+ZoneData? _mappableZone(ServiceOffer service) {
+  final zones = service.zones;
+  if (zones == null) return null;
+  for (final zone in zones) {
+    if (zone.latitude != null && zone.longitude != null) return zone;
+  }
+  return null;
+}
+
+String? _zonesSummary(List<ZoneData>? zones) {
+  if (zones == null || zones.isEmpty) return null;
+  if (zones.length == 1) return zones.first.nameAr ?? zones.first.name;
+  return '${zones.length} مناطق';
+}
+
+({String text, Color color}) _priceInfo(ServiceOffer service) {
+  final isDiscount = service.offerType == 'discount';
+  final color = isDiscount ? Colors.red.shade600 : Colors.green.shade600;
+  final text = isDiscount
+      ? '${service.formattedDiscount ?? '${service.discount}%'} ${'discount_label'.tr}'
+      : '${service.servicePrice} ${'currency_sar'.tr}';
+  return (text: text, color: color);
+}
+
+/// شاشة تفاصيل الخدمة — صورة بملء الشاشة خلف صفحة قابلة للسحب
+/// (DraggableScrollableSheet)، مع صف إجراءات سريعة (اتصال/خريطة) ثابت ضمن
+/// رأس الورقة نفسها (لا عائمًا فوق الصورة)، وشريط سعر + CTA ثابت أسفل
+/// الشاشة، مطابقةً لبنية تصميم مرجعي مقترح (عنوان+تقييم، موقع، شرائح "يشمل
+/// الخدمة"، "عن الخدمة"، ثم السعر وزر التواصل) بألوان التطبيق نفسها.
 class ServiceDetailsScreen extends StatefulWidget {
   final int serviceId;
 
@@ -68,6 +99,11 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
           final provider = (service.providers?.isNotEmpty ?? false)
               ? service.providers!.first
               : null;
+          final mappableZone = _mappableZone(service);
+          final hasPhone = provider?.phone != null && provider!.phone!.isNotEmpty;
+          // شريط السعر/CTA السفلي لا يظهر إلا مع رقم هاتف صالح — عندها يُنقَل
+          // السعر بالكامل إليه (مطابقةً للمرجع)، وإلا يبقى السعر ظاهرًا ضمن
+          // رأس البطاقة كي لا يختفي كليًا.
 
           return Stack(
             children: [
@@ -82,7 +118,7 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
                       top: Radius.circular(24),
                     ),
                     child: Container(
-                      color: Colors.white,
+                      color: Theme.of(context).cardColor,
                       child: CustomScrollView(
                         controller: scrollController,
                         slivers: [
@@ -98,17 +134,26 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
                                     borderRadius: BorderRadius.circular(4),
                                   ),
                                 ),
-                                const SizedBox(height: 10),
-                                _DetailsCard(service: service),
-                                if (provider != null) ...[
-                                  Divider(
-                                    height: 1,
-                                    thickness: 6,
-                                    color: Colors.grey.shade100,
-                                  ),
+                                const SizedBox(height: 16),
+                                _HeaderInfo(
+                                  service: service,
+                                  provider: provider,
+                                  mappableZone: mappableZone,
+                                  showInlinePrice: !hasPhone,
+                                ),
+                                const SizedBox(height: 16),
+                                _QuickActionsRow(
+                                  provider: hasPhone ? provider : null,
+                                  mappableZone: mappableZone,
+                                ),
+                                const SizedBox(height: 4),
+                                _ServicesIncludeSection(service: service),
+                                _AboutSection(service: service),
+                                _ZonesSection(service: service),
+                                _AdditionalInfoSection(service: service),
+                                if (provider != null)
                                   _ProviderCard(provider: provider),
-                                ],
-                                const SizedBox(height: 90),
+                                SizedBox(height: hasPhone ? 100 : 24),
                               ],
                             ),
                           ),
@@ -118,12 +163,12 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
                   );
                 },
               ),
-              if (provider?.phone != null && provider!.phone!.isNotEmpty)
+              if (hasPhone)
                 Positioned(
                   bottom: 0,
                   left: 0,
                   right: 0,
-                  child: _ContactBar(phone: provider.phone!),
+                  child: _BottomCtaBar(service: service, provider: provider),
                 ),
             ],
           );
@@ -171,6 +216,9 @@ class _ServiceFullScreenImage extends StatelessWidget {
             height: double.infinity,
           ),
         ),
+        // تعتيم علوي (لوضوح زر الرجوع) + تعتيم سفلي خفيف يمهّد الانتقال إلى
+        // حدّ الصفحة القابلة للسحب — يمنح الصورة "مزاجًا" أقرب للتصميم
+        // المرجعي بدل صورة خام بلا أي تدرّج عند حافتها السفلية.
         Positioned(
           top: 0,
           left: 0,
@@ -184,6 +232,24 @@ class _ServiceFullScreenImage extends StatelessWidget {
                 colors: [
                   Colors.black.withValues(alpha: 0.4),
                   Colors.transparent,
+                ],
+              ),
+            ),
+          ),
+        ),
+        Positioned(
+          bottom: 0,
+          left: 0,
+          right: 0,
+          child: Container(
+            height: 150,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Colors.transparent,
+                  Colors.black.withValues(alpha: 0.32),
                 ],
               ),
             ),
@@ -276,104 +342,404 @@ class _CircleIconButton extends StatelessWidget {
   }
 }
 
-// ─── بطاقة التفاصيل: السعر/الخصم + النوع/الفئات + الوصف + المناطق + معلومات إضافية ─
+// ─── صف إجراءات سريعة (اتصال + خريطة) ثابت ضمن تدفّق الصفحة نفسها — لا يعود
+// عنصرًا عائمًا فوق الصورة (كان يبدو منفصلاً/غير مستقر عند سحب الصفحة)، بل
+// جزء أصيل من رأس الورقة، بنفس نمط أزرار الإجراء المُسمّاة (أيقونة + نص)
+// المعتمد أصلاً في بطاقة القائمة — بدل دائرتين مجرّدتين بلا تسمية ───────────
 
-class _DetailsCard extends StatelessWidget {
-  final ServiceOffer service;
+class _QuickActionsRow extends StatelessWidget {
+  final ProviderData? provider;
+  final ZoneData? mappableZone;
 
-  const _DetailsCard({required this.service});
+  const _QuickActionsRow({this.provider, this.mappableZone});
 
   @override
   Widget build(BuildContext context) {
-    final primary = Theme.of(context).primaryColor;
-    final isDiscount = service.offerType == 'discount';
+    if (provider == null && mappableZone == null) return const SizedBox.shrink();
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 4, 16, 14),
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
+      child: Row(
+        children: [
+          if (provider != null)
+            Expanded(
+              child: _QuickActionButton(
+                icon: Icons.call_rounded,
+                label: 'اتصال',
+                color: Colors.blue.shade600,
+                onTap: () => _launch('tel:${provider!.phone}'),
+              ),
+            ),
+          if (provider != null && mappableZone != null) const SizedBox(width: 10),
+          if (mappableZone != null)
+            Expanded(
+              child: _QuickActionButton(
+                icon: Icons.map_outlined,
+                label: 'الخريطة',
+                color: Colors.deepOrange.shade400,
+                onTap: () => _launch(
+                  'https://www.google.com/maps/search/?api=1&query=${mappableZone!.latitude},${mappableZone!.longitude}',
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _QuickActionButton extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _QuickActionButton({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    return Material(
+      color: color.withValues(alpha: dark ? 0.16 : 0.08),
+      borderRadius: BorderRadius.circular(14),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(14),
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: color.withValues(alpha: 0.3)),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, size: 18, color: color),
+              const SizedBox(width: 8),
+              Text(label, style: robotoBold.copyWith(fontSize: 13.5, color: color)),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─── رأس البطاقة: العنوان + تقييم مزود الخدمة (إن وُجد) + سطر الموقع القابل
+// للنقر لفتح الخريطة (عند توفّر منطقة بإحداثيات) — مطابقةً لرأس التصميم
+// المرجعي (العنوان بجانب شارة التقييم، ثم سطر 📍 الموقع أسفله مباشرة) ───────
+
+class _HeaderInfo extends StatelessWidget {
+  final ServiceOffer service;
+  final ProviderData? provider;
+  final ZoneData? mappableZone;
+  final bool showInlinePrice;
+
+  const _HeaderInfo({
+    required this.service,
+    required this.provider,
+    required this.mappableZone,
+    required this.showInlinePrice,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = dark ? Colors.white : const Color(0xFF1A2340);
+    final zonesLabel = _zonesSummary(service.zones);
+    final primary = Theme.of(context).primaryColor;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(
-                isDiscount ? Icons.local_offer_outlined : Icons.payments_outlined,
-                color: isDiscount ? Colors.red.shade600 : Colors.green.shade600,
-                size: 20,
-              ),
-              const SizedBox(width: 6),
-              Text(
-                isDiscount
-                    ? '${service.formattedDiscount ?? '${service.discount}%'}  ${'discount_label'.tr}'
-                    : '${service.servicePrice} ${'currency_sar'.tr}',
-                style: robotoBold.copyWith(
-                  fontSize: 18,
-                  color: isDiscount ? Colors.red.shade600 : Colors.green.shade600,
+              Expanded(
+                child: Text(
+                  service.title ?? '',
+                  style: robotoBold.copyWith(fontSize: 20, color: textColor),
                 ),
               ),
+              if (provider?.rating != null) ...[
+                const SizedBox(width: 10),
+                _RatingBadge(
+                    rating: provider!.rating!, count: provider!.reviewsCount),
+              ],
             ],
           ),
-          const SizedBox(height: 6),
+          if (showInlinePrice) ...[
+            const SizedBox(height: 8),
+            _PriceTag(service: service),
+          ],
+          if (zonesLabel != null) ...[
+            const SizedBox(height: 10),
+            GestureDetector(
+              onTap:
+                  mappableZone != null ? () => _openMap(mappableZone!) : null,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.location_on_rounded,
+                      size: 16,
+                      color: mappableZone != null
+                          ? primary
+                          : Colors.grey.shade500),
+                  const SizedBox(width: 4),
+                  Text(zonesLabel,
+                      style: robotoMedium.copyWith(
+                          fontSize: 13, color: Colors.grey.shade600)),
+                  if (mappableZone != null) ...[
+                    const SizedBox(width: 2),
+                    Icon(Icons.chevron_left_rounded, size: 16, color: primary),
+                  ],
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
 
+  void _openMap(ZoneData zone) => _launch(
+      'https://www.google.com/maps/search/?api=1&query=${zone.latitude},${zone.longitude}');
+}
+
+class _RatingBadge extends StatelessWidget {
+  final double rating;
+  final int? count;
+
+  const _RatingBadge({required this.rating, this.count});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: Colors.amber.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: Colors.amber.withValues(alpha: 0.3)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.star_rounded, size: 15, color: Colors.amber),
+          const SizedBox(width: 4),
           Text(
-            service.title ?? '',
-            style: robotoBold.copyWith(fontSize: 18, color: const Color(0xFF1A2340)),
+            rating.toStringAsFixed(1),
+            style: robotoBold.copyWith(fontSize: 13, color: Colors.amber.shade800),
           ),
-          const SizedBox(height: 10),
+        ],
+      ),
+    );
+  }
+}
 
+class _PriceTag extends StatelessWidget {
+  final ServiceOffer service;
+
+  const _PriceTag({required this.service});
+
+  @override
+  Widget build(BuildContext context) {
+    final isDiscount = service.offerType == 'discount';
+    final info = _priceInfo(service);
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(
+          isDiscount ? Icons.local_offer_outlined : Icons.payments_outlined,
+          size: 18,
+          color: info.color,
+        ),
+        const SizedBox(width: 6),
+        Text(info.text, style: robotoBold.copyWith(fontSize: 15, color: info.color)),
+      ],
+    );
+  }
+}
+
+// ─── بطاقة قسم موحّدة: خلفية خفيفة + حواف مقرّبة تفصل كل قسم بصريًا عن
+// المجاور له، بدل نص متتابع على خلفية الورقة المسطّحة مباشرة — هذا ما يمنح
+// الصفحة طابعًا "احترافيًا" مقسّمًا بوضوح بدل الشعور بقائمة نصوص متلاصقة ────
+
+class _SectionCard extends StatelessWidget {
+  final Widget child;
+
+  const _SectionCard({required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 0, 16, 14),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: dark ? Colors.white.withValues(alpha: 0.035) : Colors.grey.shade50,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: dark ? Colors.white.withValues(alpha: 0.06) : Colors.grey.shade200,
+        ),
+      ),
+      child: child,
+    );
+  }
+}
+
+// ─── "يشمل الخدمة": شرائح نوع الخدمة/الفئات ─────────────────────────────────
+
+class _ServicesIncludeSection extends StatelessWidget {
+  final ServiceOffer service;
+
+  const _ServicesIncludeSection({required this.service});
+
+  @override
+  Widget build(BuildContext context) {
+    final primary = Theme.of(context).primaryColor;
+    final items = <_ChipData>[
+      if (service.serviceType?.name != null)
+        _ChipData(service.serviceType!.name!, Icons.category_outlined, primary),
+      ...?service.categories?.map((c) => _ChipData(
+          c.nameAr ?? c.name ?? '', Icons.label_outline_rounded,
+          Colors.orange.shade700)),
+    ];
+    if (items.isEmpty) return const SizedBox.shrink();
+
+    return _SectionCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _SectionHeader(
+              title: 'يشمل الخدمة',
+              icon: Icons.checklist_rounded,
+              primary: primary),
+          const SizedBox(height: 12),
           Wrap(
             spacing: 8,
             runSpacing: 8,
-            children: [
-              if (service.serviceType?.name != null)
-                _TagChip(
-                  label: service.serviceType!.name!,
-                  color: primary,
-                  icon: Icons.category_outlined,
-                ),
-              if (service.categories != null)
-                ...service.categories!.map((c) => _TagChip(
-                      label: c.nameAr ?? c.name ?? '',
-                      color: Colors.orange.shade700,
-                      icon: Icons.label_outline_rounded,
-                    )),
-            ],
+            children: items
+                .map((i) =>
+                    _TagChip(label: i.label, icon: i.icon, color: i.color))
+                .toList(),
           ),
+        ],
+      ),
+    );
+  }
+}
 
-          if (service.description != null &&
-              service.description!.isNotEmpty) ...[
-            const SizedBox(height: 14),
-            _SectionHeader(title: 'service_details'.tr, primary: primary),
-            const SizedBox(height: 8),
-            Text(
-              service.description!,
-              style: robotoRegular.copyWith(
-                fontSize: 14,
-                color: Colors.grey.shade700,
-                height: 1.55,
-              ),
+class _ChipData {
+  final String label;
+  final IconData icon;
+  final Color color;
+
+  _ChipData(this.label, this.icon, this.color);
+}
+
+// ─── "عن الخدمة": نص الوصف الكامل ───────────────────────────────────────────
+
+class _AboutSection extends StatelessWidget {
+  final ServiceOffer service;
+
+  const _AboutSection({required this.service});
+
+  @override
+  Widget build(BuildContext context) {
+    if (service.description == null || service.description!.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    final primary = Theme.of(context).primaryColor;
+    return _SectionCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _SectionHeader(
+              title: 'service_details'.tr,
+              icon: Icons.info_outline_rounded,
+              primary: primary),
+          const SizedBox(height: 10),
+          Text(
+            service.description!,
+            style: robotoRegular.copyWith(
+              fontSize: 14,
+              color: Colors.grey.shade700,
+              height: 1.6,
             ),
-          ],
+          ),
+        ],
+      ),
+    );
+  }
+}
 
-          if (service.zones != null && service.zones!.isNotEmpty) ...[
-            const SizedBox(height: 14),
-            _SectionHeader(title: 'covered_zones'.tr, primary: primary),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              runSpacing: 6,
-              children: service.zones!
-                  .map((z) => _TagChip(
-                        label: z.nameAr ?? z.name ?? '',
-                        color: Colors.teal.shade600,
-                        icon: Icons.location_on_outlined,
-                      ))
-                  .toList(),
-            ),
-          ],
+// ─── "المناطق المغطّاة": التفصيل الكامل للمناطق (سطر الموقع أعلاه يكتفي
+// بملخّص/اسم أول منطقة) — معلومة حقيقية يحتاجها المستخدم عند تعدّد المناطق،
+// لا يقابلها شيء في التصميم المرجعي أحاديّ الموقع فأُبقيت كما هي ─────────────
 
-          const SizedBox(height: 14),
-          _SectionHeader(title: 'additional_info'.tr, primary: primary),
-          const SizedBox(height: 8),
+class _ZonesSection extends StatelessWidget {
+  final ServiceOffer service;
+
+  const _ZonesSection({required this.service});
+
+  @override
+  Widget build(BuildContext context) {
+    final zones = service.zones;
+    if (zones == null || zones.length < 2) return const SizedBox.shrink();
+    final primary = Theme.of(context).primaryColor;
+
+    return _SectionCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _SectionHeader(
+              title: 'covered_zones'.tr,
+              icon: Icons.travel_explore_rounded,
+              primary: primary),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 8,
+            runSpacing: 6,
+            children: zones
+                .map((z) => _TagChip(
+                      label: z.nameAr ?? z.name ?? '',
+                      color: Colors.teal.shade600,
+                      icon: Icons.location_on_outlined,
+                    ))
+                .toList(),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─── "معلومات إضافية": تواريخ الإضافة/الانتهاء + حالة العرض ─────────────────
+
+class _AdditionalInfoSection extends StatelessWidget {
+  final ServiceOffer service;
+
+  const _AdditionalInfoSection({required this.service});
+
+  @override
+  Widget build(BuildContext context) {
+    final primary = Theme.of(context).primaryColor;
+    return _SectionCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _SectionHeader(
+              title: 'additional_info'.tr,
+              icon: Icons.event_note_rounded,
+              primary: primary),
+          const SizedBox(height: 10),
           _InfoGrid(service: service),
         ],
       ),
@@ -497,7 +863,8 @@ class _InfoTile extends StatelessWidget {
   }
 }
 
-// ─── بطاقة مزود الخدمة (بدون واتساب/اتصال — انتقلا للشريط الثابت أسفل الشاشة) ──
+// ─── بطاقة مزود الخدمة (بدون واتساب/اتصال — انتقلا لصف الإجراءات السريعة
+// أعلى الورقة وشريط الـCTA السفلي) ───────────────────────────────────────────
 
 class _ProviderCard extends StatelessWidget {
   final ProviderData provider;
@@ -513,12 +880,14 @@ class _ProviderCard extends StatelessWidget {
         (provider.tiktok?.isNotEmpty ?? false) ||
         (provider.website?.isNotEmpty ?? false);
 
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),
+    return _SectionCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _SectionHeader(title: 'service_provider'.tr, primary: primary),
+          _SectionHeader(
+              title: 'service_provider'.tr,
+              icon: Icons.storefront_rounded,
+              primary: primary),
           const SizedBox(height: 12),
           Row(
             children: [
@@ -616,26 +985,33 @@ class _ProviderCard extends StatelessWidget {
   }
 }
 
-// ─── شريط التواصل الثابت أسفل الشاشة (واتساب/اتصال) ───────────────────────────
+// ─── شريط السعر + زر "طلب الخدمة" الثابت أسفل الشاشة — يحلّ محل زر
+// واتساب/اتصال المزدوج السابق: الاتصال انتقل لصف الإجراءات السريعة أعلى
+// الورقة، فبقي هنا إجراء واحد بارز (واتساب) بجانب السعر، مطابقةً لتذييل
+// السعر/زر الحجز في التصميم المرجعي ─────────────────────────────────────────
 
-class _ContactBar extends StatelessWidget {
-  final String phone;
+class _BottomCtaBar extends StatelessWidget {
+  final ServiceOffer service;
+  final ProviderData provider;
 
-  const _ContactBar({required this.phone});
+  const _BottomCtaBar({required this.service, required this.provider});
 
   @override
   Widget build(BuildContext context) {
+    final info = _priceInfo(service);
+    final dark = Theme.of(context).brightness == Brightness.dark;
+
     return SafeArea(
       top: false,
       child: Container(
         margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+        padding: const EdgeInsets.fromLTRB(16, 10, 10, 10),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).cardColor,
           borderRadius: BorderRadius.circular(18),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.12),
+              color: Colors.black.withValues(alpha: dark ? 0.4 : 0.12),
               blurRadius: 16,
               offset: const Offset(0, 6),
             ),
@@ -643,65 +1019,42 @@ class _ContactBar extends StatelessWidget {
         ),
         child: Row(
           children: [
-            _ContactBarButton(
-              label: 'whatsapp'.tr,
-              icon: Icons.chat_rounded,
-              color: Colors.green.shade600,
-              onTap: () => _launch(
-                'https://wa.me/${phone.replaceAll('+', '').replaceAll(' ', '')}',
-              ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'السعر',
+                  style: robotoRegular.copyWith(
+                      fontSize: 10.5, color: Colors.grey.shade500),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  info.text,
+                  style: robotoBold.copyWith(fontSize: 15, color: info.color),
+                ),
+              ],
             ),
-            const SizedBox(width: 8),
-            _ContactBarButton(
-              label: 'call'.tr,
-              icon: Icons.call_rounded,
-              color: Colors.blue.shade600,
-              onTap: () => _launch('tel:$phone'),
+            const SizedBox(width: 14),
+            Expanded(
+              child: ElevatedButton.icon(
+                onPressed: () => _launch(
+                  'https://wa.me/${_cleanPhoneForWhatsapp(provider.phone!)}',
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.green.shade600,
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14)),
+                ),
+                icon: const Icon(Icons.chat_rounded, size: 18),
+                label: Text('طلب الخدمة',
+                    style: robotoBold.copyWith(fontSize: 14, color: Colors.white)),
+              ),
             ),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-class _ContactBarButton extends StatelessWidget {
-  final String label;
-  final IconData icon;
-  final Color color;
-  final VoidCallback onTap;
-
-  const _ContactBarButton({
-    required this.label,
-    required this.icon,
-    required this.color,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Expanded(
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 10),
-          decoration: BoxDecoration(
-            color: color.withValues(alpha: 0.08),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: color.withValues(alpha: 0.25)),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(icon, color: color, size: 21),
-              const SizedBox(height: 3),
-              Text(
-                label,
-                style: robotoMedium.copyWith(fontSize: 12, color: color),
-              ),
-            ],
-          ),
         ),
       ),
     );
@@ -712,27 +1065,34 @@ class _ContactBarButton extends StatelessWidget {
 
 class _SectionHeader extends StatelessWidget {
   final String title;
+  final IconData icon;
   final Color primary;
 
-  const _SectionHeader({required this.title, required this.primary});
+  const _SectionHeader({
+    required this.title,
+    required this.icon,
+    required this.primary,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final dark = Theme.of(context).brightness == Brightness.dark;
     return Row(
       children: [
         Container(
-          width: 4,
-          height: 18,
+          width: 30,
+          height: 30,
           decoration: BoxDecoration(
-            color: primary,
-            borderRadius: BorderRadius.circular(4),
+            color: primary.withValues(alpha: dark ? 0.22 : 0.1),
+            borderRadius: BorderRadius.circular(9),
           ),
+          child: Icon(icon, size: 16, color: primary),
         ),
-        const SizedBox(width: 8),
+        const SizedBox(width: 10),
         Text(
           title,
           style: robotoBold.copyWith(
-              fontSize: 15, color: const Color(0xFF1A2340)),
+              fontSize: 15, color: dark ? Colors.white : const Color(0xFF1A2340)),
         ),
       ],
     );

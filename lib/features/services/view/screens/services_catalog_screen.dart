@@ -726,32 +726,46 @@ class _QuickFilterRow extends StatelessWidget {
       width: double.infinity,
       color: Theme.of(context).cardColor,
       padding: const EdgeInsets.fromLTRB(16, 10, 16, 14),
-      child: Row(
-        children: [
-          Expanded(
-            flex: 3,
-            child: _QuickField(
-              icon: locationIcon,
-              label: locationLabel,
-              active: locationActive,
-              primary: primary,
-              trailing: Icons.location_on_rounded,
-              onTap: _openLocation,
+      // IntrinsicHeight بدل CrossAxisAlignment.stretch مباشرة على الـRow —
+      // stretch وحده يحتاج ارتفاعًا محدودًا يتمدّد الأبناء إليه، بينما هذا
+      // الصفّ يقع داخل عنصر غير ممدَّد (Expanded) من Column فيصله ارتفاع غير
+      // محدود (infinity)، وهو ما يتسبب بخطأ تخطيط يُسقط الشاشة بالكامل
+      // (الشاشة البيضاء). IntrinsicHeight يمنح الـRow ارتفاعًا محسوبًا فعليًا
+      // من أطول عنصر بداخله أولاً، فيصبح stretch آمنًا لمساواة ارتفاع الحقلين.
+      child: IntrinsicHeight(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // "نوع الخدمة" يحصل على حيّز أكبر من "الموقع" (بعكس التوزيع
+            // السابق 3:2) — أسماء أنواع الخدمة الفعلية القادمة من الباكند
+            // (مثال: "أنظمة الأمان والمراقبة") أطول عادةً من تسميات الموقع
+            // (اسم منطقة واحدة أو "الأقرب إليك")، فكانت تُقصّ في منتصف الكلمة
+            // رغم أن حقل الموقع المجاور يملك مساحة فارغة غير مستغَلّة.
+            Expanded(
+              flex: 2,
+              child: _QuickField(
+                icon: locationIcon,
+                label: locationLabel,
+                active: locationActive,
+                primary: primary,
+                trailing: Icons.location_on_rounded,
+                onTap: _openLocation,
+              ),
             ),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            flex: 2,
-            child: _QuickField(
-              icon: typeIcon,
-              label: typeLabel,
-              active: typeActive,
-              primary: primary,
-              trailing: Icons.keyboard_arrow_down_rounded,
-              onTap: _openServiceType,
+            const SizedBox(width: 10),
+            Expanded(
+              flex: 3,
+              child: _QuickField(
+                icon: typeIcon,
+                label: typeLabel,
+                active: typeActive,
+                primary: primary,
+                trailing: Icons.keyboard_arrow_down_rounded,
+                onTap: _openServiceType,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -790,8 +804,8 @@ class _QuickField extends StatelessWidget {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 220),
           curve: Curves.easeOut,
-          height: 48,
-          padding: const EdgeInsets.symmetric(horizontal: 14),
+          constraints: const BoxConstraints(minHeight: 48),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
           decoration: BoxDecoration(
             color: active
                 ? primary.withValues(alpha: dark ? 0.16 : 0.08)
@@ -802,7 +816,12 @@ class _QuickField extends StatelessWidget {
               width: active ? 1.4 : 1,
             ),
           ),
+          // maxLines:2 بدل 1 — الاسم الفعلي قد يكون أطول من أن يتّسع في سطر
+          // واحد ضمن هذا الصندوق المضغوط، فكان يُقصّ في منتصف الكلمة أحيانًا
+          // (مثال: "آنظمة الأ...")؛ سطر ثانٍ يستوعب أغلب الأسماء دون قصّ، وما
+          // يتجاوزهما فقط يُقصّ بعلامة "..." بنهاية السطر الثاني.
           child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               AnimatedSwitcher(
                 duration: const Duration(milliseconds: 200),
@@ -820,16 +839,18 @@ class _QuickField extends StatelessWidget {
                 child: AnimatedDefaultTextStyle(
                   duration: const Duration(milliseconds: 200),
                   style: (active ? robotoBold : robotoMedium).copyWith(
-                    fontSize: 13.5,
+                    fontSize: 13,
+                    height: 1.2,
                     color: active ? primary : _secondaryText(context),
                   ),
                   child: Text(
                     label,
-                    maxLines: 1,
+                    maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
               ),
+              const SizedBox(width: 4),
               Icon(trailing, size: 18, color: active ? primary : Colors.grey.shade400),
             ],
           ),

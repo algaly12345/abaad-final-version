@@ -1200,7 +1200,7 @@ class _ZoneFilterSheetState extends State<ZoneFilterSheet>
                           ),
                           const SizedBox(height: 14),
                           SizedBox(
-                            height: 106,
+                            height: 126,
                             child: loading
                                 ? const _HorizontalCardSkeleton(count: 6)
                                 : zones.isEmpty
@@ -1355,7 +1355,7 @@ class _ZoneFilterSheetState extends State<ZoneFilterSheet>
   // للمنطقة نفسها لا كأيقونة عامة مكرّرة في كل بطاقة.
   Widget _list(BuildContext context, ServicesController controller,
       Color primary, List<ZoneData> zones) {
-    final cardWidth = MediaQuery.of(context).size.width / 4.35;
+    final cardWidth = MediaQuery.of(context).size.width / 3.8;
     return ListView.separated(
       scrollDirection: Axis.horizontal,
       padding: const EdgeInsetsDirectional.only(start: 20, end: 20),
@@ -1498,7 +1498,7 @@ class _TypeFilterSheetState extends State<TypeFilterSheet>
                 children: [
                   _header(context, primary, dark, selectedCount, controller),
                   SizedBox(
-                    height: 106,
+                    height: 126,
                     child: loading
                         ? const _HorizontalCardSkeleton(count: 6)
                         : types.isEmpty
@@ -1576,7 +1576,7 @@ class _TypeFilterSheetState extends State<TypeFilterSheet>
   // مطابقةً تمامًا لصف "نوع العقار" في التطبيق المرجعي.
   Widget _list(BuildContext context, ServicesController controller,
       Color primary, List<ServiceTypeData> types) {
-    final cardWidth = MediaQuery.of(context).size.width / 4.35;
+    final cardWidth = MediaQuery.of(context).size.width / 3.8;
     return ListView.separated(
       scrollDirection: Axis.horizontal,
       padding: const EdgeInsetsDirectional.only(start: 20, end: 20),
@@ -1683,7 +1683,7 @@ class _TypeOptionCard extends StatelessWidget {
 
     return SizedBox(
       width: width,
-      height: 100,
+      height: 118,
       child: Material(
         color: Colors.transparent,
         borderRadius: BorderRadius.circular(14),
@@ -1693,7 +1693,7 @@ class _TypeOptionCard extends StatelessWidget {
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 200),
             curve: Curves.easeOut,
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 14),
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 12),
             decoration: BoxDecoration(
               color: isSelected
                   ? primary.withValues(alpha: dark ? 0.2 : 0.08)
@@ -1711,15 +1711,20 @@ class _TypeOptionCard extends StatelessWidget {
               children: [
                 leadingBuilder != null
                     ? leadingBuilder!(isSelected)
-                    : Icon(icon, size: 27, color: isSelected ? primary : unselectedInk),
-                const SizedBox(height: 8),
+                    : Icon(icon, size: 24, color: isSelected ? primary : unselectedInk),
+                const SizedBox(height: 7),
+                // maxLines:3 بدل 2 — الأسماء الفعلية القادمة من الباكند
+                // (مثال: "أنظمة التخزين للمستودعات") أطول من عناوين المرجع
+                // القصيرة ("شقة"/"فيلا")، فكانت تُقطع بعلامة "..." أو تُكسر في
+                // منتصف الكلمة عند طول غير معتاد؛ سطر ثالث + بطاقة أعرض قليلاً
+                // (القياس أعلاه) يستوعبان أغلب الأسماء الحقيقية دون قصّ.
                 Text(
                   label,
-                  maxLines: 2,
+                  maxLines: 3,
                   overflow: TextOverflow.ellipsis,
                   textAlign: TextAlign.center,
                   style: (isSelected ? robotoBold : robotoMedium).copyWith(
-                    fontSize: 11.5,
+                    fontSize: 11,
                     height: 1.2,
                     color: isSelected ? primary : unselectedInk,
                   ),
@@ -1846,7 +1851,7 @@ class _HorizontalCardSkeleton extends StatelessWidget {
     final dark = Theme.of(context).brightness == Brightness.dark;
     final baseColor =
         dark ? Colors.white.withValues(alpha: 0.08) : const Color(0xFFEEF0F5);
-    final cardWidth = MediaQuery.of(context).size.width / 4.35;
+    final cardWidth = MediaQuery.of(context).size.width / 3.8;
 
     return Shimmer(
       duration: const Duration(milliseconds: 1400),
@@ -1862,7 +1867,7 @@ class _HorizontalCardSkeleton extends StatelessWidget {
         itemBuilder: (context, i) {
           return Container(
             width: cardWidth,
-            height: 100,
+            height: 118,
             decoration: BoxDecoration(
               color: baseColor,
               borderRadius: BorderRadius.circular(14),

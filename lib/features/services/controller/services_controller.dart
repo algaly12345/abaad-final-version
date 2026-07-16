@@ -1,7 +1,9 @@
 ﻿import 'dart:async';
 
 import 'package:abaad_flutter/core/api/api_checker.dart';
+import 'package:abaad_flutter/features/map/controller/location_controller.dart';
 import 'package:abaad_flutter/features/provider/data/models/service_offer_model.dart';
+import 'package:abaad_flutter/features/services/controller/nearby_location_helper.dart';
 import 'package:abaad_flutter/features/services/data/repositories/services_repo.dart';
 import 'package:abaad_flutter/shared/widgets/custom_snackbar.dart';
 import 'package:flutter/widgets.dart';
@@ -20,6 +22,11 @@ class ServicesController extends GetxController implements GetxService {
 
   bool _isDetailsLoading = false;
   bool get isDetailsLoading => _isDetailsLoading;
+
+  // true فقط أثناء انتظار الإذن/الموقع الفعلي (قبل بدء إعادة تحميل القائمة) —
+  // يسمح للواجهة بعرض حالة "جاري تحديد موقعك..." مميزة عن حالة تحميل القائمة العادية
+  bool _isResolvingLocation = false;
+  bool get isResolvingLocation => _isResolvingLocation;
 
   List<ServiceOffer>? _servicesList;
   List<ServiceOffer>? get servicesList => _servicesList;
@@ -42,7 +49,6 @@ class ServicesController extends GetxController implements GetxService {
 
   String searchText = '';
   final TextEditingController searchController = TextEditingController();
-  bool isSearchExpanded = false;
   List<int> selectedCategories = [];
   List<int> selectedZones = [];
   List<int> selectedServiceTypes = [];
@@ -50,6 +56,23 @@ class ServicesController extends GetxController implements GetxService {
 
   String selectedOfferType = 'الكل';
   String sortBy = 'الأحدث';
+
+  // ─── "أقرب مزود خدمة": يُحاوَل تلقائياً مرة واحدة عند فتح شاشة الخدمات
+  // (enableNearMe(silent: true))، ويبقى الزر اليدوي متاحاً لإعادة التفعيل ───
+  bool nearMeActive = false;
+  double? userLat;
+  double? userLng;
+  // القيم الممكنة: '5', '10', '25', '50', 'city' (city = بدون حد أقصى للمسافة)
+  String radiusOption = 'city';
+
+  // true إذا فشلت المحاولة التلقائية الصامتة (رفض/تعطيل) — تُستخدم لعرض
+  // تلميح لطيف بدل رسالة مقتحمة، ويختفي بمجرد نجاح enableNearMe لاحقاً.
+  bool nearMeAutoDenied = false;
+  bool _autoNearMeAttempted = false;
+
+  // ─── نطاق السعر: null يعني عدم تفعيل الفلتر بعد (يُضبط أول مرة من filtersData) ───
+  double? minPriceFilter;
+  double? maxPriceFilter;
 
   static const List<String> offerTypeOptions = [
     'الكل',
@@ -63,7 +86,17 @@ class ServicesController extends GetxController implements GetxService {
     'الأقل سعرًا',
     'الأعلى سعرًا',
     'أعلى خصم',
+    'الأعلى تقييمًا',
     'ينتهي قريبًا',
+    'الأقرب مني',
+  ];
+
+  static const List<Map<String, String>> radiusOptions = [
+    {'value': '5', 'label': '٥ كم'},
+    {'value': '10', 'label': '١٠ كم'},
+    {'value': '25', 'label': '٢٥ كم'},
+    {'value': '50', 'label': '٥٠ كم'},
+    {'value': 'city', 'label': 'المدينة'},
   ];
 
   static const Map<String, String?> _offerTypeApiMap = {
@@ -78,7 +111,9 @@ class ServicesController extends GetxController implements GetxService {
     'الأقل سعرًا': 'price_asc',
     'الأعلى سعرًا': 'price_desc',
     'أعلى خصم': 'discount_desc',
+    'الأعلى تقييمًا': 'rating_desc',
     'ينتهي قريبًا': 'expiry_soon',
+    'الأقرب مني': 'nearest',
   };
 
   Timer? _debounce;
@@ -111,6 +146,11 @@ class ServicesController extends GetxController implements GetxService {
         providerId: selectedProviders.join(','),
         offerType: _offerTypeApiMap[selectedOfferType],
         sortBy: _sortByApiMap[sortBy] ?? 'latest',
+        latitude: nearMeActive ? userLat : null,
+        longitude: nearMeActive ? userLng : null,
+        radiusKm: (nearMeActive && radiusOption != 'city') ? radiusOption : null,
+        minPrice: minPriceFilter,
+        maxPrice: maxPriceFilter,
       );
 
       if (response.statusCode == 200 && response.body is Map) {
@@ -228,22 +268,6 @@ class ServicesController extends GetxController implements GetxService {
     });
   }
 
-  void openSearch() {
-    isSearchExpanded = true;
-    update();
-  }
-
-  void closeSearch() {
-    isSearchExpanded = false;
-    if (searchController.text.isNotEmpty) {
-      searchController.clear();
-      searchText = '';
-      getServicesList(1, reload: true);
-    } else {
-      update();
-    }
-  }
-
   void toggleCategory(int id) {
     if (selectedCategories.contains(id)) {
       selectedCategories.remove(id);
@@ -286,7 +310,81 @@ class ServicesController extends GetxController implements GetxService {
   }
 
   void setSortBy(String sort) {
+    // "الأقرب مني" يحتاج موقعًا فعليًا أولاً؛ يُضبط عبر enableNearMe() بدلاً
+    // من هذه الدالة (راجع filter_bottom_sheet.dart)
+    if (sort != 'الأقرب مني') {
+      nearMeActive = false;
+    }
     sortBy = sort;
+    update();
+  }
+
+  /// يعبّئ فلتر "المنطقة" تلقائيًا من عنوان المستخدم المحفوظ محليًا (إن وُجد)
+  /// دون أي طلب إذن موقع جديد — يلبي "تظهر الخدمات بحسب منطقتي" افتراضيًا،
+  /// بينما "الأقرب مني" (GPS حي) يبقى اختياريًا صراحةً عبر enableNearMe().
+  void applySavedZoneDefault() {
+    if (selectedZones.isNotEmpty) return;
+    final savedZoneIds = Get.find<LocationController>().getUserAddress()?.zoneIds;
+    if (savedZoneIds != null && savedZoneIds.isNotEmpty) {
+      selectedZones = List<int>.from(savedZoneIds);
+    }
+  }
+
+  /// يطلب الإذن ثم الموقع الحالي عبر NearbyLocationHelper، ثم يفعّل فرز/
+  /// فلترة "الأقرب مني". [silent]: للمحاولة التلقائية عند فتح الشاشة —
+  /// تُكتم رسائل الرفض عندها (راجع NearbyLocationHelper).
+  Future<void> enableNearMe({bool silent = false}) async {
+    if (silent) {
+      if (_autoNearMeAttempted || nearMeActive) return;
+      _autoNearMeAttempted = true;
+    }
+
+    _isResolvingLocation = true;
+    update();
+
+    final position =
+        await NearbyLocationHelper.resolveCurrentPosition(silent: silent);
+
+    _isResolvingLocation = false;
+    if (position == null) {
+      if (silent) nearMeAutoDenied = true;
+      update();
+      return;
+    }
+
+    userLat = position.latitude;
+    userLng = position.longitude;
+    nearMeActive = true;
+    nearMeAutoDenied = false;
+    sortBy = 'الأقرب مني';
+    update();
+    await getServicesList(1, reload: true);
+  }
+
+  void disableNearMe() {
+    nearMeActive = false;
+    userLat = null;
+    userLng = null;
+    radiusOption = 'city';
+    sortBy = 'الأحدث';
+    update();
+    getServicesList(1, reload: true);
+  }
+
+  void setRadiusOption(String value) {
+    radiusOption = value;
+    update();
+    if (nearMeActive) {
+      getServicesList(1, reload: true);
+    }
+  }
+
+  // ترتيب دفاعي: بعض تفاعلات RangeSlider (خصوصًا مع اتجاه RTL) قد تُرسل
+  // start أكبر من end، فتُخزَّن القيم مقلوبة (مثال: "1 - 0")، ما يجعل فلتر
+  // السعر يطلب مدى مستحيلًا فتختفي كل النتائج. الفرز هنا يمنع ذلك من المصدر.
+  void setPriceRange(double min, double max) {
+    minPriceFilter = min <= max ? min : max;
+    maxPriceFilter = min <= max ? max : min;
     update();
   }
 
@@ -301,9 +399,15 @@ class ServicesController extends GetxController implements GetxService {
     selectedServiceTypes.clear();
     selectedProviders.clear();
     selectedOfferType = 'الكل';
+    nearMeActive = false;
+    userLat = null;
+    userLng = null;
+    radiusOption = 'city';
     sortBy = 'الأحدث';
     searchText = '';
     searchController.clear();
+    minPriceFilter = null;
+    maxPriceFilter = null;
     update();
     getServicesList(1, reload: true);
   }

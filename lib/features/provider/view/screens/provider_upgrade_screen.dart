@@ -1,17 +1,19 @@
 import 'package:abaad_flutter/core/routes/route_helper.dart';
-import 'package:abaad_flutter/features/profile/controller/user_controller.dart';
+import 'package:abaad_flutter/features/auth/controller/auth_controller.dart';
 import 'package:abaad_flutter/features/provider/controller/service_offer_controller.dart';
 import 'package:abaad_flutter/shared/utils/styles.dart';
-import 'package:abaad_flutter/shared/widgets/custom_app_bar.dart';
+import 'package:abaad_flutter/shared/widgets/gradient_module_app_bar.dart';
 import 'package:abaad_flutter/shared/widgets/my_text_field.dart';
+import 'package:abaad_flutter/shared/widgets/not_logged_in_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 /// خطوة "صير مزود خدمة" السابقة لمعالج إنشاء أول عرض
 /// (AddPropertyServiceOfferScreen). تجمع نوع الحساب (فرد/منشأة) وبيانات
 /// التحقق المطلوبة قبل المتابعة لإنشاء العرض نفسه:
-/// - فرد: رقم الهوية الوطنية + توثيق إجباري عبر نفاذ + رقم عضوية العمل الحر.
-/// - منشأة: رقم السجل التجاري أو الرقم الموحد فقط (بدون نفاذ).
+/// - فرد: رقم الهوية الوطنية + رقم عضوية العمل الحر (بدون توثيق نفاذ في هذه
+///   الشاشة — يتحقق الأدمن من البيانات لاحقاً).
+/// - منشأة: رقم السجل التجاري أو الرقم الموحد فقط.
 class ProviderUpgradeScreen extends StatefulWidget {
   const ProviderUpgradeScreen({super.key});
 
@@ -21,17 +23,12 @@ class ProviderUpgradeScreen extends StatefulWidget {
 
 class _ProviderUpgradeScreenState extends State<ProviderUpgradeScreen> {
   late final ServiceOfferController _offerController;
-  late final UserController _userController;
 
   @override
   void initState() {
     super.initState();
     _offerController = Get.find<ServiceOfferController>();
-    _userController = Get.find<UserController>();
   }
-
-  bool get _isNafathVerified =>
-      _userController.userInfoModel?.accountVerification == '1';
 
   void _selectEntityType(String type) {
     // setEntityType() يستدعي update() الخاص بـ GetX داخلياً بالفعل، فيعيد بناء
@@ -41,26 +38,6 @@ class _ProviderUpgradeScreenState extends State<ProviderUpgradeScreen> {
     _offerController.setEntityType(type);
   }
 
-  Future<void> _startNafathVerification() async {
-    final idNumber = _offerController.identityNumberController.text.trim();
-    if (idNumber.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('enter_national_id_first'.tr)),
-      );
-      return;
-    }
-
-    await _userController.validateNafath(
-      idNumber,
-      context,
-      onVerified: () async {
-        // تحديث بيانات المستخدم محلياً لتفعيل حقل عضوية العمل الحر وزر المتابعة
-        await _userController.getUserInfo();
-        if (mounted) setState(() {});
-      },
-    );
-  }
-
   void _continue() {
     Get.toNamed(RouteHelper.getAddServiceOfferRoute());
   }
@@ -68,7 +45,9 @@ class _ProviderUpgradeScreenState extends State<ProviderUpgradeScreen> {
   bool get _canContinue {
     final type = _offerController.entityType;
     if (type == 'individual') {
-      return _isNafathVerified &&
+      return RegExp(
+            r'^[12]\d{9}$',
+          ).hasMatch(_offerController.identityNumberController.text.trim()) &&
           RegExp(r'^FL-\d+$').hasMatch(
             _offerController.freelanceMembershipController.text.trim(),
           );
@@ -87,81 +66,81 @@ class _ProviderUpgradeScreenState extends State<ProviderUpgradeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (!Get.find<AuthController>().isLoggedIn()) {
+      return const NotLoggedInScreen();
+    }
+
     return GetBuilder<ServiceOfferController>(
       builder: (controller) {
-        return GetBuilder<UserController>(
-          builder: (_) {
-            return Scaffold(
-              appBar: CustomAppBar(title: 'become_provider_title'.tr),
-              body: SafeArea(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+        return Scaffold(
+          appBar: GradientModuleAppBar(title: 'become_provider_title'.tr),
+          body: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'choose_account_type'.tr,
+                    style: robotoBold.copyWith(fontSize: 16),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'provider_upgrade_subtitle'.tr,
+                    style: robotoRegular.copyWith(
+                      fontSize: 12,
+                      color: Colors.black54,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  Row(
                     children: [
-                      Text(
-                        'choose_account_type'.tr,
-                        style: robotoBold.copyWith(fontSize: 16),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        'provider_upgrade_subtitle'.tr,
-                        style: robotoRegular.copyWith(
-                          fontSize: 12,
-                          color: Colors.black54,
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _EntityTypeCard(
-                              label: 'individual'.tr,
-                              icon: Icons.person_outline,
-                              selected: controller.entityType == 'individual',
-                              onTap: () => _selectEntityType('individual'),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: _EntityTypeCard(
-                              label: 'organization'.tr,
-                              icon: Icons.apartment_outlined,
-                              selected: controller.entityType == 'organization',
-                              onTap: () => _selectEntityType('organization'),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 24),
                       Expanded(
-                        child: SingleChildScrollView(
-                          child: controller.entityType == 'individual'
-                              ? _buildIndividualForm()
-                              : controller.entityType == 'organization'
-                              ? _buildOrganizationForm()
-                              : const SizedBox(),
+                        child: _EntityTypeCard(
+                          label: 'individual'.tr,
+                          icon: Icons.person_outline,
+                          selected: controller.entityType == 'individual',
+                          onTap: () => _selectEntityType('individual'),
                         ),
                       ),
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          onPressed: _canContinue ? _continue : null,
-                          style: ElevatedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                          ),
-                          child: Text('continue_label'.tr),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _EntityTypeCard(
+                          label: 'organization'.tr,
+                          icon: Icons.apartment_outlined,
+                          selected: controller.entityType == 'organization',
+                          onTap: () => _selectEntityType('organization'),
                         ),
                       ),
                     ],
                   ),
-                ),
+                  const SizedBox(height: 24),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      child: controller.entityType == 'individual'
+                          ? _buildIndividualForm()
+                          : controller.entityType == 'organization'
+                          ? _buildOrganizationForm()
+                          : const SizedBox(),
+                    ),
+                  ),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: _canContinue ? _continue : null,
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                      child: Text('continue_label'.tr),
+                    ),
+                  ),
+                ],
               ),
-            );
-          },
+            ),
+          ),
         );
       },
     );
@@ -177,55 +156,37 @@ class _ProviderUpgradeScreenState extends State<ProviderUpgradeScreen> {
           hintText: 'enter_id_number'.tr,
           controller: _offerController.identityNumberController,
           inputType: TextInputType.number,
-          isEnabled: !_isNafathVerified,
+          onChanged: (_) => setState(() {}),
           showBorder: true,
         ),
-        const SizedBox(height: 12),
-        if (!_isNafathVerified)
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton.icon(
-              onPressed: _userController.isLoading
-                  ? null
-                  : _startNafathVerification,
-              icon: const Icon(Icons.verified_user_outlined),
-              label: Text(
-                _userController.isLoading
-                    ? 'sending_ellipsis'.tr
-                    : 'verify_via_nafath'.tr,
-              ),
-            ),
-          )
-        else
-          Row(
-            children: [
-              const Icon(Icons.check_circle, color: Colors.green, size: 18),
-              const SizedBox(width: 6),
-              Text('nafath_verified_success'.tr),
-            ],
-          ),
-        if (_isNafathVerified) ...[
-          const SizedBox(height: 16),
-          Text(
-            'freelance_document_number'.tr,
-            style: robotoMedium.copyWith(fontSize: 13),
-          ),
-          const SizedBox(height: 8),
-          MyTextField(
-            hintText: 'freelance_document_example'.tr,
-            controller: _offerController.freelanceMembershipController,
-            onChanged: (_) => setState(() {}),
-            showBorder: true,
-          ),
-          const SizedBox(height: 4),
-          _FormatHint(
-            text: _offerController.freelanceMembershipController.text.trim(),
-            regex: RegExp(r'^FL-\d+$'),
-            hintText: 'freelance_document_hint'.tr,
-            errorText: 'freelance_document_error'.tr,
-            validText: 'valid_format'.tr,
-          ),
-        ],
+        const SizedBox(height: 4),
+        _FormatHint(
+          text: _offerController.identityNumberController.text.trim(),
+          regex: RegExp(r'^[12]\d{9}$'),
+          hintText: 'national_id_hint'.tr,
+          errorText: 'national_id_error'.tr,
+          validText: 'valid_format'.tr,
+        ),
+        const SizedBox(height: 16),
+        Text(
+          'freelance_document_number'.tr,
+          style: robotoMedium.copyWith(fontSize: 13),
+        ),
+        const SizedBox(height: 8),
+        MyTextField(
+          hintText: 'freelance_document_example'.tr,
+          controller: _offerController.freelanceMembershipController,
+          onChanged: (_) => setState(() {}),
+          showBorder: true,
+        ),
+        const SizedBox(height: 4),
+        _FormatHint(
+          text: _offerController.freelanceMembershipController.text.trim(),
+          regex: RegExp(r'^FL-\d+$'),
+          hintText: 'freelance_document_hint'.tr,
+          errorText: 'freelance_document_error'.tr,
+          validText: 'valid_format'.tr,
+        ),
       ],
     );
   }

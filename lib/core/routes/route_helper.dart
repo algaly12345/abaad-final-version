@@ -36,6 +36,7 @@ import 'package:abaad_flutter/features/profile/view/screens/profile_screen.dart'
 import 'package:abaad_flutter/features/settings/view/screens/settings_screen.dart';
 import 'package:abaad_flutter/features/profile/view/screens/update_profile_screen.dart';
 import 'package:abaad_flutter/features/profile/controller/user_controller.dart';
+import 'package:abaad_flutter/core/routes/middlewares/auth_guard_middleware.dart';
 import 'package:abaad_flutter/features/provider/view/screens/add_property_service_offer_screen.dart';
 import 'package:abaad_flutter/features/provider/view/screens/provider_upgrade_screen.dart';
 import 'package:abaad_flutter/features/provider/view/screens/service_offer_payment_screen.dart';
@@ -233,6 +234,7 @@ class RouteHelper {
     GetPage(name: agent, page: () => AgentRegistrationScreen()),
     GetPage(
       name: serviceProvider,
+      middlewares: [AuthGuardMiddleware()],
       page: () {
         final userType = Get.find<UserController>().userInfoModel?.userType;
         return userType == 'provider'
@@ -242,10 +244,12 @@ class RouteHelper {
     ),
     GetPage(
       name: addServiceOffer,
+      middlewares: [AuthGuardMiddleware()],
       page: () => const AddPropertyServiceOfferScreen(),
     ),
     GetPage(
       name: serviceOfferPayment,
+      middlewares: [AuthGuardMiddleware()],
       page: () {
         final args = Get.arguments as Map?;
         return ServiceOfferPaymentScreen(
@@ -255,7 +259,11 @@ class RouteHelper {
       },
     ),
     GetPage(name: servicesCatalog, page: () => ServicesCatalogScreen()),
-    GetPage(name: myServices, page: () => MyServicesScreen()),
+    GetPage(
+      name: myServices,
+      middlewares: [AuthGuardMiddleware()],
+      page: () => MyServicesScreen(),
+    ),
     GetPage(name: success, page: () => ScreenSuccess()),
     GetPage(
       name: wallet,

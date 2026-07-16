@@ -5,6 +5,7 @@ import 'package:abaad_flutter/features/provider/data/models/service_offer_model.
 import 'package:abaad_flutter/core/routes/route_helper.dart';
 import 'package:abaad_flutter/shared/utils/styles.dart';
 import 'package:abaad_flutter/shared/widgets/custom_image.dart';
+import 'package:abaad_flutter/shared/widgets/gradient_module_app_bar.dart';
 import 'package:abaad_flutter/shared/widgets/not_logged_in_screen.dart';
 import 'package:abaad_flutter/features/services/view/screens/service_details_screen.dart';
 import 'package:flutter/material.dart';
@@ -149,13 +150,8 @@ class _MyServicesScreenState extends State<MyServicesScreen>
 
     return Scaffold(
       backgroundColor: const Color(0xFFF4F6F9),
-      appBar: AppBar(
-        title: Text('my_services'.tr,
-            style: robotoBold.copyWith(fontSize: 17, color: Colors.white)),
-        backgroundColor: primary,
-        foregroundColor: Colors.white,
-        elevation: 0,
-        centerTitle: true,
+      appBar: GradientModuleAppBar(
+        title: 'my_services'.tr,
         bottom: tabBar,
       ),
       floatingActionButton: fab,

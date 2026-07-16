@@ -274,8 +274,13 @@ class ServiceOfferController extends GetxController implements GetxService {
       return null;
     }
     if (_entityType == 'individual') {
-      if (identityNumberController.text.trim().isEmpty) {
+      final identityNumber = identityNumberController.text.trim();
+      if (identityNumber.isEmpty) {
         showCustomSnackBar('رقم الهوية الوطنية مطلوب');
+        return null;
+      }
+      if (!RegExp(r'^[12]\d{9}$').hasMatch(identityNumber)) {
+        showCustomSnackBar('رقم الهوية يجب أن يتكون من 10 أرقام ويبدأ بـ 1 أو 2');
         return null;
       }
       final freelanceNumber = freelanceMembershipController.text.trim();

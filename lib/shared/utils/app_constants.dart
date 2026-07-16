@@ -14,7 +14,7 @@ class AppConstants {
 
   // فعّل هذا للاختبار المحلي
 
-  static const String BASE_URL = "http://10.111.206.145";
+  static const String BASE_URL = 'http://10.135.230.108';
 
   // static const String BASE_URL = 'https://baad.arabengksa.com';
   static const String LAND_SERVICE_URL =

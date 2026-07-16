@@ -15,6 +15,11 @@ class ServicesRepo {
     String? serviceTypeId,
     String? providerId,
     bool myServices = false,
+    double? latitude,
+    double? longitude,
+    String? radiusKm,
+    double? minPrice,
+    double? maxPrice,
   }) async {
     // لوحة "خدماتي" لها مسار محمي بتسجيل الدخول مستقل عن كتالوج الخدمات العام،
     // ولا يجوز إرسال نفس استعلام الكتالوج العام مع my_services=true لأنه غير مدعوم بعد الآن.
@@ -45,6 +50,19 @@ class ServicesRepo {
     // التسمية العربية المعروضة في الواجهة - التحويل يحدث في ServicesController.
     if (offerType != null && offerType.isNotEmpty) {
       uri += '&offer_type=$offerType';
+    }
+    // فلتر "أقرب مزود خدمة": المسافة تُحسب على مناطق تغطية العرض بالباكند
+    if (latitude != null && longitude != null) {
+      uri += '&latitude=$latitude&longitude=$longitude';
+      if (radiusKm != null && radiusKm.isNotEmpty) {
+        uri += '&radius_km=$radiusKm';
+      }
+    }
+    if (minPrice != null) {
+      uri += '&min_price=$minPrice';
+    }
+    if (maxPrice != null) {
+      uri += '&max_price=$maxPrice';
     }
 
     return await apiClient.getData(uri);

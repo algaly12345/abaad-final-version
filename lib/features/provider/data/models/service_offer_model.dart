@@ -40,6 +40,9 @@ class ServiceOffer {
   List<ZoneData>? zones;
   List<ProviderData>? providers;
   String? createdAt;
+  // أقل مسافة (كم) بين موقع المستخدم ومناطق تغطية العرض — تصل فقط عند تفعيل
+  // "الأقرب مني" (راجع services_controller.dart / GetServicesRequest بالباكند)
+  double? distanceKm;
 
   ServiceOffer({
     this.id,
@@ -61,6 +64,7 @@ class ServiceOffer {
     this.zones,
     this.providers,
     this.createdAt,
+    this.distanceKm,
   });
 
   ServiceOffer.fromJson(Map<String, dynamic> json) {
@@ -103,6 +107,9 @@ class ServiceOffer {
       );
     }
     createdAt = json['created_at'];
+    distanceKm = json['distance_km'] != null
+        ? double.tryParse(json['distance_km'].toString())
+        : null;
   }
 }
 
@@ -130,10 +137,18 @@ class ZoneData {
   int? id;
   String? name;
   String? nameAr;
+  double? latitude;
+  double? longitude;
   ZoneData.fromJson(Map<String, dynamic> json) {
     id = json['id'];
     name = json['name'];
     nameAr = json['name_ar'];
+    latitude = json['latitude'] != null
+        ? double.tryParse(json['latitude'].toString())
+        : null;
+    longitude = json['longitude'] != null
+        ? double.tryParse(json['longitude'].toString())
+        : null;
   }
 }
 
@@ -147,6 +162,9 @@ class ProviderData {
   String? tiktok;
   String? twitter;
   String? image;
+  // عرض فقط حاليًا — لا توجد آلية لتقديم تقييم بعد
+  double? rating;
+  int? reviewsCount;
 
   ProviderData.fromJson(Map<String, dynamic> json) {
     id = json['id'];
@@ -158,6 +176,12 @@ class ProviderData {
     tiktok = json['tiktok'];
     twitter = json['twitter'];
     image = json['image'];
+    rating = json['rating'] != null
+        ? double.tryParse(json['rating'].toString())
+        : null;
+    reviewsCount = json['reviews_count'] != null
+        ? int.tryParse(json['reviews_count'].toString())
+        : null;
   }
 }
 

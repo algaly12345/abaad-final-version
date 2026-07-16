@@ -1,6 +1,6 @@
 ﻿import 'package:abaad_flutter/features/provider/controller/service_offer_controller.dart';
 import 'package:abaad_flutter/shared/utils/styles.dart';
-import 'package:abaad_flutter/shared/widgets/custom_app_bar.dart';
+import 'package:abaad_flutter/shared/widgets/gradient_module_app_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:webview_flutter/webview_flutter.dart';
@@ -94,7 +94,7 @@ class _ServiceOfferPaymentScreenState extends State<ServiceOfferPaymentScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: const CustomAppBar(title: 'الدفع'),
+      appBar: const GradientModuleAppBar(title: 'الدفع'),
       body: Stack(
         children: [
           WebViewWidget(controller: _controller),

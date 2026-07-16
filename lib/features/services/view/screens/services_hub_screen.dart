@@ -15,41 +15,24 @@ class ServicesHubScreen extends StatelessWidget {
 
     return GetBuilder<ProviderPermissionController>(
       builder: (pc) {
-        return Scaffold(
-          backgroundColor: const Color(0xFFF4F6F9),
-          appBar: AppBar(
-            backgroundColor: Colors.transparent,
-            foregroundColor: Colors.white,
-            elevation: 0,
-            centerTitle: false,
-            toolbarHeight: 64,
-            flexibleSpace: Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [primary, primary.withValues(alpha: 0.85)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
+        // الشريط العلوي (متدرّج + بحث قابل للطي) بات مملوكاً بالكامل من
+        // ServicesCatalogScreen بدل تكراره هنا — هذه الشاشة تمرّر فقط
+        // العنوان وأيقونة "طلباتي" الإضافية الخاصة بها وزر الإجراء العائم.
+        return ServicesCatalogScreen(
+          showAppBar: true,
+          title: 'services'.tr,
+          subtitle: 'أفضل العروض والخصومات الحصرية',
+          extraActions: [
+            // نقطة وصول دائمة لحالة طلباتي/خدماتي، بغض النظر عن كونه
+            // مزود خدمة فعلياً أو لسه بانتظار موافقة الأدمن — بعكس زر
+            // "خدماتي" العائم اللي يظهر فقط لمزودي الخدمة المعتمدين.
+            if (Get.find<AuthController>().isLoggedIn())
+              IconButton(
+                tooltip: 'my_applications'.tr,
+                icon: const Icon(Icons.assignment_outlined, color: Colors.white),
+                onPressed: () => Get.toNamed(RouteHelper.getMyServicesRoute()),
               ),
-            ),
-            title: ServicesAppBarTitle(
-              title: 'services'.tr,
-              subtitle: 'أفضل العروض والخصومات الحصرية',
-            ),
-            actions: [
-              // نقطة وصول دائمة لحالة طلباتي/خدماتي، بغض النظر عن كونه
-              // مزود خدمة فعلياً أو لسه بانتظار موافقة الأدمن — بعكس زر
-              // "خدماتي" العائم اللي يظهر فقط لمزودي الخدمة المعتمدين.
-              if (Get.find<AuthController>().isLoggedIn())
-                IconButton(
-                  tooltip: 'my_applications'.tr,
-                  icon: const Icon(Icons.assignment_outlined, color: Colors.white),
-                  onPressed: () => Get.toNamed(RouteHelper.getMyServicesRoute()),
-                ),
-              const ServicesAppBarActions(),
-            ],
-          ),
-          body: const ServicesCatalogScreen(showAppBar: false),
+          ],
           floatingActionButton: pc.isProvider
               ? FloatingActionButton.extended(
                   backgroundColor: primary,

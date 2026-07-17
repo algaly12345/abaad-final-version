@@ -427,6 +427,12 @@
   "company": "Company",
   "broker": "Broker",
   "sort_by": "Sort By",
+  "price_range": "Price Range",
+  "search_radius": "Search Radius",
+  "min_price": "Min Price",
+  "max_price": "Max Price",
+  "to_label": "to",
+  "reset_fields": "Reset Fields",
 
   "permission_screen_title": "We Need Your Permission",
   "permission_screen_subtitle": "For a complete experience, the app needs the following permissions",

@@ -1,11 +1,10 @@
-﻿import 'dart:io';
+import 'dart:io';
 
 import 'package:abaad_flutter/features/provider/controller/service_offer_controller.dart';
 import 'package:abaad_flutter/features/provider/data/models/service_offer_setup_model.dart';
 import 'package:abaad_flutter/core/routes/route_helper.dart';
-import 'package:abaad_flutter/shared/utils/styles.dart';
+import 'package:abaad_flutter/shared/theme/design_system.dart';
 import 'package:abaad_flutter/shared/widgets/app_dropdown.dart';
-import 'package:abaad_flutter/shared/widgets/my_text_field.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -112,8 +111,8 @@ class _TermsScreenState extends State<_TermsScreen> {
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 Container(
-                                  width: 72,
-                                  height: 72,
+                                  width: AvatarSpec.profile,
+                                  height: AvatarSpec.profile,
                                   decoration: BoxDecoration(
                                     color:
                                         Colors.white.withValues(alpha: 0.15),
@@ -123,25 +122,24 @@ class _TermsScreenState extends State<_TermsScreen> {
                                             .withValues(alpha: 0.3),
                                         width: 2),
                                   ),
-                                  child: const Icon(Icons.handshake_outlined,
-                                      color: Colors.white, size: 36),
+                                  child: Icon(Icons.handshake_outlined,
+                                      color: Colors.white, size: IconSpec.large),
                                 ),
-                                const SizedBox(height: 14),
+                                const SizedBox(height: Spacing.md),
                                 Text(
                                   'service_terms_title'.tr,
-                                  style: robotoBold.copyWith(
-                                      fontSize: 20, color: Colors.white),
+                                  style: AppTypography.title
+                                      .copyWith(color: Colors.white),
                                 ),
-                                const SizedBox(height: 6),
+                                const SizedBox(height: Spacing.sm),
                                 Padding(
                                   padding: const EdgeInsets.symmetric(
                                       horizontal: 40),
                                   child: Text(
                                     'service_terms_subtitle'.tr,
-                                    style: robotoRegular.copyWith(
-                                      fontSize: 12,
+                                    style: AppTypography.small.copyWith(
                                       color:
-                                          Colors.white.withValues(alpha: 0.8),
+                                          Colors.white.withValues(alpha: 0.85),
                                       height: 1.55,
                                     ),
                                     textAlign: TextAlign.center,
@@ -150,7 +148,7 @@ class _TermsScreenState extends State<_TermsScreen> {
                               ],
                             ),
                           ),
-                          const SizedBox(height: 20),
+                          const SizedBox(height: Spacing.lg),
                         ],
                       ),
                     ),
@@ -160,7 +158,8 @@ class _TermsScreenState extends State<_TermsScreen> {
 
               // Terms list — flows naturally below header
               SliverPadding(
-                padding: const EdgeInsets.fromLTRB(16, 20, 16, 0),
+                padding: const EdgeInsets.fromLTRB(
+                    Spacing.pagePadding, Spacing.lg, Spacing.pagePadding, 0),
                 sliver: SliverList(
                   delegate: SliverChildBuilderDelegate(
                     (context, i) => _TermItem(
@@ -193,7 +192,7 @@ class _TermsScreenState extends State<_TermsScreen> {
                       color: Colors.transparent,
                       child: IconButton(
                         icon: const Icon(Icons.arrow_back_ios_rounded,
-                            color: Colors.white, size: 20),
+                            color: Colors.white, size: IconSpec.small),
                         onPressed: () => Get.back(),
                       ),
                     ),
@@ -209,16 +208,11 @@ class _TermsScreenState extends State<_TermsScreen> {
             left: 0,
             right: 0,
             child: Container(
-              padding: EdgeInsets.fromLTRB(16, 16, 16, 16 + bottomPadding),
+              padding: EdgeInsets.fromLTRB(Spacing.pagePadding, Spacing.lg,
+                  Spacing.pagePadding, Spacing.lg + bottomPadding),
               decoration: BoxDecoration(
                 color: Colors.white,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.09),
-                    blurRadius: 20,
-                    offset: const Offset(0, -6),
-                  ),
-                ],
+                boxShadow: AppShadows.soft(blur: 16, opacity: 0.09),
               ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -227,13 +221,13 @@ class _TermsScreenState extends State<_TermsScreen> {
                   GestureDetector(
                     onTap: () => setState(() => _checked = !_checked),
                     child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
-                      padding: const EdgeInsets.all(14),
+                      duration: AnimSpec.button,
+                      padding: const EdgeInsets.all(Spacing.md),
                       decoration: BoxDecoration(
                         color: _checked
                             ? primary.withValues(alpha: 0.06)
                             : const Color(0xFFF8FAFC),
-                        borderRadius: BorderRadius.circular(14),
+                        borderRadius: BorderRadius.circular(AppRadius.medium),
                         border: Border.all(
                           color:
                               _checked ? primary : Colors.grey.shade200,
@@ -243,12 +237,12 @@ class _TermsScreenState extends State<_TermsScreen> {
                       child: Row(
                         children: [
                           AnimatedContainer(
-                            duration: const Duration(milliseconds: 200),
+                            duration: AnimSpec.button,
                             width: 22,
                             height: 22,
                             decoration: BoxDecoration(
                               color: _checked ? primary : Colors.white,
-                              borderRadius: BorderRadius.circular(6),
+                              borderRadius: BorderRadius.circular(AppRadius.small - 2),
                               border: Border.all(
                                 color: _checked
                                     ? primary
@@ -260,12 +254,11 @@ class _TermsScreenState extends State<_TermsScreen> {
                                     color: Colors.white, size: 14)
                                 : null,
                           ),
-                          const SizedBox(width: 12),
+                          const SizedBox(width: Spacing.md),
                           Expanded(
                             child: Text(
                               'agree_all_terms'.tr,
-                              style: robotoMedium.copyWith(
-                                fontSize: 12.5,
+                              style: AppTypography.small.copyWith(
                                 color: _checked
                                     ? primary
                                     : Colors.grey.shade700,
@@ -277,41 +270,16 @@ class _TermsScreenState extends State<_TermsScreen> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: Spacing.md),
 
                   // Start button
                   AnimatedOpacity(
                     opacity: _checked ? 1.0 : 0.45,
-                    duration: const Duration(milliseconds: 250),
-                    child: SizedBox(
-                      width: double.infinity,
-                      height: 52,
-                      child: ElevatedButton(
-                        onPressed: _checked ? widget.onAccepted : null,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: primary,
-                          foregroundColor: Colors.white,
-                          disabledBackgroundColor:
-                              primary.withValues(alpha: 0.4),
-                          elevation: _checked ? 4 : 0,
-                          shadowColor: primary.withValues(alpha: 0.4),
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14)),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              'start_adding_now'.tr,
-                              style: robotoBold.copyWith(
-                                  fontSize: 15, color: Colors.white),
-                            ),
-                            const SizedBox(width: 10),
-                            const Icon(Icons.arrow_forward_rounded,
-                                size: 18),
-                          ],
-                        ),
-                      ),
+                    duration: AnimSpec.dialog,
+                    child: DSPrimaryButton(
+                      label: 'start_adding_now'.tr,
+                      icon: Icons.arrow_forward_rounded,
+                      onPressed: _checked ? widget.onAccepted : null,
                     ),
                   ),
                 ],
@@ -334,36 +302,29 @@ class _TermItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.only(bottom: Spacing.md),
+      padding: const EdgeInsets.all(CardSpec.padding),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
-              blurRadius: 8,
-              offset: const Offset(0, 2))
-        ],
+        borderRadius: BorderRadius.circular(AppRadius.large),
+        boxShadow: AppShadows.soft(blur: 8, opacity: 0.04),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(emoji, style: const TextStyle(fontSize: 22)),
-          const SizedBox(width: 14),
+          const SizedBox(width: Spacing.md),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(title,
-                    style: robotoBold.copyWith(
-                        fontSize: 13, color: const Color(0xFF1A2340))),
-                const SizedBox(height: 4),
+                    style: AppTypography.smallBold
+                        .copyWith(color: const Color(0xFF1A2340))),
+                const SizedBox(height: Spacing.xs),
                 Text(body,
-                    style: robotoRegular.copyWith(
-                        fontSize: 12,
-                        color: Colors.grey.shade600,
-                        height: 1.55)),
+                    style: AppTypography.caption.copyWith(
+                        color: Colors.grey.shade600, height: 1.55)),
               ],
             ),
           ),
@@ -492,9 +453,9 @@ class _WizardScreenState extends State<_WizardScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   CircularProgressIndicator(color: primary),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: Spacing.lg),
                   Text('loading_data'.tr,
-                      style: robotoRegular.copyWith(color: Colors.grey)),
+                      style: AppTypography.small.copyWith(color: Colors.grey)),
                 ],
               ),
             ),
@@ -556,32 +517,37 @@ class _WizardScreenState extends State<_WizardScreen> {
         bottom: false,
         child: Column(
           children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(8, 6, 8, 0),
-              child: Row(
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.arrow_back_ios_rounded,
-                        color: Colors.white, size: 20),
-                    onPressed: _goBack,
-                  ),
-                  Expanded(
-                    child: Text(
-                      'add_service_inside_estate'.tr,
-                      style: robotoBold.copyWith(
-                          fontSize: 16, color: Colors.white),
-                      textAlign: TextAlign.center,
+            SizedBox(
+              height: AppBarSpec.height,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: Spacing.sm),
+                child: Row(
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.arrow_back_ios_rounded,
+                          color: Colors.white, size: IconSpec.small),
+                      onPressed: _goBack,
                     ),
-                  ),
-                  const SizedBox(width: 48),
-                ],
+                    Expanded(
+                      child: Text(
+                        'add_service_inside_estate'.tr,
+                        style: AppTypography.bodyBold.copyWith(color: Colors.white),
+                        textAlign: TextAlign.center,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    const SizedBox(width: 48),
+                  ],
+                ),
               ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: Spacing.sm),
 
             // Step indicators
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+              padding: const EdgeInsets.fromLTRB(
+                  Spacing.pagePadding, 0, Spacing.pagePadding, Spacing.xl),
               child: Row(
                 children: List.generate(_totalSteps * 2 - 1, (i) {
                   if (i.isOdd) {
@@ -625,42 +591,42 @@ class _WizardScreenState extends State<_WizardScreen> {
 
     return Container(
       padding: EdgeInsets.fromLTRB(
-        20, 12, 20, 12 + MediaQuery.of(context).padding.bottom,
+        Spacing.pagePadding,
+        Spacing.md,
+        Spacing.pagePadding,
+        Spacing.md + MediaQuery.of(context).padding.bottom,
       ),
       decoration: BoxDecoration(
         color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.08),
-            blurRadius: 16,
-            offset: const Offset(0, -4),
-          )
-        ],
+        boxShadow: AppShadows.soft(blur: 16, opacity: 0.08),
       ),
       child: Row(
         children: [
           if (_step > 0)
-            OutlinedButton(
-              onPressed: _goBack,
-              style: OutlinedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 20, vertical: 14),
-                side: BorderSide(color: Colors.grey.shade300),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14)),
-              ),
-              child: Row(
-                children: [
-                  Icon(Icons.arrow_back_rounded,
-                      size: 16, color: Colors.grey.shade600),
-                  const SizedBox(width: 6),
-                  Text('previous'.tr,
-                      style: robotoMedium.copyWith(
-                          color: Colors.grey.shade700, fontSize: 13)),
-                ],
+            SizedBox(
+              height: ButtonSpec.primaryHeight,
+              child: OutlinedButton(
+                onPressed: _goBack,
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: Spacing.lg),
+                  side: BorderSide(color: Colors.grey.shade300),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(ButtonSpec.radius)),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.arrow_back_rounded,
+                        size: IconSpec.small, color: Colors.grey.shade600),
+                    const SizedBox(width: Spacing.xs),
+                    Text('previous'.tr,
+                        style: AppTypography.smallMedium
+                            .copyWith(color: Colors.grey.shade700)),
+                  ],
+                ),
               ),
             ),
-          if (_step > 0) const SizedBox(width: 12),
+          if (_step > 0) const SizedBox(width: Spacing.md),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.end,
@@ -668,8 +634,7 @@ class _WizardScreenState extends State<_WizardScreen> {
               children: [
                 if (isLast && total > 0) ...[
                   Text('total'.tr,
-                      style: robotoRegular.copyWith(
-                          fontSize: 10, color: Colors.grey)),
+                      style: AppTypography.badge.copyWith(color: Colors.grey)),
                   c.isPriceLoading
                       ? const SizedBox(
                           height: 18,
@@ -677,46 +642,15 @@ class _WizardScreenState extends State<_WizardScreen> {
                           child: CircularProgressIndicator(strokeWidth: 2))
                       : Text(
                           '${total.toStringAsFixed(0)} ريال',
-                          style: robotoBold.copyWith(
-                              fontSize: 18, color: primary),
+                          style: AppTypography.subtitle
+                              .copyWith(color: primary, fontWeight: FontWeight.w700),
                         ),
                 ],
-                SizedBox(
-                  width: double.infinity,
-                  height: 50,
-                  child: c.isSubmitting
-                      ? Center(
-                          child: CircularProgressIndicator(color: primary))
-                      : ElevatedButton(
-                          onPressed: canNext ? () => _goNext(c) : null,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: primary,
-                            foregroundColor: Colors.white,
-                            disabledBackgroundColor:
-                                primary.withValues(alpha: 0.35),
-                            elevation: canNext ? 3 : 0,
-                            shadowColor: primary.withValues(alpha: 0.4),
-                            shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(14)),
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text(
-                                isLast ? 'complete_and_pay'.tr : 'next'.tr,
-                                style: robotoBold.copyWith(
-                                    fontSize: 15, color: Colors.white),
-                              ),
-                              const SizedBox(width: 8),
-                              Icon(
-                                isLast
-                                    ? Icons.payments_outlined
-                                    : Icons.arrow_forward_rounded,
-                                size: 18,
-                              ),
-                            ],
-                          ),
-                        ),
+                DSPrimaryButton(
+                  label: isLast ? 'complete_and_pay'.tr : 'next'.tr,
+                  icon: isLast ? Icons.payments_outlined : Icons.arrow_forward_rounded,
+                  loading: c.isSubmitting,
+                  onPressed: canNext ? () => _goNext(c) : null,
                 ),
               ],
             ),
@@ -749,7 +683,7 @@ class _StepDot extends StatelessWidget {
     return Column(
       children: [
         AnimatedContainer(
-          duration: const Duration(milliseconds: 300),
+          duration: AnimSpec.card,
           width: isActive ? 44 : 32,
           height: isActive ? 44 : 32,
           decoration: BoxDecoration(
@@ -759,14 +693,7 @@ class _StepDot extends StatelessWidget {
                     ? Colors.white
                     : Colors.white.withValues(alpha: 0.2),
             shape: BoxShape.circle,
-            boxShadow: isActive
-                ? [
-                    BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.2),
-                        blurRadius: 10,
-                        offset: const Offset(0, 3))
-                  ]
-                : null,
+            boxShadow: isActive ? AppShadows.soft(blur: 10, opacity: 0.2) : null,
           ),
           child: Center(
             child: isDone
@@ -780,11 +707,10 @@ class _StepDot extends StatelessWidget {
                   ),
           ),
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: Spacing.xs),
         Text(
           label,
-          style: (isActive ? robotoMedium : robotoRegular).copyWith(
-            fontSize: 10,
+          style: (isActive ? AppTypography.badge.copyWith(fontWeight: FontWeight.w600) : AppTypography.badge).copyWith(
             color: isActive
                 ? Colors.white
                 : Colors.white.withValues(alpha: 0.6),
@@ -817,7 +743,7 @@ class _Step1ServiceInfo extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
+      padding: const EdgeInsets.all(Spacing.pagePadding),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -827,7 +753,7 @@ class _Step1ServiceInfo extends StatelessWidget {
             subtitle: 'enter_basic_service_info'.tr,
             primary: primary,
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: Spacing.xl),
 
           // Image picker
           _Card(
@@ -835,7 +761,7 @@ class _Step1ServiceInfo extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _FieldLabel('صورة العرض', icon: Icons.image_outlined),
-                const SizedBox(height: 10),
+                const SizedBox(height: Spacing.sm),
                 GestureDetector(
                   onTap: controller.pickImage,
                   child: Container(
@@ -843,13 +769,13 @@ class _Step1ServiceInfo extends StatelessWidget {
                     width: double.infinity,
                     decoration: BoxDecoration(
                       color: const Color(0xFFF4F6FB),
-                      borderRadius: BorderRadius.circular(14),
+                      borderRadius: BorderRadius.circular(AppRadius.medium),
                       border: Border.all(
                           color: Colors.grey.withValues(alpha: 0.25)),
                     ),
                     child: controller.pickedImage != null
                         ? ClipRRect(
-                            borderRadius: BorderRadius.circular(14),
+                            borderRadius: BorderRadius.circular(AppRadius.medium),
                             child: Image.file(
                               File(controller.pickedImage!.path),
                               fit: BoxFit.cover,
@@ -860,27 +786,27 @@ class _Step1ServiceInfo extends StatelessWidget {
                             children: [
                               Icon(Icons.add_photo_alternate_outlined,
                                   size: 40, color: primary.withValues(alpha: 0.5)),
-                              const SizedBox(height: 8),
+                              const SizedBox(height: Spacing.sm),
                               Text('tap_to_choose_image'.tr,
-                                  style: robotoRegular.copyWith(
-                                      fontSize: 12, color: Colors.grey)),
+                                  style: AppTypography.caption
+                                      .copyWith(color: Colors.grey)),
                             ],
                           ),
                   ),
                 ),
                 if (controller.pickedImage != null) ...[
-                  const SizedBox(height: 8),
+                  const SizedBox(height: Spacing.sm),
                   TextButton.icon(
                     onPressed: controller.pickImage,
-                    icon: const Icon(Icons.swap_horiz_rounded, size: 16),
-                    label: Text('change_image'.tr),
+                    icon: const Icon(Icons.swap_horiz_rounded, size: IconSpec.small),
+                    label: Text('change_image'.tr, style: AppTypography.smallMedium),
                     style: TextButton.styleFrom(foregroundColor: primary),
                   ),
                 ],
               ],
             ),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: Spacing.md),
 
           // Service type
           _Card(
@@ -888,7 +814,7 @@ class _Step1ServiceInfo extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _FieldLabel('نوع الخدمة', icon: Icons.category_outlined),
-                const SizedBox(height: 10),
+                const SizedBox(height: Spacing.sm),
                 AppDropdown<int>(
                   value: controller.selectedServiceTypeIndex >= 0
                       ? controller.selectedServiceTypeIndex
@@ -909,7 +835,7 @@ class _Step1ServiceInfo extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: Spacing.md),
 
           // Title
           _Card(
@@ -917,16 +843,16 @@ class _Step1ServiceInfo extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _FieldLabel('عنوان العرض', icon: Icons.title_rounded),
-                const SizedBox(height: 10),
-                MyTextField(
+                const SizedBox(height: Spacing.sm),
+                _dsTextField(
+                  context,
                   hintText: 'اكتب عنواناً واضحاً للعرض',
                   controller: titleCtrl,
-                  showBorder: true,
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: Spacing.md),
 
           // Offer type
           _Card(
@@ -934,7 +860,7 @@ class _Step1ServiceInfo extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _FieldLabel('نوع العرض', icon: Icons.sell_outlined),
-                const SizedBox(height: 12),
+                const SizedBox(height: Spacing.md),
                 Row(
                   children: [
                     _OfferTypeCard(
@@ -946,7 +872,7 @@ class _Step1ServiceInfo extends StatelessWidget {
                       sub: 'سعر ثابت ومحدد',
                       primary: primary,
                     ),
-                    const SizedBox(width: 10),
+                    const SizedBox(width: Spacing.sm),
                     _OfferTypeCard(
                       controller: controller,
                       type: 'discount',
@@ -957,26 +883,26 @@ class _Step1ServiceInfo extends StatelessWidget {
                     ),
                   ],
                 ),
-                const SizedBox(height: 14),
+                const SizedBox(height: Spacing.md),
                 _FieldLabel(
                   controller.offerType == 'discount'
                       ? 'نسبة الخصم (%)'
                       : 'السعر (ريال)',
                   icon: Icons.numbers_rounded,
                 ),
-                const SizedBox(height: 8),
-                MyTextField(
+                const SizedBox(height: Spacing.sm),
+                _dsTextField(
+                  context,
                   hintText: controller.offerType == 'discount'
                       ? 'مثال: 20'
                       : 'مثال: 500',
                   controller: valueCtrl,
-                  inputType: TextInputType.number,
-                  showBorder: true,
+                  keyboardType: TextInputType.number,
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: Spacing.md),
 
           // Description
           _Card(
@@ -984,17 +910,17 @@ class _Step1ServiceInfo extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _FieldLabel('وصف الخدمة', icon: Icons.description_outlined),
-                const SizedBox(height: 10),
-                MyTextField(
+                const SizedBox(height: Spacing.sm),
+                _dsTextField(
+                  context,
                   hintText: 'اكتب وصفاً احترافياً وتفصيلياً للخدمة...',
                   controller: descCtrl,
                   maxLines: 4,
-                  showBorder: true,
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 80),
+          const SizedBox(height: Spacing.xxl),
         ],
       ),
     );
@@ -1014,7 +940,7 @@ class _Step2Plan extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
+      padding: const EdgeInsets.all(Spacing.pagePadding),
       child: Column(
         children: [
           _StepHeader(
@@ -1023,32 +949,27 @@ class _Step2Plan extends StatelessWidget {
             subtitle: 'choose_plan_subtitle'.tr,
             primary: primary,
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: Spacing.xl),
           ...List.generate(controller.servicePlans.length, (i) {
             final ServicePlanModel plan = controller.servicePlans[i];
             final selected = i == controller.selectedPlanIndex;
             return GestureDetector(
               onTap: () => controller.selectPlan(i),
               child: AnimatedContainer(
-                duration: const Duration(milliseconds: 250),
-                margin: const EdgeInsets.only(bottom: 14),
-                padding: const EdgeInsets.all(18),
+                duration: AnimSpec.card,
+                margin: const EdgeInsets.only(bottom: Spacing.md),
+                padding: const EdgeInsets.all(CardSpec.padding),
                 decoration: BoxDecoration(
                   color: selected
                       ? primary.withValues(alpha: 0.06)
                       : Colors.white,
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(AppRadius.large),
                   border: Border.all(
                     color: selected ? primary : Colors.grey.shade200,
                     width: selected ? 2 : 1,
                   ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: selected ? 0.08 : 0.04),
-                      blurRadius: selected ? 16 : 8,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
+                  boxShadow: AppShadows.soft(
+                      blur: selected ? 16 : 8, opacity: selected ? 0.08 : 0.04),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -1066,22 +987,21 @@ class _Step2Plan extends StatelessWidget {
                           ),
                           child: Icon(Icons.workspace_premium_rounded,
                               color: selected ? Colors.white : Colors.grey,
-                              size: 22),
+                              size: IconSpec.defaultSize),
                         ),
-                        const SizedBox(width: 12),
+                        const SizedBox(width: Spacing.md),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(plan.name ?? '',
-                                  style: robotoBold.copyWith(
-                                      fontSize: 15,
-                                      color: const Color(0xFF1A2340))),
+                                  style: AppTypography.bodyBold
+                                      .copyWith(color: const Color(0xFF1A2340))),
                               const SizedBox(height: 2),
                               Text(
                                 '${plan.price?.toStringAsFixed(0)} ${'sar_per_month'.tr}',
-                                style: robotoBold.copyWith(
-                                    fontSize: 18, color: primary),
+                                style: AppTypography.subtitle.copyWith(
+                                    color: primary, fontWeight: FontWeight.w700),
                               ),
                             ],
                           ),
@@ -1096,12 +1016,12 @@ class _Step2Plan extends StatelessWidget {
                           ),
                       ],
                     ),
-                    const SizedBox(height: 14),
+                    const SizedBox(height: Spacing.md),
                     const Divider(height: 1),
-                    const SizedBox(height: 14),
+                    const SizedBox(height: Spacing.md),
                     Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
+                      spacing: Spacing.sm,
+                      runSpacing: Spacing.sm,
                       children: [
                         _PlanFeature('${plan.numberOfAds ?? 0} إعلانات',
                             Icons.campaign_outlined, primary, selected),
@@ -1128,7 +1048,7 @@ class _Step2Plan extends StatelessWidget {
               ),
             );
           }),
-          const SizedBox(height: 60),
+          const SizedBox(height: Spacing.xxxl),
         ],
       ),
     );
@@ -1145,12 +1065,12 @@ class _PlanFeature extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: Spacing.sm, vertical: Spacing.xs),
       decoration: BoxDecoration(
         color: selected
             ? primary.withValues(alpha: 0.1)
             : Colors.grey.shade50,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(ChipSpec.radius),
         border: Border.all(
           color: selected ? primary.withValues(alpha: 0.3) : Colors.grey.shade200,
         ),
@@ -1162,8 +1082,8 @@ class _PlanFeature extends StatelessWidget {
               size: 13, color: selected ? primary : Colors.grey.shade500),
           const SizedBox(width: 5),
           Text(label,
-              style: robotoMedium.copyWith(
-                  fontSize: 11,
+              style: AppTypography.badge.copyWith(
+                  fontWeight: FontWeight.w600,
                   color: selected ? primary : Colors.grey.shade600)),
         ],
       ),
@@ -1188,7 +1108,7 @@ class _Step3ZoneCategory extends StatelessWidget {
     final allowedCats = plan?.numberOfCategories ?? 0;
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
+      padding: const EdgeInsets.all(Spacing.pagePadding),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1198,7 +1118,7 @@ class _Step3ZoneCategory extends StatelessWidget {
             subtitle: 'zones_categories_subtitle'.tr,
             primary: primary,
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: Spacing.xl),
 
           _Card(
             child: Column(
@@ -1215,10 +1135,10 @@ class _Step3ZoneCategory extends StatelessWidget {
                           primary: primary),
                   ],
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: Spacing.md),
                 Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
+                  spacing: Spacing.sm,
+                  runSpacing: Spacing.sm,
                   children: controller.zones.map((z) {
                     final selected =
                         controller.selectedZoneIds.contains(z.id);
@@ -1239,7 +1159,7 @@ class _Step3ZoneCategory extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: Spacing.md),
 
           _Card(
             child: Column(
@@ -1257,10 +1177,10 @@ class _Step3ZoneCategory extends StatelessWidget {
                           primary: primary),
                   ],
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: Spacing.md),
                 Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
+                  spacing: Spacing.sm,
+                  runSpacing: Spacing.sm,
                   children: controller.categories.map((cat) {
                     final selected =
                         controller.selectedCategoryIds.contains(cat.id);
@@ -1278,7 +1198,7 @@ class _Step3ZoneCategory extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(height: 80),
+          const SizedBox(height: Spacing.xxl),
         ],
       ),
     );
@@ -1314,7 +1234,7 @@ class _Step4Review extends StatelessWidget {
     ];
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
+      padding: const EdgeInsets.all(Spacing.pagePadding),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1324,7 +1244,7 @@ class _Step4Review extends StatelessWidget {
             subtitle: 'review_subtitle'.tr,
             primary: primary,
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: Spacing.xl),
 
           // Summary card
           _Card(
@@ -1332,7 +1252,7 @@ class _Step4Review extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _FieldLabel('offer_summary'.tr, icon: Icons.summarize_outlined),
-                const SizedBox(height: 14),
+                const SizedBox(height: Spacing.md),
                 _ReviewRow('العنوان', titleCtrl.text.trim()),
                 _ReviewRow(
                   'نوع العرض',
@@ -1358,7 +1278,7 @@ class _Step4Review extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: Spacing.md),
 
           // Duration
           _Card(
@@ -1367,13 +1287,13 @@ class _Step4Review extends StatelessWidget {
               children: [
                 _FieldLabel('subscription_duration'.tr,
                     icon: Icons.calendar_month_outlined),
-                const SizedBox(height: 12),
+                const SizedBox(height: Spacing.md),
                 GridView.count(
                   crossAxisCount: 2,
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
-                  crossAxisSpacing: 10,
-                  mainAxisSpacing: 10,
+                  crossAxisSpacing: Spacing.sm,
+                  mainAxisSpacing: Spacing.sm,
                   childAspectRatio: 2.4,
                   children: durations.map((d) {
                     final selected =
@@ -1382,10 +1302,10 @@ class _Step4Review extends StatelessWidget {
                       onTap: () =>
                           controller.selectDuration(d['v'] as int),
                       child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 200),
+                        duration: AnimSpec.card,
                         decoration: BoxDecoration(
                           color: selected ? primary : Colors.grey.shade50,
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(AppRadius.medium),
                           border: Border.all(
                             color: selected
                                 ? primary
@@ -1396,8 +1316,7 @@ class _Step4Review extends StatelessWidget {
                         child: Center(
                           child: Text(
                             d['l'] as String,
-                            style: robotoMedium.copyWith(
-                              fontSize: 13,
+                            style: AppTypography.smallMedium.copyWith(
                               color: selected
                                   ? Colors.white
                                   : Colors.grey.shade700,
@@ -1409,26 +1328,25 @@ class _Step4Review extends StatelessWidget {
                   }).toList(),
                 ),
                 if (controller.expiryDateText.isNotEmpty) ...[
-                  const SizedBox(height: 14),
+                  const SizedBox(height: Spacing.md),
                   Container(
-                    padding: const EdgeInsets.all(12),
+                    padding: const EdgeInsets.all(Spacing.md),
                     decoration: BoxDecoration(
                       color: primary.withValues(alpha: 0.06),
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(AppRadius.medium),
                       border: Border.all(
                           color: primary.withValues(alpha: 0.2)),
                     ),
                     child: Row(
                       children: [
                         Icon(Icons.event_available_rounded,
-                            color: primary, size: 18),
-                        const SizedBox(width: 10),
+                            color: primary, size: IconSpec.small),
+                        const SizedBox(width: Spacing.sm),
                         Text('${'subscription_expires'.tr}: ',
-                            style: robotoRegular.copyWith(
-                                fontSize: 12, color: Colors.grey.shade600)),
+                            style: AppTypography.caption
+                                .copyWith(color: Colors.grey.shade600)),
                         Text(controller.expiryDateText,
-                            style: robotoBold.copyWith(
-                                fontSize: 13, color: primary)),
+                            style: AppTypography.smallBold.copyWith(color: primary)),
                       ],
                     ),
                   ),
@@ -1436,7 +1354,7 @@ class _Step4Review extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(height: 80),
+          const SizedBox(height: Spacing.xxl),
         ],
       ),
     );
@@ -1451,18 +1369,17 @@ class _ReviewRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.only(bottom: Spacing.sm),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text('$label:',
-              style: robotoMedium.copyWith(
-                  fontSize: 12, color: Colors.grey.shade600)),
-          const SizedBox(width: 8),
+              style: AppTypography.captionMedium.copyWith(color: Colors.grey.shade600)),
+          const SizedBox(width: Spacing.sm),
           Expanded(
             child: Text(value,
-                style: robotoMedium.copyWith(
-                    fontSize: 12, color: const Color(0xFF1A2340))),
+                style: AppTypography.captionMedium
+                    .copyWith(color: const Color(0xFF1A2340))),
           ),
         ],
       ),
@@ -1473,6 +1390,24 @@ class _ReviewRow extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 // SHARED WIDGETS
 // ─────────────────────────────────────────────────────────────────────────────
+
+/// حقل نصي محلي بمقاييس النظام (Height 56 / Radius 12) بدل MyTextField
+/// المشترك (Radius 8) — استبدال محصور بهذه الشاشة فقط.
+Widget _dsTextField(
+  BuildContext context, {
+  required String hintText,
+  required TextEditingController controller,
+  TextInputType keyboardType = TextInputType.text,
+  int maxLines = 1,
+}) {
+  return TextFormField(
+    controller: controller,
+    keyboardType: keyboardType,
+    maxLines: maxLines,
+    style: AppTypography.body.copyWith(color: AppColors.textPrimary(context)),
+    decoration: dsInputDecoration(context, hint: hintText),
+  );
+}
 
 class _StepHeader extends StatelessWidget {
   final IconData icon;
@@ -1494,22 +1429,21 @@ class _StepHeader extends StatelessWidget {
           height: 48,
           decoration: BoxDecoration(
             color: primary.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(AppRadius.medium),
           ),
-          child: Icon(icon, color: primary, size: 24),
+          child: Icon(icon, color: primary, size: IconSpec.defaultSize),
         ),
-        const SizedBox(width: 14),
+        const SizedBox(width: Spacing.md),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(title,
-                  style: robotoBold.copyWith(
-                      fontSize: 17, color: const Color(0xFF1A2340))),
+                  style: AppTypography.title
+                      .copyWith(color: const Color(0xFF1A2340))),
               const SizedBox(height: 3),
               Text(subtitle,
-                  style: robotoRegular.copyWith(
-                      fontSize: 12, color: Colors.grey.shade500)),
+                  style: AppTypography.caption.copyWith(color: Colors.grey.shade500)),
             ],
           ),
         ),
@@ -1526,16 +1460,11 @@ class _Card extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.all(CardSpec.padding),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        boxShadow: [
-          BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
-              blurRadius: 10,
-              offset: const Offset(0, 3))
-        ],
+        borderRadius: BorderRadius.circular(AppRadius.large),
+        boxShadow: AppShadows.soft(blur: 10, opacity: 0.04),
       ),
       child: child,
     );
@@ -1551,11 +1480,11 @@ class _FieldLabel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Icon(icon, size: 16, color: Theme.of(context).primaryColor),
-        const SizedBox(width: 6),
+        Icon(icon, size: IconSpec.small, color: Theme.of(context).primaryColor),
+        const SizedBox(width: Spacing.xs),
         Text(text,
-            style: robotoMedium.copyWith(
-                fontSize: 13, color: const Color(0xFF1A2340))),
+            style: AppTypography.small
+                .copyWith(color: const Color(0xFF1A2340))),
       ],
     );
   }
@@ -1586,11 +1515,11 @@ class _OfferTypeCard extends StatelessWidget {
       child: GestureDetector(
         onTap: () => controller.setOfferType(type),
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          padding: const EdgeInsets.all(14),
+          duration: AnimSpec.button,
+          padding: const EdgeInsets.all(Spacing.md),
           decoration: BoxDecoration(
             color: selected ? primary.withValues(alpha: 0.08) : Colors.grey.shade50,
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(AppRadius.medium),
             border: Border.all(
               color: selected ? primary : Colors.grey.shade200,
               width: selected ? 1.5 : 1,
@@ -1602,22 +1531,20 @@ class _OfferTypeCard extends StatelessWidget {
               useRiyalIcon
                   ? Image.asset(
                       'assets/image/riyals.png',
-                      width: 20,
-                      height: 20,
+                      width: IconSpec.small,
+                      height: IconSpec.small,
                       color: selected ? primary : Colors.grey.shade400,
                     )
                   : Icon(icon,
-                      size: 20,
+                      size: IconSpec.small,
                       color: selected ? primary : Colors.grey.shade400),
-              const SizedBox(height: 8),
+              const SizedBox(height: Spacing.sm),
               Text(title,
-                  style: robotoBold.copyWith(
-                      fontSize: 13,
+                  style: AppTypography.smallBold.copyWith(
                       color: selected ? primary : Colors.grey.shade800)),
               const SizedBox(height: 3),
               Text(sub,
-                  style: robotoRegular.copyWith(
-                      fontSize: 10, color: Colors.grey.shade500)),
+                  style: AppTypography.badge.copyWith(color: Colors.grey.shade500)),
             ],
           ),
         ),
@@ -1642,19 +1569,18 @@ class _SelectChip extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        duration: AnimSpec.tap,
+        padding: const EdgeInsets.symmetric(horizontal: Spacing.md, vertical: Spacing.sm),
         decoration: BoxDecoration(
           color: selected ? primary : Colors.grey.shade50,
-          borderRadius: BorderRadius.circular(22),
+          borderRadius: BorderRadius.circular(ChipSpec.radius),
           border: Border.all(
               color: selected ? primary : Colors.grey.shade200,
               width: selected ? 1.5 : 1),
         ),
         child: Text(label,
-            style: robotoMedium.copyWith(
-                fontSize: 12,
-                color: selected ? Colors.white : Colors.grey.shade700)),
+            style: AppTypography.captionMedium
+                .copyWith(color: selected ? Colors.white : Colors.grey.shade700)),
       ),
     );
   }
@@ -1671,22 +1597,22 @@ class _LimitBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     final over = current > max;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: Spacing.sm, vertical: Spacing.xs),
       decoration: BoxDecoration(
         color: over
-            ? Colors.orange.withValues(alpha: 0.12)
+            ? AppColors.warning.withValues(alpha: 0.12)
             : primary.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(ChipSpec.radius),
         border: Border.all(
             color: over
-                ? Colors.orange.withValues(alpha: 0.4)
+                ? AppColors.warning.withValues(alpha: 0.4)
                 : primary.withValues(alpha: 0.25)),
       ),
       child: Text(
         '$current / $max',
-        style: robotoMedium.copyWith(
-            fontSize: 11,
-            color: over ? Colors.orange.shade700 : primary),
+        style: AppTypography.badge.copyWith(
+            fontWeight: FontWeight.w600,
+            color: over ? AppColors.warning : primary),
       ),
     );
   }
@@ -1699,22 +1625,21 @@ class _OverLimitWarning extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.only(top: 10),
-      padding: const EdgeInsets.all(10),
+      margin: const EdgeInsets.only(top: Spacing.sm),
+      padding: const EdgeInsets.all(Spacing.sm),
       decoration: BoxDecoration(
-        color: Colors.orange.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
+        color: AppColors.warning.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(AppRadius.small),
+        border: Border.all(color: AppColors.warning.withValues(alpha: 0.3)),
       ),
       child: Row(
         children: [
           Icon(Icons.info_outline_rounded,
-              size: 15, color: Colors.orange.shade700),
-          const SizedBox(width: 8),
+              size: 15, color: AppColors.warning),
+          const SizedBox(width: Spacing.sm),
           Expanded(
             child: Text(message,
-                style: robotoRegular.copyWith(
-                    fontSize: 11, color: Colors.orange.shade800)),
+                style: AppTypography.caption.copyWith(color: AppColors.warning)),
           ),
         ],
       ),

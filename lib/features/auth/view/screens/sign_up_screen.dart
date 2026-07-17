@@ -1,14 +1,13 @@
-﻿import 'dart:convert';
+import 'dart:convert';
 
 import 'package:abaad_flutter/features/auth/controller/auth_controller.dart';
 import 'package:abaad_flutter/shared/controllers/splash_controller.dart';
 import 'package:abaad_flutter/features/auth/data/models/signup_body.dart';
 import 'package:abaad_flutter/shared/helpers/responsive_helper.dart';
 import 'package:abaad_flutter/core/routes/route_helper.dart';
+import 'package:abaad_flutter/shared/theme/design_system.dart';
 import 'package:abaad_flutter/shared/utils/images.dart';
-import 'package:abaad_flutter/shared/utils/styles.dart';
 import 'package:abaad_flutter/shared/widgets/app_dropdown.dart';
-import 'package:abaad_flutter/shared/widgets/custom_button.dart';
 import 'package:abaad_flutter/shared/widgets/custom_snackbar.dart';
 import 'package:abaad_flutter/shared/widgets/web_menu_bar.dart';
 import 'package:flutter/material.dart';
@@ -68,6 +67,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
           : AppBar(
               backgroundColor: Colors.transparent,
               elevation: 0,
+              toolbarHeight: AppBarSpec.height,
               leading: IconButton(
                 onPressed: () => Get.back(),
                 icon: const Icon(Icons.arrow_back_ios_rounded, color: Colors.white),
@@ -106,7 +106,12 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     return Center(
                       child: SingleChildScrollView(
                         physics: const BouncingScrollPhysics(),
-                        padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
+                        padding: const EdgeInsets.fromLTRB(
+                          Spacing.pagePadding,
+                          Spacing.md,
+                          Spacing.pagePadding,
+                          Spacing.xxl,
+                        ),
                         child: ConstrainedBox(
                           constraints: BoxConstraints(maxWidth: maxWidth),
                           child: Form(
@@ -115,63 +120,49 @@ class _SignUpScreenState extends State<SignUpScreen> {
                               children: [
                                 // ── Logo ─────────────────────────────────
                                 Container(
-                                  width: 76,
-                                  height: 76,
+                                  width: AvatarSpec.profile,
+                                  height: AvatarSpec.profile,
                                   decoration: BoxDecoration(
                                     color: Colors.white,
-                                    borderRadius: BorderRadius.circular(20),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.black.withValues(alpha: 0.18),
-                                        blurRadius: 20,
-                                        offset: const Offset(0, 6),
-                                      ),
-                                    ],
+                                    borderRadius:
+                                        BorderRadius.circular(AppRadius.extraLarge),
+                                    boxShadow: AppShadows.soft(blur: 14, opacity: 0.1),
                                   ),
                                   child: Center(
-                                    child: Image.asset(Images.logo, width: 46),
+                                    child: Image.asset(Images.logo, width: 48),
                                   ),
                                 ),
-                                const SizedBox(height: 14),
+                                const SizedBox(height: Spacing.lg),
 
                                 Text(
                                   'sign_up'.tr,
-                                  style: robotoBold.copyWith(
-                                    fontSize: 22,
-                                    color: Colors.white,
-                                  ),
+                                  style: AppTypography.h3.copyWith(color: Colors.white),
                                 ),
-                                const SizedBox(height: 4),
+                                const SizedBox(height: Spacing.xs),
                                 Text(
                                   'complete_form_data'.tr,
                                   textAlign: TextAlign.center,
-                                  style: robotoRegular.copyWith(
-                                    fontSize: 13,
-                                    color: Colors.white.withValues(alpha: 0.82),
+                                  style: AppTypography.small.copyWith(
+                                    color: Colors.white.withValues(alpha: 0.85),
                                   ),
                                 ),
-                                const SizedBox(height: 24),
+                                const SizedBox(height: Spacing.xl),
 
                                 // ── Form card ─────────────────────────────
                                 Container(
-                                  padding: const EdgeInsets.all(20),
+                                  padding: const EdgeInsets.all(CardSpec.padding),
                                   decoration: BoxDecoration(
                                     color: Colors.white,
-                                    borderRadius: BorderRadius.circular(24),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.black.withValues(alpha: 0.07),
-                                        blurRadius: 20,
-                                        offset: const Offset(0, 6),
-                                      ),
-                                    ],
+                                    borderRadius:
+                                        BorderRadius.circular(AppRadius.large),
+                                    boxShadow: AppShadows.soft(blur: 12, opacity: 0.08),
                                   ),
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.stretch,
                                     children: [
                                       // Full name
                                       _fieldLabel('full_name'.tr),
-                                      const SizedBox(height: 7),
+                                      const SizedBox(height: Spacing.sm),
                                       _textField(
                                         controller: _fullNameController,
                                         focusNode: _firstNameFocus,
@@ -181,11 +172,11 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                         primary: primary,
                                         keyboardType: TextInputType.name,
                                       ),
-                                      const SizedBox(height: 14),
+                                      const SizedBox(height: Spacing.md),
 
                                       // Email
                                       _fieldLabel('email'.tr),
-                                      const SizedBox(height: 7),
+                                      const SizedBox(height: Spacing.sm),
                                       _textField(
                                         controller: _emailController,
                                         focusNode: _emailFocus,
@@ -195,17 +186,17 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                         primary: primary,
                                         keyboardType: TextInputType.emailAddress,
                                       ),
-                                      const SizedBox(height: 14),
+                                      const SizedBox(height: Spacing.md),
 
                                       // Phone
                                       _fieldLabel('phone'.tr),
-                                      const SizedBox(height: 7),
+                                      const SizedBox(height: Spacing.sm),
                                       _buildPhoneField(primary),
-                                      const SizedBox(height: 14),
+                                      const SizedBox(height: Spacing.md),
 
                                       // User type
                                       _fieldLabel('user_type'.tr),
-                                      const SizedBox(height: 7),
+                                      const SizedBox(height: Spacing.sm),
                                       AppDropdown<String>(
                                         value: _selectedUserType,
                                         hintText: 'please_select_user_type'.tr,
@@ -222,11 +213,11 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                         onChanged: (value) =>
                                             setState(() => _selectedUserType = value),
                                       ),
-                                      const SizedBox(height: 14),
+                                      const SizedBox(height: Spacing.md),
 
                                       // Registration type
                                       _fieldLabel('registration_type'.tr),
-                                      const SizedBox(height: 7),
+                                      const SizedBox(height: Spacing.sm),
                                       AppDropdown<String>(
                                         value: _registrationType,
                                         hintText: 'registration_type'.tr,
@@ -246,9 +237,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
                                       // Unified number (organization only)
                                       if (_registrationType == 'organization') ...[
-                                        const SizedBox(height: 14),
+                                        const SizedBox(height: Spacing.md),
                                         _fieldLabel('unified_number'.tr),
-                                        const SizedBox(height: 7),
+                                        const SizedBox(height: Spacing.sm),
                                         _textField(
                                           controller: _unifiedNumberController,
                                           focusNode: _unifiedNumberFocus,
@@ -263,17 +254,18 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                         ),
                                       ],
 
-                                      const SizedBox(height: 18),
+                                      const SizedBox(height: Spacing.lg),
 
                                       // Terms
                                       Container(
                                         padding: const EdgeInsets.symmetric(
-                                          horizontal: 12,
-                                          vertical: 10,
+                                          horizontal: Spacing.md,
+                                          vertical: Spacing.md,
                                         ),
                                         decoration: BoxDecoration(
                                           color: const Color(0xFFF9FAFB),
-                                          borderRadius: BorderRadius.circular(14),
+                                          borderRadius:
+                                              BorderRadius.circular(AppRadius.medium),
                                           border: Border.all(
                                             color: const Color(0xFFE5E7EB),
                                           ),
@@ -282,47 +274,24 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                           authController: authController,
                                         ),
                                       ),
-                                      const SizedBox(height: 20),
+                                      const SizedBox(height: Spacing.lg),
 
                                       // Register button
-                                      authController.isLoading
-                                          ? const Center(
-                                              child: CircularProgressIndicator())
-                                          : CustomButton(
-                                              margin: EdgeInsets.zero,
-                                              height: 52,
-                                              radius: 14,
-                                              buttonText: 'sign_up'.tr,
-                                              onPressed: authController.acceptTerms
-                                                  ? () => _register(authController)
-                                                  : null,
-                                            ),
-                                      const SizedBox(height: 10),
+                                      DSPrimaryButton(
+                                        label: 'sign_up'.tr,
+                                        loading: authController.isLoading,
+                                        onPressed: authController.acceptTerms
+                                            ? () => _register(authController)
+                                            : null,
+                                      ),
+                                      const SizedBox(height: Spacing.md),
 
                                       // Sign in link
-                                      SizedBox(
-                                        height: 52,
-                                        child: OutlinedButton(
-                                          onPressed: () => Get.toNamed(
-                                            RouteHelper.getSignInRoute(
-                                              RouteHelper.signUp,
-                                            ),
-                                          ),
-                                          style: OutlinedButton.styleFrom(
-                                            foregroundColor: primary,
-                                            side: BorderSide(
-                                              color: primary.withValues(alpha: 0.45),
-                                            ),
-                                            shape: RoundedRectangleBorder(
-                                              borderRadius: BorderRadius.circular(14),
-                                            ),
-                                          ),
-                                          child: Text(
-                                            'already_have_account'.tr,
-                                            style: robotoMedium.copyWith(
-                                              fontSize: 14,
-                                              color: primary,
-                                            ),
+                                      DSSecondaryButton(
+                                        label: 'already_have_account'.tr,
+                                        onPressed: () => Get.toNamed(
+                                          RouteHelper.getSignInRoute(
+                                            RouteHelper.signUp,
                                           ),
                                         ),
                                       ),
@@ -350,10 +319,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
   Widget _fieldLabel(String text) {
     return Text(
       text,
-      style: robotoMedium.copyWith(
-        fontSize: 13,
-        color: const Color(0xFF374151),
-      ),
+      style: AppTypography.small.copyWith(color: const Color(0xFF374151)),
     );
   }
 
@@ -368,13 +334,17 @@ class _SignUpScreenState extends State<SignUpScreen> {
     TextInputAction textInputAction = TextInputAction.next,
     List<TextInputFormatter>? inputFormatters,
   }) {
+    final border = OutlineInputBorder(
+      borderRadius: BorderRadius.circular(FieldSpec.radius),
+      borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+    );
     return TextFormField(
       controller: controller,
       focusNode: focusNode,
       keyboardType: keyboardType,
       textInputAction: textInputAction,
       inputFormatters: inputFormatters,
-      style: robotoMedium.copyWith(fontSize: 15, color: const Color(0xFF1A2340)),
+      style: AppTypography.body.copyWith(color: const Color(0xFF1A2340)),
       cursorColor: primary,
       onFieldSubmitted: (_) {
         if (nextFocus != null) {
@@ -385,67 +355,58 @@ class _SignUpScreenState extends State<SignUpScreen> {
       },
       decoration: InputDecoration(
         hintText: hint,
-        hintStyle: robotoRegular.copyWith(
-          fontSize: 14,
-          color: Colors.grey.shade400,
-        ),
-        prefixIcon: Icon(icon, color: primary, size: 20),
+        hintStyle: AppTypography.small.copyWith(color: Colors.grey.shade400),
+        prefixIcon: Icon(icon, color: primary, size: IconSpec.small),
         filled: true,
         fillColor: const Color(0xFFF9FAFB),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+        contentPadding: const EdgeInsets.symmetric(
+            horizontal: FieldSpec.padding, vertical: FieldSpec.padding),
+        border: border,
+        enabledBorder: border,
+        focusedBorder: border.copyWith(
+          borderSide: BorderSide(color: primary, width: 1.6),
         ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+        errorBorder: border.copyWith(
+          borderSide: const BorderSide(color: AppColors.danger),
         ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(color: primary, width: 1.5),
-        ),
-        errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: Colors.red),
-        ),
-        focusedErrorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: Colors.red, width: 1.3),
+        focusedErrorBorder: border.copyWith(
+          borderSide: const BorderSide(color: AppColors.danger, width: 1.6),
         ),
       ),
     );
   }
 
   Widget _buildPhoneField(Color primary) {
+    final border = OutlineInputBorder(
+      borderRadius: BorderRadius.circular(FieldSpec.radius),
+      borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+    );
     return Directionality(
       textDirection: TextDirection.ltr,
       child: Row(
         children: [
           Container(
-            height: 54,
-            padding: const EdgeInsets.symmetric(horizontal: 12),
+            height: FieldSpec.height,
+            padding: const EdgeInsets.symmetric(horizontal: Spacing.md),
             decoration: BoxDecoration(
               color: const Color(0xFFF3F4F6),
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(FieldSpec.radius),
               border: Border.all(color: const Color(0xFFE5E7EB)),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Image.asset(Images.saudi_flag, width: 26, height: 26),
-                const SizedBox(width: 6),
+                const SizedBox(width: Spacing.xs),
                 Text(
                   '+966',
-                  style: robotoBold.copyWith(
-                    fontSize: 14,
-                    color: const Color(0xFF1A2340),
-                  ),
+                  style: AppTypography.bodyBold
+                      .copyWith(color: const Color(0xFF1A2340)),
                 ),
               ],
             ),
           ),
-          const SizedBox(width: 10),
+          const SizedBox(width: Spacing.sm),
           Expanded(
             child: TextFormField(
               controller: _phoneController,
@@ -454,10 +415,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
               textDirection: TextDirection.ltr,
               textAlign: TextAlign.left,
               textInputAction: TextInputAction.next,
-              style: robotoMedium.copyWith(
-                fontSize: 16,
-                color: const Color(0xFF1A2340),
-              ),
+              style: AppTypography.body.copyWith(color: const Color(0xFF1A2340)),
               cursorColor: primary,
               inputFormatters: [
                 FilteringTextInputFormatter.digitsOnly,
@@ -474,35 +432,23 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   FocusScope.of(context).requestFocus(_unifiedNumberFocus),
               decoration: InputDecoration(
                 hintText: '5XXXXXXXX',
-                hintStyle: robotoRegular.copyWith(
-                  fontSize: 14,
-                  color: Colors.grey.shade400,
-                ),
+                hintStyle: AppTypography.small.copyWith(color: Colors.grey.shade400),
                 filled: true,
                 fillColor: const Color(0xFFF9FAFB),
                 contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 16,
+                  horizontal: FieldSpec.padding,
+                  vertical: FieldSpec.padding,
                 ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
-                  borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+                border: border,
+                enabledBorder: border,
+                focusedBorder: border.copyWith(
+                  borderSide: BorderSide(color: primary, width: 1.6),
                 ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
-                  borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+                errorBorder: border.copyWith(
+                  borderSide: const BorderSide(color: AppColors.danger),
                 ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
-                  borderSide: BorderSide(color: primary, width: 1.5),
-                ),
-                errorBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
-                  borderSide: const BorderSide(color: Colors.red),
-                ),
-                focusedErrorBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
-                  borderSide: const BorderSide(color: Colors.red, width: 1.3),
+                focusedErrorBorder: border.copyWith(
+                  borderSide: const BorderSide(color: AppColors.danger, width: 1.6),
                 ),
               ),
             ),

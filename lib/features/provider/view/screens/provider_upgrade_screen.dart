@@ -1,9 +1,8 @@
 import 'package:abaad_flutter/core/routes/route_helper.dart';
 import 'package:abaad_flutter/features/auth/controller/auth_controller.dart';
 import 'package:abaad_flutter/features/provider/controller/service_offer_controller.dart';
-import 'package:abaad_flutter/shared/utils/styles.dart';
+import 'package:abaad_flutter/shared/theme/design_system.dart';
 import 'package:abaad_flutter/shared/widgets/gradient_module_app_bar.dart';
-import 'package:abaad_flutter/shared/widgets/my_text_field.dart';
 import 'package:abaad_flutter/shared/widgets/not_logged_in_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -76,23 +75,24 @@ class _ProviderUpgradeScreenState extends State<ProviderUpgradeScreen> {
           appBar: GradientModuleAppBar(title: 'become_provider_title'.tr),
           body: SafeArea(
             child: Padding(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(Spacing.pagePadding),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     'choose_account_type'.tr,
-                    style: robotoBold.copyWith(fontSize: 16),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    'provider_upgrade_subtitle'.tr,
-                    style: robotoRegular.copyWith(
-                      fontSize: 12,
-                      color: Colors.black54,
+                    style: AppTypography.title.copyWith(
+                      color: AppColors.textPrimary(context),
                     ),
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: Spacing.xs),
+                  Text(
+                    'provider_upgrade_subtitle'.tr,
+                    style: AppTypography.caption.copyWith(
+                      color: AppColors.textSecondary(context),
+                    ),
+                  ),
+                  const SizedBox(height: Spacing.xl),
                   Row(
                     children: [
                       Expanded(
@@ -103,7 +103,7 @@ class _ProviderUpgradeScreenState extends State<ProviderUpgradeScreen> {
                           onTap: () => _selectEntityType('individual'),
                         ),
                       ),
-                      const SizedBox(width: 12),
+                      const SizedBox(width: Spacing.md),
                       Expanded(
                         child: _EntityTypeCard(
                           label: 'organization'.tr,
@@ -114,7 +114,7 @@ class _ProviderUpgradeScreenState extends State<ProviderUpgradeScreen> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: Spacing.xl),
                   Expanded(
                     child: SingleChildScrollView(
                       child: controller.entityType == 'individual'
@@ -124,18 +124,9 @@ class _ProviderUpgradeScreenState extends State<ProviderUpgradeScreen> {
                           : const SizedBox(),
                     ),
                   ),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: _canContinue ? _continue : null,
-                      style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                      ),
-                      child: Text('continue_label'.tr),
-                    ),
+                  DSPrimaryButton(
+                    label: 'continue_label'.tr,
+                    onPressed: _canContinue ? _continue : null,
                   ),
                 ],
               ),
@@ -150,16 +141,15 @@ class _ProviderUpgradeScreenState extends State<ProviderUpgradeScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('national_id_number'.tr, style: robotoMedium.copyWith(fontSize: 13)),
-        const SizedBox(height: 8),
-        MyTextField(
+        _fieldLabel('national_id_number'.tr),
+        const SizedBox(height: Spacing.sm),
+        _dsTextField(
           hintText: 'enter_id_number'.tr,
           controller: _offerController.identityNumberController,
-          inputType: TextInputType.number,
+          keyboardType: TextInputType.number,
           onChanged: (_) => setState(() {}),
-          showBorder: true,
         ),
-        const SizedBox(height: 4),
+        const SizedBox(height: Spacing.xs),
         _FormatHint(
           text: _offerController.identityNumberController.text.trim(),
           regex: RegExp(r'^[12]\d{9}$'),
@@ -167,19 +157,15 @@ class _ProviderUpgradeScreenState extends State<ProviderUpgradeScreen> {
           errorText: 'national_id_error'.tr,
           validText: 'valid_format'.tr,
         ),
-        const SizedBox(height: 16),
-        Text(
-          'freelance_document_number'.tr,
-          style: robotoMedium.copyWith(fontSize: 13),
-        ),
-        const SizedBox(height: 8),
-        MyTextField(
+        const SizedBox(height: Spacing.lg),
+        _fieldLabel('freelance_document_number'.tr),
+        const SizedBox(height: Spacing.sm),
+        _dsTextField(
           hintText: 'freelance_document_example'.tr,
           controller: _offerController.freelanceMembershipController,
           onChanged: (_) => setState(() {}),
-          showBorder: true,
         ),
-        const SizedBox(height: 4),
+        const SizedBox(height: Spacing.xs),
         _FormatHint(
           text: _offerController.freelanceMembershipController.text.trim(),
           regex: RegExp(r'^FL-\d+$'),
@@ -204,11 +190,8 @@ class _ProviderUpgradeScreenState extends State<ProviderUpgradeScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'choose_organization_id_type'.tr,
-          style: robotoMedium.copyWith(fontSize: 13),
-        ),
-        const SizedBox(height: 8),
+        _fieldLabel('choose_organization_id_type'.tr),
+        const SizedBox(height: Spacing.sm),
         Row(
           children: [
             Expanded(
@@ -218,7 +201,7 @@ class _ProviderUpgradeScreenState extends State<ProviderUpgradeScreen> {
                 onTap: () => _selectOrganizationIdType('commercial'),
               ),
             ),
-            const SizedBox(width: 10),
+            const SizedBox(width: Spacing.md),
             Expanded(
               child: _IdTypeChip(
                 label: 'unified_number_option'.tr,
@@ -229,24 +212,22 @@ class _ProviderUpgradeScreenState extends State<ProviderUpgradeScreen> {
           ],
         ),
         if (idType != null) ...[
-          const SizedBox(height: 16),
-          Text(
+          const SizedBox(height: Spacing.lg),
+          _fieldLabel(
             isUnified
                 ? 'unified_number_option'.tr
                 : 'commercial_registration_option'.tr,
-            style: robotoMedium.copyWith(fontSize: 13),
           ),
-          const SizedBox(height: 8),
-          MyTextField(
+          const SizedBox(height: Spacing.sm),
+          _dsTextField(
             hintText: isUnified
                 ? 'unified_number_example'.tr
                 : 'commercial_registration_example'.tr,
             controller: _offerController.commercialRegistrationController,
-            inputType: TextInputType.number,
+            keyboardType: TextInputType.number,
             onChanged: (_) => setState(() {}),
-            showBorder: true,
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: Spacing.xs),
           _FormatHint(
             text: _offerController.commercialRegistrationController.text.trim(),
             regex: isUnified ? RegExp(r'^70\d{8}$') : RegExp(r'^\d{10}$'),
@@ -260,6 +241,31 @@ class _ProviderUpgradeScreenState extends State<ProviderUpgradeScreen> {
           ),
         ],
       ],
+    );
+  }
+
+  Widget _fieldLabel(String text) {
+    return Text(
+      text,
+      style: AppTypography.small.copyWith(color: AppColors.textPrimary(context)),
+    );
+  }
+
+  /// حقل نصي محلي بمقاييس النظام (Height 56 / Radius 12) بدل MyTextField
+  /// المشترك (Radius 8) — يبقى استبداله محصوراً بهذه الشاشة فقط دون التأثير
+  /// على بقية شاشات التطبيق التي تستخدم MyTextField الأصلي.
+  Widget _dsTextField({
+    required String hintText,
+    required TextEditingController controller,
+    TextInputType keyboardType = TextInputType.text,
+    required ValueChanged<String> onChanged,
+  }) {
+    return TextFormField(
+      controller: controller,
+      keyboardType: keyboardType,
+      onChanged: onChanged,
+      style: AppTypography.body.copyWith(color: AppColors.textPrimary(context)),
+      decoration: dsInputDecoration(context, hint: hintText),
     );
   }
 }
@@ -280,24 +286,25 @@ class _IdTypeChip extends StatelessWidget {
     final primary = Theme.of(context).primaryColor;
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(10),
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+      borderRadius: BorderRadius.circular(AppRadius.medium),
+      child: AnimatedContainer(
+        duration: AnimSpec.button,
+        padding: const EdgeInsets.symmetric(
+            vertical: Spacing.md, horizontal: Spacing.sm),
         alignment: Alignment.center,
         decoration: BoxDecoration(
-          color: selected ? primary.withValues(alpha: 0.08) : Colors.white,
-          borderRadius: BorderRadius.circular(10),
+          color: selected ? primary.withValues(alpha: 0.08) : AppColors.surface(context),
+          borderRadius: BorderRadius.circular(AppRadius.medium),
           border: Border.all(
-            color: selected ? primary : Colors.black12,
-            width: selected ? 2 : 1,
+            color: selected ? primary : AppColors.border(context),
+            width: selected ? 1.6 : 1,
           ),
         ),
         child: Text(
           label,
           textAlign: TextAlign.center,
-          style: robotoMedium.copyWith(
-            fontSize: 12.5,
-            color: selected ? primary : Colors.black87,
+          style: AppTypography.smallMedium.copyWith(
+            color: selected ? primary : AppColors.textPrimary(context),
           ),
         ),
       ),
@@ -327,26 +334,20 @@ class _FormatHint extends StatelessWidget {
     if (text.isEmpty) {
       return Text(
         hintText,
-        style: robotoRegular.copyWith(fontSize: 11, color: Colors.black45),
+        style: AppTypography.caption.copyWith(color: AppColors.textSecondary(context)),
       );
     }
 
     final isValid = regex.hasMatch(text);
+    final color = isValid ? AppColors.success : AppColors.danger;
     return Row(
       children: [
-        Icon(
-          isValid ? Icons.check_circle : Icons.error_outline,
-          size: 14,
-          color: isValid ? Colors.green : Colors.red,
-        ),
-        const SizedBox(width: 4),
+        Icon(isValid ? Icons.check_circle : Icons.error_outline, size: 14, color: color),
+        const SizedBox(width: Spacing.xs),
         Expanded(
           child: Text(
             isValid ? validText : errorText,
-            style: robotoRegular.copyWith(
-              fontSize: 11,
-              color: isValid ? Colors.green : Colors.red,
-            ),
+            style: AppTypography.caption.copyWith(color: color),
           ),
         ),
       ],
@@ -372,26 +373,27 @@ class _EntityTypeCard extends StatelessWidget {
     final primary = Theme.of(context).primaryColor;
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 18),
+      borderRadius: BorderRadius.circular(AppRadius.medium),
+      child: AnimatedContainer(
+        duration: AnimSpec.button,
+        padding: const EdgeInsets.symmetric(vertical: Spacing.lg),
         decoration: BoxDecoration(
-          color: selected ? primary.withValues(alpha: 0.08) : Colors.white,
-          borderRadius: BorderRadius.circular(12),
+          color: selected ? primary.withValues(alpha: 0.08) : AppColors.surface(context),
+          borderRadius: BorderRadius.circular(AppRadius.medium),
           border: Border.all(
-            color: selected ? primary : Colors.black12,
-            width: selected ? 2 : 1,
+            color: selected ? primary : AppColors.border(context),
+            width: selected ? 1.6 : 1,
           ),
         ),
         child: Column(
           children: [
-            Icon(icon, color: selected ? primary : Colors.black54, size: 30),
-            const SizedBox(height: 8),
+            Icon(icon, color: selected ? primary : AppColors.textSecondary(context),
+                size: IconSpec.large),
+            const SizedBox(height: Spacing.sm),
             Text(
               label,
-              style: robotoMedium.copyWith(
-                fontSize: 14,
-                color: selected ? primary : Colors.black87,
+              style: AppTypography.smallMedium.copyWith(
+                color: selected ? primary : AppColors.textPrimary(context),
               ),
             ),
           ],

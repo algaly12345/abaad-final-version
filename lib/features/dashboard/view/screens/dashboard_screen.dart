@@ -199,6 +199,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
               fromPage: '',
             ),
             drawer: DrawerMenu(),
+            onDrawerChanged: (isOpened) {
+              if (isOpened) DrawerMenu.ensureUserDataLoaded();
+            },
 
             floatingActionButton: _pageIndex == 2
                 ? null

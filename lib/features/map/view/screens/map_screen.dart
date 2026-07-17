@@ -1951,6 +1951,9 @@ class _MapViewScreenState extends State<MapScreen> {
         fromPage: "main",
       ),
       drawer: DrawerMenu(),
+      onDrawerChanged: (isOpened) {
+        if (isOpened) DrawerMenu.ensureUserDataLoaded();
+      },
       body: GetBuilder<CategoryController>(
         builder: (categoryController) {
           return GetBuilder<LocationController>(

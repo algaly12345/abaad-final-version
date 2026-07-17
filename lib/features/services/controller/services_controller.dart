@@ -58,7 +58,7 @@ class ServicesController extends GetxController implements GetxService {
   String sortBy = 'الأحدث';
 
   // ─── "أقرب مزود خدمة": يُحاوَل تلقائياً مرة واحدة عند فتح شاشة الخدمات
-  // (enableNearMe(silent: true))، ويبقى الزر اليدوي متاحاً لإعادة التفعيل ───
+  // (loadInitial())، ويبقى الزر اليدوي (enableNearMe()) متاحاً لإعادة التفعيل ───
   bool nearMeActive = false;
   double? userLat;
   double? userLng;
@@ -274,6 +274,68 @@ class ServicesController extends GetxController implements GetxService {
     });
   }
 
+  // ─── بحث مستقل بالكامل عن قائمة الكتالوج الرئيسية — يُستخدم من شاشة البحث
+  // المخصّصة (ServicesSearchScreen) فقط. لا يمسّ searchText/servicesList
+  // الخاصّين بالشاشة الرئيسية، حتى لا يتأثر ترتيب/محتوى القائمة الرئيسية
+  // بمجرد فتح شاشة البحث ثم الرجوع منها بدون اختيار نتيجة.
+  Timer? _searchDebounce;
+  List<ServiceOffer>? _searchResults;
+  List<ServiceOffer>? get searchResults => _searchResults;
+  bool _isSearching = false;
+  bool get isSearching => _isSearching;
+
+  Future<void> searchStandalone(String query) async {
+    _searchDebounce?.cancel();
+    final trimmed = query.trim();
+    if (trimmed.isEmpty) {
+      _searchResults = null;
+      _isSearching = false;
+      update();
+      return;
+    }
+
+    _isSearching = true;
+    update();
+
+    _searchDebounce = Timer(const Duration(milliseconds: 450), () async {
+      try {
+        final response = await servicesRepo.getServices(
+          offset: 1,
+          search: trimmed,
+          categoryId: selectedCategories.join(','),
+          zoneId: selectedZones.join(','),
+          serviceTypeId: selectedServiceTypes.join(','),
+          providerId: selectedProviders.join(','),
+          offerType: _offerTypeApiMap[selectedOfferType],
+          sortBy: _sortByApiMap[sortBy] ?? 'latest',
+          latitude: nearMeActive ? userLat : null,
+          longitude: nearMeActive ? userLng : null,
+          radiusKm: (nearMeActive && radiusOption != 'city') ? radiusOption : null,
+          minPrice: minPriceFilter,
+          maxPrice: maxPriceFilter,
+        );
+
+        if (response.statusCode == 200 && response.body is Map) {
+          final model = ServiceModel.fromJson(response.body);
+          _searchResults = model.services ?? [];
+        } else {
+          _searchResults = [];
+        }
+      } catch (e) {
+        _searchResults = [];
+      } finally {
+        _isSearching = false;
+        update();
+      }
+    });
+  }
+
+  void clearSearchResults() {
+    _searchDebounce?.cancel();
+    _searchResults = null;
+    _isSearching = false;
+  }
+
   void toggleCategory(int id) {
     if (selectedCategories.contains(id)) {
       selectedCategories.remove(id);
@@ -308,6 +370,17 @@ class ServicesController extends GetxController implements GetxService {
       selectedServiceTypes.add(id);
     }
     update();
+  }
+
+  // اختيار وحيد لنوع الخدمة من الشريط الأفقي أسفل البحث (بدل التعدد الذي
+  // تسمح به ورقة الفلاتر) — تمرير null يعني "الكل" (بلا فلتر نوع)، ويُعيد
+  // تحميل القائمة فورًا بدل انتظار زر "تطبيق" منفصل.
+  void selectServiceType(int? id) {
+    selectedServiceTypes
+      ..clear()
+      ..addAll(id != null ? [id] : []);
+    update();
+    getServicesList(1, reload: true);
   }
 
   void toggleProvider(int id) {
@@ -345,24 +418,53 @@ class ServicesController extends GetxController implements GetxService {
     }
   }
 
-  /// يطلب الإذن ثم الموقع الحالي عبر NearbyLocationHelper، ثم يفعّل فرز/
-  /// فلترة "الأقرب مني". [silent]: للمحاولة التلقائية عند فتح الشاشة —
-  /// تُكتم رسائل الرفض عندها (راجع NearbyLocationHelper).
-  Future<void> enableNearMe({bool silent = false}) async {
-    if (silent) {
-      if (_autoNearMeAttempted || nearMeActive) return;
-      _autoNearMeAttempted = true;
-    }
+  /// يُستدعى مرة واحدة فقط عند فتح شاشة الخدمات: يعطي الأولوية لتحديد الموقع
+  /// أولاً (بسقف زمني محدود 6 ثوانٍ) قبل عرض أي قائمة، بدل جلب القائمة
+  /// الافتراضية فورًا ثم استبدالها لاحقًا بنتائج "الأقرب مني" — فيتفادى وميض
+  /// إعادة ترتيب البطاقات أمام المستخدم. إن لم يتحدد الموقع خلال المهلة
+  /// (رفض/تعطيل/GPS بطيء)، تُعرض القائمة الافتراضية فورًا دون انتظار أطول.
+  Future<void> loadInitial() async {
+    applySavedZoneDefault();
+
+    if (_autoNearMeAttempted) return;
+    _autoNearMeAttempted = true;
 
     _isResolvingLocation = true;
     update();
 
-    final position =
-        await NearbyLocationHelper.resolveCurrentPosition(silent: silent);
+    final position = await NearbyLocationHelper.resolveCurrentPosition(
+      silent: true,
+      timeLimit: const Duration(seconds: 6),
+    );
+
+    _isResolvingLocation = false;
+
+    if (position != null) {
+      userLat = position.latitude;
+      userLng = position.longitude;
+      nearMeActive = true;
+      nearMeAutoDenied = false;
+      sortBy = 'الأقرب مني';
+      selectedZones.clear();
+    } else {
+      nearMeAutoDenied = true;
+    }
+
+    update();
+    await getServicesList(1, reload: true);
+  }
+
+  /// يطلب الإذن ثم الموقع الحالي عبر NearbyLocationHelper، ثم يفعّل فرز/
+  /// فلترة "الأقرب مني" — للتفعيل اليدوي فقط (زر "أقرب مني")؛ المحاولة
+  /// التلقائية عند فتح الشاشة تمرّ عبر loadInitial() أعلاه بدلاً منها.
+  Future<void> enableNearMe() async {
+    _isResolvingLocation = true;
+    update();
+
+    final position = await NearbyLocationHelper.resolveCurrentPosition();
 
     _isResolvingLocation = false;
     if (position == null) {
-      if (silent) nearMeAutoDenied = true;
       update();
       return;
     }
@@ -433,6 +535,7 @@ class ServicesController extends GetxController implements GetxService {
   @override
   void onClose() {
     _debounce?.cancel();
+    _searchDebounce?.cancel();
     searchController.dispose();
     super.onClose();
   }

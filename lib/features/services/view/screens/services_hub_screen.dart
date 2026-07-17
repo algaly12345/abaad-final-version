@@ -14,20 +14,18 @@ class ServicesHubScreen extends StatelessWidget {
 
     return GetBuilder<ProviderPermissionController>(
       builder: (pc) {
-        // الشريط العلوي (متدرّج + بحث قابل للطي) بات مملوكاً بالكامل من
+        // الشريط العلوي (حقل بحث دائم + زر فلترة) بات مملوكاً بالكامل من
         // ServicesCatalogScreen بدل تكراره هنا — هذه الشاشة تمرّر فقط
-        // العنوان وأيقونة "طلباتي" الإضافية الخاصة بها وزر الإجراء العائم.
+        // أيقونة "طلباتي" الإضافية الخاصة بها وزر الإجراء العائم.
         return ServicesCatalogScreen(
           showAppBar: true,
-          title: 'services'.tr,
-          subtitle: 'أفضل العروض والخصومات الحصرية',
           extraActions: [
             // أيقونة "طلباتي/خدماتي" مقصورة على مزودي الخدمة المعتمدين فقط —
             // العميل العادي غير المسجَّل كمزود لا يجب أن يراها إطلاقاً.
             if (pc.isProvider)
               IconButton(
                 tooltip: 'my_applications'.tr,
-                icon: const Icon(Icons.assignment_outlined, color: Colors.white),
+                icon: Icon(Icons.assignment_outlined, color: primary),
                 onPressed: () => Get.toNamed(RouteHelper.getMyServicesRoute()),
               ),
           ],
@@ -50,7 +48,7 @@ class ServicesHubScreen extends StatelessWidget {
                   onPressed: () =>
                       Get.toNamed(RouteHelper.getServiceProviderRoute()),
                   icon: const Icon(Icons.handshake_outlined),
-                  label: Text('صير مزود خدمة',
+                  label: Text('إضافة خدمة',
                       style: robotoBold.copyWith(
                           color: Colors.white, fontSize: 13)),
                 ),

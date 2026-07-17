@@ -288,7 +288,7 @@ class _MapViewScreenState extends State<MapViewScreen> {
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
                       color: Colors.white,
-                      fontFamily: 'Cairo',
+                      fontFamily: 'IBMPlexSansArabic',
                       fontSize: 10,
                       fontWeight: FontWeight.w600,
                       height: 1.2,

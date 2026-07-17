@@ -6,7 +6,7 @@ import 'package:flutter/material.dart';
 // اللون الأساسي هنا نسخة أفتح من primaryColor في light_theme.dart (نفس عائلة
 // الأزرق) لضمان تباين كافٍ فوق خلفية داكنة، وليس هوية بصرية جديدة.
 ThemeData dark = ThemeData(
-  fontFamily: 'Tajawal',
+  fontFamily: 'IBMPlexSansArabic',
   primaryColor: const Color(0xFF4C86C1),
   secondaryHeaderColor: const Color(0xFFE0904D),
   disabledColor: const Color(0xFF4A4E5C),
@@ -34,7 +34,7 @@ ThemeData dark = ThemeData(
     elevation: 0,
     centerTitle: true,
     titleTextStyle: TextStyle(
-      fontFamily: 'Tajawal',
+      fontFamily: 'IBMPlexSansArabic',
       color: Colors.white,
       fontSize: 18,
       fontWeight: FontWeight.w600,
@@ -76,7 +76,7 @@ ThemeData dark = ThemeData(
       ),
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
       textStyle: const TextStyle(
-        fontFamily: 'Tajawal',
+        fontFamily: 'IBMPlexSansArabic',
         fontSize: 15,
         fontWeight: FontWeight.w600,
       ),

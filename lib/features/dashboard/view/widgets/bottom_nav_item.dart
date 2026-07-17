@@ -46,7 +46,7 @@ class BottomNavItem extends StatelessWidget {
             Text(
               name ?? "",
               style: TextStyle(
-                fontFamily: 'Tajawal',
+                fontFamily: 'IBMPlexSansArabic',
                 fontSize: 10,
                 fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
                 color: selected ? primaryColor : inactiveColor,

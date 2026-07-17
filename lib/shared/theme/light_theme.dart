@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 ThemeData light = ThemeData(
-  fontFamily: 'Tajawal',
+  fontFamily: 'IBMPlexSansArabic',
   primaryColor: const Color(0xFF1A3C5E),
   secondaryHeaderColor: const Color(0xFF2E6DA4),
   disabledColor: const Color(0xFFBCC0C7),
@@ -29,7 +29,7 @@ ThemeData light = ThemeData(
     elevation: 0,
     centerTitle: true,
     titleTextStyle: TextStyle(
-      fontFamily: 'Tajawal',
+      fontFamily: 'IBMPlexSansArabic',
       color: Color(0xFF1A3C5E),
       fontSize: 18,
       fontWeight: FontWeight.w600,
@@ -71,7 +71,7 @@ ThemeData light = ThemeData(
       ),
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
       textStyle: const TextStyle(
-        fontFamily: 'Tajawal',
+        fontFamily: 'IBMPlexSansArabic',
         fontSize: 15,
         fontWeight: FontWeight.w600,
       ),

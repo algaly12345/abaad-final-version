@@ -1,5 +1,5 @@
-﻿import 'package:abaad_flutter/features/provider/controller/service_offer_controller.dart';
-import 'package:abaad_flutter/shared/utils/styles.dart';
+import 'package:abaad_flutter/features/provider/controller/service_offer_controller.dart';
+import 'package:abaad_flutter/shared/theme/design_system.dart';
 import 'package:abaad_flutter/shared/widgets/gradient_module_app_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -65,13 +65,21 @@ class _ServiceOfferPaymentScreenState extends State<ServiceOfferPaymentScreen> {
       context: context,
       barrierDismissible: false,
       builder: (_) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text(isPaid ? 'تم الدفع بنجاح' : 'تعذر تأكيد الدفع'),
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(DialogSpec.radius)),
+        contentPadding: const EdgeInsets.fromLTRB(
+            DialogSpec.padding, 20, DialogSpec.padding, Spacing.sm),
+        actionsPadding: const EdgeInsets.fromLTRB(
+            Spacing.md, 0, Spacing.md, Spacing.sm),
+        title: Text(
+          isPaid ? 'تم الدفع بنجاح' : 'تعذر تأكيد الدفع',
+          style: AppTypography.title.copyWith(color: AppColors.textPrimary(context)),
+        ),
         content: Text(
           isPaid
               ? 'تم الدفع بنجاح. طلبك الآن قيد المراجعة من الإدارة، وستصلك رسالة عند الموافقة على عرضك وتفعيل حسابك كمزود خدمة.'
               : 'لم نتمكن من تأكيد عملية الدفع، يمكنك المحاولة مرة أخرى من قائمة اشتراكاتي.',
-          style: robotoRegular.copyWith(fontSize: 13),
+          style: AppTypography.small.copyWith(color: AppColors.textSecondary(context)),
         ),
         actions: [
           TextButton(
@@ -81,7 +89,7 @@ class _ServiceOfferPaymentScreenState extends State<ServiceOfferPaymentScreen> {
             },
             child: Text(
               'حسناً',
-              style: robotoMedium.copyWith(
+              style: AppTypography.smallBold.copyWith(
                 color: Theme.of(context).primaryColor,
               ),
             ),

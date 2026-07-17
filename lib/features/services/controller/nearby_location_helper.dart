@@ -23,6 +23,7 @@ class NearbyLocationHelper {
   /// تفاعل منه. الاستدعاء اليدوي (زر "أقرب مني") يبقى بكل رسائله كاملة.
   static Future<NearbyPosition?> resolveCurrentPosition({
     bool silent = false,
+    Duration? timeLimit,
   }) async {
     final serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) {
@@ -45,9 +46,26 @@ class NearbyLocationHelper {
       return null;
     }
 
+    // مسار سريع: موقع مخزَّن مسبقًا (من آخر قراءة GPS فعلية على الجهاز، ولو من
+    // تطبيق آخر) يعود فورًا بلا انتظار أي بصمة GPS جديدة — يكفي تمامًا هنا لأن
+    // "المسافة" أصلاً تقريبية (أقرب منطقة، لا موقع دقيق، راجع
+    // ServiceCatalogService::applyDistanceSelection)، فلا داعٍ لانتظار بصمة GPS
+    // طازجة قبل عرض النتائج للمستخدم.
+    try {
+      final lastKnown = await Geolocator.getLastKnownPosition();
+      if (lastKnown != null) {
+        return NearbyPosition(lastKnown.latitude, lastKnown.longitude);
+      }
+    } catch (_) {
+      // لا مشكلة إن فشل هذا المسار السريع — يُكمَل إلى القراءة الفعلية أدناه.
+    }
+
     try {
       final position = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high,
+        // دقة متوسطة (شبكة/واي فاي) بدل GPS عالي الدقة: أسرع بكثير في الحصول
+        // على أول بصمة موقع، وكافية لنفس سبب "المسافة تقريبية" أعلاه.
+        desiredAccuracy: LocationAccuracy.medium,
+        timeLimit: timeLimit,
       );
       return NearbyPosition(position.latitude, position.longitude);
     } catch (_) {

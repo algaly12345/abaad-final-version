@@ -424,6 +424,12 @@
   "company": "شركة",
   "broker": "وسيط",
   "sort_by": "ترتيب حسب",
+  "price_range": "نطاق السعر",
+  "search_radius": "نطاق البحث",
+  "min_price": "أقل سعر",
+  "max_price": "أعلى سعر",
+  "to_label": "إلى",
+  "reset_fields": "إعادة تعيين الحقول",
 
   "permission_screen_title": "نحتاج إذنك",
   "permission_screen_subtitle": "لضمان تجربة متكاملة، يحتاج التطبيق إلى الصلاحيات التالية",

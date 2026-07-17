@@ -2,6 +2,7 @@ import 'package:abaad_flutter/features/provider/data/models/service_offer_model.
 import 'package:abaad_flutter/features/services/controller/services_controller.dart';
 import 'package:abaad_flutter/features/services/view/screens/services_catalog_screen.dart'
     show serviceCategoryIcon;
+import 'package:abaad_flutter/shared/theme/design_system.dart';
 import 'package:abaad_flutter/shared/utils/styles.dart';
 import 'package:abaad_flutter/shared/widgets/scroll_reveal_item.dart';
 import 'package:flutter/material.dart';
@@ -26,7 +27,7 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final primary = Theme.of(context).primaryColor;
+    final primary = AppColors.primary(context);
 
     return GetBuilder<ServicesController>(
       builder: (controller) {
@@ -37,8 +38,9 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
             maxHeight: MediaQuery.of(context).size.height * 0.88,
           ),
           decoration: BoxDecoration(
-            color: Theme.of(context).cardColor,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+            color: AppColors.surface(context),
+            borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(BottomSheetSpec.radius)),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -49,13 +51,14 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
               Flexible(
                 child: SingleChildScrollView(
                   controller: _scrollController,
-                  padding: const EdgeInsets.only(bottom: 20),
+                  padding: const EdgeInsets.only(bottom: Spacing.lg),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // نوع العرض — تعبئة صلبة بارزة للمُختار (مطابقة للمرجع)
+                      // نوع العرض — تعبئة لونية ناعمة للمُختار
                       _Section(
                         title: 'offer_type'.tr,
+                        icon: Icons.local_offer_rounded,
                         child: _SegmentedRow(
                           options: ServicesController.offerTypeOptions,
                           selected: controller.selectedOfferType,
@@ -68,9 +71,10 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
                       // ملاحظة: قسم "الموقع" لم يعد هنا — أصبح له زر مخصّص
                       // وحيد أعلى قائمة الخدمات (_QuickFilterRow في
                       // services_catalog_screen.dart) يفتح ZoneFilterSheet
-                      // مباشرة. أما "نوع الخدمة" فله زر مخصّص خاص به أيضًا
-                      // (TypeFilterSheet)، لكن "نوع العقار" بقي هنا في
-                      // الفلاتر المتقدمة — مطابقةً لموضعه في التطبيق المرجعي.
+                      // مباشرة. أما "نوع الخدمة" فأصبح شريطًا أفقيًا دائم
+                      // الظهور أسفل ذلك الزر (_ServiceTypesBar)، لكن "نوع
+                      // العقار" بقي هنا في الفلاتر المتقدمة — مطابقةً لموضعه
+                      // في التطبيق المرجعي.
 
                       // نوع العقار — بانتظار وصول filtersData يُعرض هيكل تحميل
                       // بنفس أبعاد الشبكة الفعلية بدل اختفاء القسم بالكامل، كي
@@ -78,17 +82,20 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
                       if (controller.filtersData == null) ...[
                         _Section(
                           title: 'property_type'.tr,
-                          child: const _WrapGridSkeleton(count: 4),
+                          icon: Icons.home_work_rounded,
+                          bleedChild: true,
+                          child: const _HorizontalCardSkeleton(count: 5),
                         ),
                         const _Divider(),
                       ] else if ((controller.filtersData?.categories ?? [])
                           .isNotEmpty) ...[
                         _Section(
                           title: 'property_type'.tr,
-                          child: _CategoryGrid(
+                          icon: Icons.home_work_rounded,
+                          bleedChild: true,
+                          child: _CategoryList(
                             controller: controller,
                             primary: primary,
-                            scrollController: _scrollController,
                           ),
                         ),
                         const _Divider(),
@@ -96,7 +103,8 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
 
                       // نطاق السعر
                       _Section(
-                        title: 'نطاق السعر',
+                        title: 'price_range'.tr,
+                        icon: Icons.sell_rounded,
                         child: controller.filtersData == null
                             ? const _PriceRangeSkeleton()
                             : _PriceRangeSection(
@@ -110,6 +118,8 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
                       if (controller.filtersData == null) ...[
                         _Section(
                           title: 'service_provider'.tr,
+                          icon: Icons.storefront_rounded,
+                          bleedChild: true,
                           child: const _ChipRowSkeleton(),
                         ),
                         const _Divider(),
@@ -117,10 +127,11 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
                           .isNotEmpty) ...[
                         _Section(
                           title: 'service_provider'.tr,
+                          icon: Icons.storefront_rounded,
+                          bleedChild: true,
                           child: _ProviderChips(
                             controller: controller,
                             primary: primary,
-                            scrollController: _scrollController,
                           ),
                         ),
                         const _Divider(),
@@ -129,11 +140,12 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
                       // الترتيب (فرز + الأقرب مني)
                       _Section(
                         title: 'sort_by'.tr,
-                        child: _ChipGrid(
+                        icon: Icons.sort_rounded,
+                        bleedChild: true,
+                        child: _ChipRow(
                           options: ServicesController.sortOptions,
                           selected: {controller.sortBy},
                           primary: primary,
-                          scrollController: _scrollController,
                           onTap: (v) => v == 'الأقرب مني'
                               ? controller.enableNearMe()
                               : controller.setSortBy(v),
@@ -144,8 +156,10 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
                       if (controller.nearMeActive) ...[
                         const _Divider(),
                         _Section(
-                          title: 'نطاق البحث',
-                          child: _ChipGrid(
+                          title: 'search_radius'.tr,
+                          icon: Icons.radar_rounded,
+                          bleedChild: true,
+                          child: _ChipRow(
                             options: ServicesController.radiusOptions
                                 .map((r) => r['label']!)
                                 .toList(),
@@ -155,7 +169,6 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
                               )['label']!
                             },
                             primary: primary,
-                            scrollController: _scrollController,
                             onTap: (label) {
                               final value = ServicesController.radiusOptions
                                   .firstWhere((r) => r['label'] == label)['value']!;
@@ -165,7 +178,7 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
                         ),
                       ],
 
-                      const SizedBox(height: 8),
+                      const SizedBox(height: Spacing.sm),
                     ],
                   ),
                 ),
@@ -183,9 +196,10 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
   Widget _buildHeader(BuildContext context, Color primary, int activeCount) {
     return Container(
       decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-        border: Border(bottom: BorderSide(color: Theme.of(context).dividerColor, width: 1)),
+        color: AppColors.surface(context),
+        borderRadius: const BorderRadius.vertical(
+            top: Radius.circular(BottomSheetSpec.radius)),
+        border: Border(bottom: BorderSide(color: AppColors.divider(context))),
       ),
       child: Column(
         children: [
@@ -194,52 +208,62 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
             width: 40,
             height: 4,
             decoration: BoxDecoration(
-              color: Colors.grey.shade300,
+              color: AppColors.divider(context),
               borderRadius: BorderRadius.circular(10),
             ),
           ),
           Padding(
-            padding: const EdgeInsets.fromLTRB(20, 14, 12, 14),
+            padding:
+                const EdgeInsets.fromLTRB(Spacing.lg, 14, Spacing.md, Spacing.md),
             child: Row(
               children: [
-                GestureDetector(
-                  onTap: () => Get.back(),
-                  child: Container(
-                    padding: const EdgeInsets.all(6),
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade100,
-                      shape: BoxShape.circle,
+                _RoundIconButton(icon: Icons.close_rounded, onTap: () => Get.back()),
+                Expanded(
+                  child: Center(
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 30,
+                          height: 30,
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(
+                            color: primary.withValues(alpha: 0.12),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(Icons.tune_rounded, size: 16, color: primary),
+                        ),
+                        const SizedBox(width: Spacing.sm),
+                        Flexible(
+                          child: Text(
+                            'filter_services'.tr,
+                            style: AppTypography.smallBold.copyWith(
+                                fontSize: 17, color: AppColors.textPrimary(context)),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        if (activeCount > 0) ...[
+                          const SizedBox(width: Spacing.sm),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: primary,
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Text(
+                              '$activeCount',
+                              style: AppTypography.badge.copyWith(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 11),
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
-                    child: Icon(Icons.close_rounded,
-                        color: Colors.grey.shade600, size: 20),
                   ),
                 ),
-                const Spacer(),
-                Text(
-                  'filter_services'.tr,
-                  style: robotoBold.copyWith(
-                      fontSize: 17,
-                      color: Theme.of(context).brightness == Brightness.dark
-                          ? Colors.white
-                          : const Color(0xFF1A2340)),
-                ),
-                if (activeCount > 0) ...[
-                  const SizedBox(width: 8),
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: primary,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
-                      '$activeCount',
-                      style: robotoBold.copyWith(
-                          color: Colors.white, fontSize: 11),
-                    ),
-                  ),
-                ],
-                const Spacer(),
                 const SizedBox(width: 32),
               ],
             ),
@@ -253,50 +277,57 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
       ServicesController controller, int activeCount) {
     return Container(
       padding: EdgeInsets.fromLTRB(
-        20,
-        14,
-        20,
-        14 + MediaQuery.of(context).padding.bottom,
+        Spacing.lg,
+        Spacing.md,
+        Spacing.lg,
+        Spacing.md + MediaQuery.of(context).padding.bottom,
       ),
       decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
-        border: Border(top: BorderSide(color: Theme.of(context).dividerColor, width: 1)),
+        color: AppColors.surface(context),
+        border: Border(top: BorderSide(color: AppColors.divider(context))),
       ),
       child: Row(
         children: [
           Expanded(
-            child: OutlinedButton(
-              onPressed: () => controller.clearFilters(),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: Colors.grey.shade700,
-                side: BorderSide(color: Colors.grey.shade300, width: 1.4),
-                padding: const EdgeInsets.symmetric(vertical: 15),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
-              ),
-              child: Text(
-                'إعادة تعيين الحقول',
-                style: robotoBold.copyWith(fontSize: 13.5),
+            flex: 2,
+            child: SizedBox(
+              height: ButtonSpec.primaryHeight,
+              child: OutlinedButton(
+                onPressed: () => controller.clearFilters(),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.textSecondary(context),
+                  side: BorderSide(color: AppColors.border(context), width: 1.4),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(ButtonSpec.radius)),
+                ),
+                child: Text(
+                  'reset_fields'.tr,
+                  style: AppTypography.smallBold
+                      .copyWith(fontSize: 13.5, color: AppColors.textSecondary(context)),
+                ),
               ),
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: Spacing.md),
           Expanded(
-            child: ElevatedButton(
-              onPressed: () => controller.applyFilters(),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: primary,
-                foregroundColor: Colors.white,
-                elevation: 0,
-                padding: const EdgeInsets.symmetric(vertical: 15),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
-              ),
-              child: Text(
-                activeCount > 0
-                    ? '${'apply_filters'.tr} ($activeCount)'
-                    : 'apply_filters'.tr,
-                style: robotoBold.copyWith(fontSize: 14.5, color: Colors.white),
+            flex: 3,
+            child: SizedBox(
+              height: ButtonSpec.primaryHeight,
+              child: ElevatedButton(
+                onPressed: () => controller.applyFilters(),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: primary,
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(ButtonSpec.radius)),
+                ),
+                child: Text(
+                  activeCount > 0
+                      ? '${'apply_filters'.tr} ($activeCount)'
+                      : 'apply_filters'.tr,
+                  style: AppTypography.bodyBold.copyWith(fontSize: 14.5, color: Colors.white),
+                ),
               ),
             ),
           ),
@@ -317,45 +348,38 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
   }
 }
 
-// ─── هياكل تحميل بنفس أبعاد كل قسم من أقسام الفلاتر المتقدمة (نوع العقار/
-// نطاق السعر/مزود الخدمة) — تحل محل مؤشر دوّار عام واحد يظهر وسط الورقة
-// بينما الأقسام نفسها تختفي بصمت، فلا تقفز الأبعاد لحظة وصول filtersData
-// ولا تبدو الورقة فارغة بلا تفسير أثناء الانتظار ───────────────────────────
+// ─── زر دائري صغير موحّد (إغلاق الورقة) — مقاس ثابت 32×32 يوازن بصريًا مع
+// SizedBox(width: 32) بالطرف الآخر من رأس الورقة فيبقى العنوان مركزًا تمامًا ─
 
-class _WrapGridSkeleton extends StatelessWidget {
-  final int count;
+class _RoundIconButton extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback onTap;
 
-  const _WrapGridSkeleton({this.count = 4});
+  const _RoundIconButton({required this.icon, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
     final dark = Theme.of(context).brightness == Brightness.dark;
-    final baseColor =
-        dark ? Colors.white.withValues(alpha: 0.08) : const Color(0xFFEEF0F5);
-    final cardWidth = (MediaQuery.of(context).size.width - 40 - 30) / 4;
-
-    return Shimmer(
-      duration: const Duration(milliseconds: 1400),
-      interval: const Duration(milliseconds: 350),
-      color: dark ? Colors.white : Theme.of(context).primaryColor,
-      colorOpacity: dark ? 0.16 : 0.3,
-      child: Wrap(
-        spacing: 10,
-        runSpacing: 10,
-        children: List.generate(count, (i) {
-          return Container(
-            width: cardWidth,
-            height: 96,
-            decoration: BoxDecoration(
-              color: baseColor,
-              borderRadius: BorderRadius.circular(16),
-            ),
-          );
-        }),
+    return Material(
+      color: dark ? Colors.white.withValues(alpha: 0.08) : Colors.grey.shade100,
+      shape: const CircleBorder(),
+      child: InkWell(
+        onTap: onTap,
+        customBorder: const CircleBorder(),
+        child: SizedBox(
+          width: 32,
+          height: 32,
+          child: Icon(icon, size: 18, color: AppColors.textSecondary(context)),
+        ),
       ),
     );
   }
 }
+
+// ─── هياكل تحميل بنفس أبعاد كل قسم من أقسام الفلاتر المتقدمة (نوع العقار/
+// نطاق السعر/مزود الخدمة) — تحل محل مؤشر دوّار عام واحد يظهر وسط الورقة
+// بينما الأقسام نفسها تختفي بصمت، فلا تقفز الأبعاد لحظة وصول filtersData
+// ولا تبدو الورقة فارغة بلا تفسير أثناء الانتظار ───────────────────────────
 
 class _ChipRowSkeleton extends StatelessWidget {
   const _ChipRowSkeleton();
@@ -373,19 +397,23 @@ class _ChipRowSkeleton extends StatelessWidget {
       interval: const Duration(milliseconds: 350),
       color: dark ? Colors.white : Theme.of(context).primaryColor,
       colorOpacity: dark ? 0.16 : 0.3,
-      child: Wrap(
-        spacing: 10,
-        runSpacing: 10,
-        children: _widths.map((w) {
-          return Container(
-            width: w,
+      child: SizedBox(
+        height: 30,
+        child: ListView.separated(
+          scrollDirection: Axis.horizontal,
+          physics: const NeverScrollableScrollPhysics(),
+          padding: const EdgeInsetsDirectional.only(start: 20, end: 20),
+          itemCount: _widths.length,
+          separatorBuilder: (_, __) => const SizedBox(width: 10),
+          itemBuilder: (context, i) => Container(
+            width: _widths[i],
             height: 30,
             decoration: BoxDecoration(
               color: baseColor,
               borderRadius: BorderRadius.circular(20),
             ),
-          );
-        }).toList(),
+          ),
+        ),
       ),
     );
   }
@@ -453,8 +481,11 @@ class _Divider extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 18),
-      child: Divider(height: 1, thickness: 1, color: Theme.of(context).dividerColor),
+      padding: const EdgeInsets.symmetric(vertical: Spacing.xl - 2),
+      child: Divider(
+          height: 1,
+          thickness: 1,
+          color: AppColors.divider(context).withValues(alpha: 0.6)),
     );
   }
 }
@@ -463,38 +494,82 @@ class _Divider extends StatelessWidget {
 
 class _Section extends StatelessWidget {
   final String title;
+  // أيقونة صغيرة داخل شارة مصبوغة بلون التطبيق تسبق عنوان القسم — تمنح كل
+  // قسم هوية بصرية سريعة التمييز (نوع العرض/العقار/السعر/المزود/الترتيب)
+  // بدل نص عنوان مجرّد فقط.
+  final IconData? icon;
   final String? subtitle;
   final Widget child;
+  // true لعناصر تُعرض كقائمة أفقية قابلة للتمرير (نوع العقار/الفرز/مزود
+  // الخدمة) — يبقى العنوان بنفس هامش 20 كبقية الأقسام، بينما تمتد القائمة
+  // نفسها حتى حافة الورقة فتُدير حشوتها الداخلية بنفسها (20 من البداية فقط)
+  // ليطابق أول عنصر ظاهر حافة العنوان تمامًا، وتترك بقية العناصر "تُلمح"
+  // (peek) عند الحافة المقابلة مطابقةً للتطبيق المرجعي، بدل أن تُحصر القائمة
+  // بهامش 20 مكرر من الخارج والداخل معًا فتبتعد عن محاذاة العنوان.
+  final bool bleedChild;
 
-  const _Section({required this.title, this.subtitle, required this.child});
+  const _Section({
+    required this.title,
+    this.icon,
+    this.subtitle,
+    required this.child,
+    this.bleedChild = false,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            title,
-            style: robotoBold.copyWith(
-                fontSize: 15.5,
-                color: Theme.of(context).brightness == Brightness.dark
-                    ? Colors.white
-                    : const Color(0xFF1A2340)),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: Spacing.lg),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              if (icon != null) ...[
+                Container(
+                  width: 26,
+                  height: 26,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: AppColors.primary(context).withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(AppRadius.small),
+                  ),
+                  child: Icon(icon, size: 14, color: AppColors.primary(context)),
+                ),
+                const SizedBox(width: Spacing.sm),
+              ],
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: AppTypography.smallBold.copyWith(
+                          fontSize: 15.5, color: AppColors.textPrimary(context)),
+                    ),
+                    if (subtitle != null) ...[
+                      const SizedBox(height: 3),
+                      Text(
+                        subtitle!,
+                        style: AppTypography.caption
+                            .copyWith(color: AppColors.textSecondary(context)),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ],
           ),
-          if (subtitle != null) ...[
-            const SizedBox(height: 3),
-            Text(
-              subtitle!,
-              style: robotoRegular.copyWith(
-                  fontSize: 12, color: Colors.grey.shade500),
-            ),
-          ],
-          const SizedBox(height: 12),
-          child,
-        ],
-      ),
+        ),
+        const SizedBox(height: Spacing.md + 2),
+        bleedChild
+            ? child
+            : Padding(
+                padding: const EdgeInsets.symmetric(horizontal: Spacing.lg),
+                child: child,
+              ),
+      ],
     );
   }
 }
@@ -524,32 +599,33 @@ class _SegmentedRow extends StatelessWidget {
         final isSelected = opt == selected;
         return Expanded(
           child: Padding(
-            padding: EdgeInsets.only(left: opt != options.last ? 10 : 0),
+            padding: EdgeInsets.only(left: opt != options.last ? Spacing.sm + 2 : 0),
             child: Material(
               color: isSelected
                   ? primary.withValues(alpha: dark ? 0.2 : 0.1)
-                  : Theme.of(context).cardColor,
-              borderRadius: BorderRadius.circular(13),
+                  : AppColors.surface(context),
+              borderRadius: BorderRadius.circular(AppRadius.medium),
               child: InkWell(
                 onTap: () => onSelect(opt),
-                borderRadius: BorderRadius.circular(13),
+                borderRadius: BorderRadius.circular(AppRadius.medium),
                 child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
+                  duration: AnimSpec.card,
                   curve: Curves.easeOut,
-                  padding: const EdgeInsets.symmetric(vertical: 11),
+                  padding: const EdgeInsets.symmetric(vertical: 13),
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(13),
+                    borderRadius: BorderRadius.circular(AppRadius.medium),
                     border: Border.all(
-                      color: isSelected ? primary : Theme.of(context).dividerColor,
+                      color: isSelected ? primary : AppColors.border(context),
                       width: isSelected ? 1.3 : 1,
                     ),
                   ),
                   child: Center(
                     child: Text(
                       opt,
-                      style: (isSelected ? robotoBold : robotoMedium).copyWith(
+                      style: (isSelected ? AppTypography.smallBold : AppTypography.smallMedium)
+                          .copyWith(
                         fontSize: 12.5,
-                        color: isSelected ? primary : Colors.grey.shade700,
+                        color: isSelected ? primary : AppColors.textSecondary(context),
                       ),
                     ),
                   ),
@@ -563,199 +639,99 @@ class _SegmentedRow extends StatelessWidget {
   }
 }
 
-// ─── Chip Grid (multi-select, soft-tint) ───────────────────────────────────────
+// ─── Chip Row: قائمة أفقية قابلة للتمرير من رقائق بيضاوية الشكل (Stadium)
+// بتعبئة لونية ناعمة عند التحديد — تحل محل الشبكة المتعددة الأسطر (Wrap)
+// السابقة، مطابقةً لنمط "غرف النوم"/"التأثيث" في التطبيق المرجعي حيث كل
+// مجموعة خيارات (فرز/نطاق البحث) تظهر كصف أفقي واحد بدل أسطر متكدّسة ───────
 
-class _ChipGrid extends StatelessWidget {
+class _ChipRow extends StatelessWidget {
   final List<String> options;
   final Set<String> selected;
   final Color primary;
   final ValueChanged<String> onTap;
-  final ScrollController scrollController;
 
-  const _ChipGrid({
+  const _ChipRow({
     required this.options,
     required this.selected,
     required this.primary,
     required this.onTap,
-    required this.scrollController,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Wrap(
-      spacing: 10,
-      runSpacing: 10,
-      children: options.map((opt) {
-        final isSelected = selected.contains(opt);
-        return ScrollRevealItem(
-          scrollController: scrollController,
-          child: Material(
-            color: isSelected ? primary.withValues(alpha: 0.08) : Theme.of(context).cardColor,
-            borderRadius: BorderRadius.circular(10),
+    return SizedBox(
+      height: 40,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsetsDirectional.only(start: Spacing.lg, end: Spacing.lg),
+        itemCount: options.length,
+        separatorBuilder: (_, __) => const SizedBox(width: Spacing.sm + 2),
+        itemBuilder: (context, i) {
+          final opt = options[i];
+          final isSelected = selected.contains(opt);
+          return Material(
+            color: isSelected ? primary.withValues(alpha: 0.1) : AppColors.background(context),
+            borderRadius: BorderRadius.circular(ChipSpec.radius + 4),
             child: InkWell(
               onTap: () => onTap(opt),
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(ChipSpec.radius + 4),
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 180),
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                padding: const EdgeInsets.symmetric(horizontal: Spacing.lg, vertical: 9),
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(ChipSpec.radius + 4),
                   border: Border.all(
-                    color: isSelected ? primary : Theme.of(context).dividerColor,
+                    color: isSelected ? primary : AppColors.border(context),
                     width: isSelected ? 1.4 : 1,
                   ),
                 ),
-                child: Text(
-                  opt,
-                  style: (isSelected ? robotoBold : robotoMedium).copyWith(
-                    fontSize: 12,
-                    color: isSelected ? primary : Colors.grey.shade700,
+                child: Center(
+                  child: Text(
+                    opt,
+                    style: (isSelected ? AppTypography.smallBold : AppTypography.smallMedium)
+                        .copyWith(
+                      fontSize: 12.5,
+                      color: isSelected ? primary : AppColors.textSecondary(context),
+                    ),
                   ),
                 ),
               ),
             ),
-          ),
-        );
-      }).toList(),
-    );
-  }
-}
-
-// ─── بطاقة خيار موحّدة (أيقونة داخل دائرة + نص) تُستخدم في كل شبكات الاختيار
-// (نوع الخدمة/نوع العقار/المنطقة) — قالب واحد بأبعاد أكبر وأوضح مطابقةً
-// لحجم البطاقات في التطبيق المرجعي بدل الأيقونات الصغيرة المزدحمة سابقًا ───
-
-class _OptionGridCard extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final bool isSelected;
-  final Color primary;
-  final double width;
-  final VoidCallback onTap;
-
-  const _OptionGridCard({
-    required this.icon,
-    required this.label,
-    required this.isSelected,
-    required this.primary,
-    required this.width,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final dark = Theme.of(context).brightness == Brightness.dark;
-    // نص/أيقونة الحالة غير المختارة بلون داكن واضح (نفس لون عناوين الورقة)
-    // بدل الرمادي الباهت السابق الذي كان يكاد يندمج مع خلفية الورقة البيضاء.
-    final unselectedInk =
-        dark ? Colors.white.withValues(alpha: 0.82) : const Color(0xFF1A2340);
-    return SizedBox(
-      width: width,
-      child: Material(
-        color: Colors.transparent,
-        borderRadius: BorderRadius.circular(16),
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(16),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 220),
-            curve: Curves.easeOutCubic,
-            constraints: const BoxConstraints(minHeight: 96),
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 12),
-            decoration: BoxDecoration(
-              // خلفية مغايرة لخلفية الورقة (البيضاء) حتى تُرى حدود البطاقة
-              // فعليًا، لا لونًا شفافًا يندمج بها.
-              color: isSelected
-                  ? primary.withValues(alpha: dark ? 0.2 : 0.1)
-                  : Theme.of(context).scaffoldBackgroundColor,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: isSelected
-                    ? primary
-                    : (dark ? Theme.of(context).dividerColor : Colors.grey.shade300),
-                width: isSelected ? 1.6 : 1,
-              ),
-              boxShadow: !isSelected && !dark
-                  ? [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.05),
-                        blurRadius: 8,
-                        offset: const Offset(0, 3),
-                      ),
-                    ]
-                  : null,
-            ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                AnimatedScale(
-                  duration: const Duration(milliseconds: 220),
-                  curve: Curves.easeOutBack,
-                  scale: isSelected ? 1.06 : 1.0,
-                  child: Container(
-                    width: 42,
-                    height: 42,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: isSelected
-                          ? primary.withValues(alpha: dark ? 0.28 : 0.16)
-                          : Theme.of(context).cardColor,
-                    ),
-                    child: Icon(
-                      icon,
-                      size: 22,
-                      color: isSelected ? primary : unselectedInk,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  label,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  textAlign: TextAlign.center,
-                  style: (isSelected ? robotoBold : robotoMedium).copyWith(
-                    fontSize: 11.5,
-                    height: 1.2,
-                    color: isSelected ? primary : unselectedInk,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
+          );
+        },
       ),
     );
   }
 }
 
-// ─── Category (نوع العقار) icon grid — نفس نمط _ServiceTypeGrid ──────────────
+// ─── Category (نوع العقار) — قائمة أفقية قابلة للتمرير بنفس بطاقة/قياسات
+// صفّي "نوع الخدمة"/"المنطقة" (_TypeOptionCard) بالضبط، مع "لمحة" (peek) لبطاقة
+// جزئية عند الحافة المقابلة — مطابقةً حرفيًا لقسم "نوع العقار" في التطبيق
+// المرجعي بدل الشبكة ذات الأربعة أعمدة السابقة ─────────────────────────────
 
-class _CategoryGrid extends StatelessWidget {
+class _CategoryList extends StatelessWidget {
   final ServicesController controller;
   final Color primary;
-  final ScrollController scrollController;
 
-  const _CategoryGrid({
-    required this.controller,
-    required this.primary,
-    required this.scrollController,
-  });
+  const _CategoryList({required this.controller, required this.primary});
 
   @override
   Widget build(BuildContext context) {
     final categories = controller.filtersData!.categories!;
-    final cardWidth = (MediaQuery.of(context).size.width - 40 - 30) / 4;
+    final cardWidth = MediaQuery.of(context).size.width / 3.8;
 
-    return Wrap(
-      spacing: 10,
-      runSpacing: 10,
-      children: categories.map((cat) {
-        final label = cat.nameAr ?? cat.name ?? '';
-        final isSelected = controller.selectedCategories.contains(cat.id);
-        return ScrollRevealItem(
-          scrollController: scrollController,
-          child: _OptionGridCard(
+    return SizedBox(
+      height: 118,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsetsDirectional.only(start: Spacing.lg, end: Spacing.lg),
+        itemCount: categories.length,
+        separatorBuilder: (_, __) => const SizedBox(width: Spacing.sm + 2),
+        itemBuilder: (context, i) {
+          final cat = categories[i];
+          final label = cat.nameAr ?? cat.name ?? '';
+          final isSelected = controller.selectedCategories.contains(cat.id);
+          return _TypeOptionCard(
             icon: serviceCategoryIcon(label),
             label: label,
             isSelected: isSelected,
@@ -764,9 +740,9 @@ class _CategoryGrid extends StatelessWidget {
             onTap: () {
               if (cat.id != null) controller.toggleCategory(cat.id!);
             },
-          ),
-        );
-      }).toList(),
+          );
+        },
+      ),
     );
   }
 }
@@ -803,7 +779,7 @@ class _PriceRangeSection extends StatelessWidget {
             min: floor,
             max: ceiling,
             activeColor: primary,
-            inactiveColor: Theme.of(context).dividerColor,
+            inactiveColor: AppColors.divider(context),
             values: RangeValues(currentMin, currentMax),
             labels: RangeLabels(
               currentMin.toStringAsFixed(0),
@@ -817,16 +793,16 @@ class _PriceRangeSection extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Expanded(
-              child: _PriceBox(label: 'أقل سعر', value: currentMin),
+              child: _PriceBox(label: 'min_price'.tr, value: currentMin),
             ),
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              child: Text('إلى',
-                  style: robotoRegular.copyWith(
-                      fontSize: 12, color: Colors.grey.shade500)),
+              padding: const EdgeInsets.symmetric(horizontal: Spacing.sm + 2),
+              child: Text('to_label'.tr,
+                  style: AppTypography.caption
+                      .copyWith(color: AppColors.textSecondary(context))),
             ),
             Expanded(
-              child: _PriceBox(label: 'أعلى سعر', value: currentMax),
+              child: _PriceBox(label: 'max_price'.tr, value: currentMax),
             ),
           ],
         ),
@@ -844,23 +820,25 @@ class _PriceBox extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: Spacing.md, vertical: 11),
       decoration: BoxDecoration(
-        color: Theme.of(context).scaffoldBackgroundColor,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: Theme.of(context).dividerColor),
+        color: AppColors.background(context),
+        borderRadius: BorderRadius.circular(AppRadius.medium - 1),
+        border: Border.all(color: AppColors.border(context)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             label,
-            style: robotoRegular.copyWith(fontSize: 10.5, color: Colors.grey.shade500),
+            style: AppTypography.caption
+                .copyWith(fontSize: 10.5, color: AppColors.textSecondary(context)),
           ),
           const SizedBox(height: 2),
           Text(
             '${value.toStringAsFixed(0)} ر.س',
-            style: robotoBold.copyWith(fontSize: 13),
+            style: AppTypography.smallBold
+                .copyWith(fontSize: 13, color: AppColors.textPrimary(context)),
           ),
         ],
       ),
@@ -1102,11 +1080,10 @@ class PriceFilterSheet extends StatelessWidget {
   }
 }
 
-/// حوار "الموقع": نفس بنية TypeFilterSheet تمامًا — رأس بعنوان+أيقونة يمينًا
-/// وزر "إعادة ضبط" يسارًا (بلا زر إغلاق)، صف مناطق أفقي قابل للتمرير بنفس
-/// قياسات صف نوع الخدمة (peek عند الحافة)، وزر "بحث" وحيد بعرض كامل —
-/// مع الإبقاء على ميزتَي "استخدم موقعي الحالي" وحقل البحث اليدوي الخاصّتين
-/// بالموقع فقط، فوق الصف الأفقي.
+/// حوار "الموقع": رأس بعنوان+أيقونة يمينًا وزر "إعادة ضبط" يسارًا (بلا زر
+/// إغلاق)، صف مناطق أفقي قابل للتمرير (peek عند الحافة)، وزر "بحث" وحيد
+/// بعرض كامل — مع الإبقاء على ميزتَي "استخدم موقعي الحالي" وحقل البحث اليدوي
+/// الخاصّتين بالموقع فقط، فوق الصف الأفقي.
 class ZoneFilterSheet extends StatefulWidget {
   const ZoneFilterSheet({super.key});
 
@@ -1430,226 +1407,6 @@ class _ZoneFilterSheetState extends State<ZoneFilterSheet>
   }
 }
 
-/// حوار "نوع الخدمة": ورقة مستقلة بتصميم خاص بها (لا تعتمد على _MiniFilterSheet
-/// العام) — رأس بشارة أيقونة وعدّاد تحديد حيّ، حقل بحث فوري عند تعدد الأنواع،
-/// بطاقات اختيار بارزة (شارة صح + توهّج ملوّن عند التحديد)، هيكل تحميل بحركة
-/// shimmer حقيقية بدل النبض البسيط، وتذييل بزر تطبيق يحمل عدّاد النتائج.
-class TypeFilterSheet extends StatefulWidget {
-  const TypeFilterSheet({super.key});
-
-  @override
-  State<TypeFilterSheet> createState() => _TypeFilterSheetState();
-}
-
-class _TypeFilterSheetState extends State<TypeFilterSheet>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _entranceController = AnimationController(
-    vsync: this,
-    duration: const Duration(milliseconds: 300),
-  );
-  late final Animation<double> _fade =
-      CurvedAnimation(parent: _entranceController, curve: Curves.easeOutCubic);
-  late final Animation<Offset> _slide = Tween<Offset>(
-    begin: const Offset(0, 0.06),
-    end: Offset.zero,
-  ).animate(_fade);
-
-  @override
-  void initState() {
-    super.initState();
-    _entranceController.forward();
-  }
-
-  @override
-  void dispose() {
-    _entranceController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _applyAndClose(ServicesController controller) async {
-    await _entranceController.reverse();
-    if (!mounted) return;
-    Get.back();
-    controller.getServicesList(1, reload: true);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final primary = Theme.of(context).primaryColor;
-    final dark = Theme.of(context).brightness == Brightness.dark;
-
-    return GetBuilder<ServicesController>(
-      builder: (controller) {
-        final loading = controller.filtersData == null;
-        final types = controller.filtersData?.serviceTypes ?? [];
-        final selectedCount = controller.selectedServiceTypes.length;
-
-        return FadeTransition(
-          opacity: _fade,
-          child: SlideTransition(
-            position: _slide,
-            child: Container(
-              decoration: BoxDecoration(
-                color: Theme.of(context).cardColor,
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  _header(context, primary, dark, selectedCount, controller),
-                  SizedBox(
-                    height: 126,
-                    child: loading
-                        ? const _HorizontalCardSkeleton(count: 6)
-                        : types.isEmpty
-                            ? _emptyState(context)
-                            : _list(context, controller, primary, types),
-                  ),
-                  const SizedBox(height: 8),
-                  _footer(context, primary, controller),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _header(BuildContext context, Color primary, bool dark,
-      int selectedCount, ServicesController controller) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 12, 20, 18),
-      child: Column(
-        children: [
-          Center(
-            child: Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.grey.shade300,
-                borderRadius: BorderRadius.circular(10),
-              ),
-            ),
-          ),
-          const SizedBox(height: 18),
-          Row(
-            children: [
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.apps_rounded, color: primary, size: 20),
-                  const SizedBox(width: 8),
-                  Text(
-                    'نوع الخدمة',
-                    style: robotoBold.copyWith(
-                        fontSize: 17,
-                        color: dark ? Colors.white : const Color(0xFF1A2340)),
-                  ),
-                ],
-              ),
-              const Spacer(),
-              GestureDetector(
-                onTap: selectedCount > 0
-                    ? () {
-                        controller.selectedServiceTypes.clear();
-                        controller.update();
-                      }
-                    : null,
-                child: Text(
-                  'إعادة ضبط',
-                  style: robotoBold.copyWith(
-                    fontSize: 13.5,
-                    color: selectedCount > 0 ? primary : Colors.grey.shade400,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  // قائمة أفقية قابلة للتمرير، بلا حشو نهائي — لتترك بطاقة آخر عنصر مقصوصة
-  // جزئيًا عند الحافة (peek) كإيحاء بصري بوجود مزيد من العناصر للتمرير،
-  // مطابقةً تمامًا لصف "نوع العقار" في التطبيق المرجعي.
-  Widget _list(BuildContext context, ServicesController controller,
-      Color primary, List<ServiceTypeData> types) {
-    final cardWidth = MediaQuery.of(context).size.width / 3.8;
-    return ListView.separated(
-      scrollDirection: Axis.horizontal,
-      padding: const EdgeInsetsDirectional.only(start: 20, end: 20),
-      itemCount: types.length,
-      separatorBuilder: (_, __) => const SizedBox(width: 10),
-      itemBuilder: (context, i) {
-        final type = types[i];
-        final label = type.name ?? '';
-        final isSelected = controller.selectedServiceTypes.contains(type.id);
-        return _TypeOptionCard(
-          icon: serviceCategoryIcon(label),
-          label: label,
-          isSelected: isSelected,
-          primary: primary,
-          width: cardWidth,
-          onTap: () {
-            if (type.id != null) controller.toggleServiceType(type.id!);
-          },
-        );
-      },
-    );
-  }
-
-  Widget _emptyState(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.inbox_rounded, size: 30, color: Colors.grey.shade400),
-          const SizedBox(height: 8),
-          Text(
-            'لا توجد أنواع خدمات متاحة',
-            style: robotoMedium.copyWith(fontSize: 13, color: Colors.grey.shade500),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _footer(
-      BuildContext context, Color primary, ServicesController controller) {
-    return Container(
-      padding: EdgeInsets.fromLTRB(
-        20,
-        14,
-        20,
-        14 + MediaQuery.of(context).padding.bottom,
-      ),
-      decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
-        border: Border(top: BorderSide(color: Theme.of(context).dividerColor, width: 1)),
-      ),
-      child: SizedBox(
-        width: double.infinity,
-        child: ElevatedButton(
-          onPressed: () => _applyAndClose(controller),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: primary,
-            foregroundColor: Colors.white,
-            elevation: 0,
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          ),
-          child: Text(
-            'بحث',
-            style: robotoBold.copyWith(fontSize: 15, color: Colors.white),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 // ─── بطاقة اختيار نوع الخدمة: تصميم مسطّح (بلا ظلال ولا خلفية دائرية للأيقونة)
 // مطابق لنمط بطاقات "نوع العقار" في التطبيق المرجعي — حدّ رمادي فاتح وأيقونة/
 // نص رماديان في الحالة غير المحددة، وتعبئة خضراء فاتحة + حدّ وأيقونة ونص
@@ -1679,39 +1436,54 @@ class _TypeOptionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final dark = Theme.of(context).brightness == Brightness.dark;
-    final unselectedInk = dark ? Colors.white.withValues(alpha: 0.75) : Colors.grey.shade700;
+    final unselectedInk = AppColors.textSecondary(context);
 
     return SizedBox(
       width: width,
       height: 118,
       child: Material(
         color: Colors.transparent,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(AppRadius.large),
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(AppRadius.large),
           child: AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
+            duration: AnimSpec.card,
             curve: Curves.easeOut,
             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 12),
             decoration: BoxDecoration(
               color: isSelected
                   ? primary.withValues(alpha: dark ? 0.2 : 0.08)
-                  : Theme.of(context).cardColor,
-              borderRadius: BorderRadius.circular(14),
+                  : AppColors.background(context),
+              borderRadius: BorderRadius.circular(AppRadius.large),
               border: Border.all(
-                color: isSelected
-                    ? primary
-                    : (dark ? Theme.of(context).dividerColor : Colors.grey.shade300),
+                color: isSelected ? primary : AppColors.border(context),
                 width: isSelected ? 1.4 : 1,
               ),
+              boxShadow: !isSelected && !dark ? AppShadows.soft(blur: 8, opacity: 0.06) : null,
             ),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
+                // أيقونة داخل شارة دائرية مصبوغة بدل أيقونة مجرّدة — لمسة
+                // أكثر احترافية تميّز البطاقة المختارة بوضوح أكبر من مجرد
+                // تغيّر لون الأيقونة نفسها.
                 leadingBuilder != null
                     ? leadingBuilder!(isSelected)
-                    : Icon(icon, size: 24, color: isSelected ? primary : unselectedInk),
+                    : Container(
+                        width: 36,
+                        height: 36,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          color: isSelected
+                              ? primary.withValues(alpha: dark ? 0.28 : 0.14)
+                              : (dark
+                                  ? Colors.white.withValues(alpha: 0.06)
+                                  : Colors.grey.shade100),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(icon, size: 18, color: isSelected ? primary : unselectedInk),
+                      ),
                 const SizedBox(height: 7),
                 // maxLines:3 بدل 2 — الأسماء الفعلية القادمة من الباكند
                 // (مثال: "أنظمة التخزين للمستودعات") أطول من عناوين المرجع
@@ -1723,7 +1495,8 @@ class _TypeOptionCard extends StatelessWidget {
                   maxLines: 3,
                   overflow: TextOverflow.ellipsis,
                   textAlign: TextAlign.center,
-                  style: (isSelected ? robotoBold : robotoMedium).copyWith(
+                  style: (isSelected ? AppTypography.smallBold : AppTypography.smallMedium)
+                      .copyWith(
                     fontSize: 11,
                     height: 1.2,
                     color: isSelected ? primary : unselectedInk,
@@ -1861,16 +1634,16 @@ class _HorizontalCardSkeleton extends StatelessWidget {
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         physics: const NeverScrollableScrollPhysics(),
-        padding: const EdgeInsetsDirectional.only(start: 20, end: 20),
+        padding: const EdgeInsetsDirectional.only(start: Spacing.lg, end: Spacing.lg),
         itemCount: count,
-        separatorBuilder: (_, __) => const SizedBox(width: 10),
+        separatorBuilder: (_, __) => const SizedBox(width: Spacing.sm + 2),
         itemBuilder: (context, i) {
           return Container(
             width: cardWidth,
             height: 118,
             decoration: BoxDecoration(
               color: baseColor,
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(AppRadius.large),
             ),
           );
         },
@@ -1884,39 +1657,37 @@ class _HorizontalCardSkeleton extends StatelessWidget {
 class _ProviderChips extends StatelessWidget {
   final ServicesController controller;
   final Color primary;
-  final ScrollController scrollController;
 
-  const _ProviderChips({
-    required this.controller,
-    required this.primary,
-    required this.scrollController,
-  });
+  const _ProviderChips({required this.controller, required this.primary});
 
   @override
   Widget build(BuildContext context) {
     final providers = controller.filtersData!.providers!;
-    return Wrap(
-      spacing: 10,
-      runSpacing: 10,
-      children: providers.map((p) {
-        final isSelected = controller.selectedProviders.contains(p.id);
-        return ScrollRevealItem(
-          scrollController: scrollController,
-          child: Material(
-            color: isSelected ? primary.withValues(alpha: 0.08) : Theme.of(context).cardColor,
-            borderRadius: BorderRadius.circular(20),
+    return SizedBox(
+      height: 40,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsetsDirectional.only(start: Spacing.lg, end: Spacing.lg),
+        itemCount: providers.length,
+        separatorBuilder: (_, __) => const SizedBox(width: Spacing.sm + 2),
+        itemBuilder: (context, i) {
+          final p = providers[i];
+          final isSelected = controller.selectedProviders.contains(p.id);
+          return Material(
+            color: isSelected ? primary.withValues(alpha: 0.1) : AppColors.background(context),
+            borderRadius: BorderRadius.circular(ChipSpec.radius + 4),
             child: InkWell(
               onTap: () {
                 if (p.id != null) controller.toggleProvider(p.id!);
               },
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(ChipSpec.radius + 4),
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 180),
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+                padding: const EdgeInsets.symmetric(horizontal: Spacing.md, vertical: 8),
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(ChipSpec.radius + 4),
                   border: Border.all(
-                    color: isSelected ? primary : Theme.of(context).dividerColor,
+                    color: isSelected ? primary : AppColors.border(context),
                     width: isSelected ? 1.4 : 1,
                   ),
                 ),
@@ -1940,18 +1711,19 @@ class _ProviderChips extends StatelessWidget {
                     const SizedBox(width: 5),
                     Text(
                       p.name ?? '',
-                      style: (isSelected ? robotoBold : robotoMedium).copyWith(
+                      style: (isSelected ? AppTypography.smallBold : AppTypography.smallMedium)
+                          .copyWith(
                         fontSize: 12,
-                        color: isSelected ? primary : Colors.grey.shade700,
+                        color: isSelected ? primary : AppColors.textSecondary(context),
                       ),
                     ),
                   ],
                 ),
               ),
             ),
-          ),
-        );
-      }).toList(),
+          );
+        },
+      ),
     );
   }
 }

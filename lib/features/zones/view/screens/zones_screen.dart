@@ -84,7 +84,7 @@ class _ZonesScreenState extends State<ZonesScreen> {
                           Text(
                             'اختر منطقتك',
                             style: TextStyle(
-                              fontFamily: 'Tajawal',
+                              fontFamily: 'IBMPlexSansArabic',
                               fontSize: 18,
                               fontWeight: FontWeight.w700,
                               color: Theme.of(context).primaryColor,
@@ -154,7 +154,7 @@ class _ZonesScreenState extends State<ZonesScreen> {
                       Text(
                         'مرحباً بك',
                         style: TextStyle(
-                          fontFamily: 'Tajawal',
+                          fontFamily: 'IBMPlexSansArabic',
                           fontSize: 13,
                           color: Colors.white.withValues(alpha: 0.8),
                         ),
@@ -163,7 +163,7 @@ class _ZonesScreenState extends State<ZonesScreen> {
                       const Text(
                         'في أبعاد العقارية',
                         style: TextStyle(
-                          fontFamily: 'Tajawal',
+                          fontFamily: 'IBMPlexSansArabic',
                           fontSize: 22,
                           fontWeight: FontWeight.w700,
                           color: Colors.white,
@@ -211,7 +211,7 @@ class _ZonesScreenState extends State<ZonesScreen> {
                     Text(
                       'ابحث عن عقارك المثالي...',
                       style: TextStyle(
-                        fontFamily: 'Tajawal',
+                        fontFamily: 'IBMPlexSansArabic',
                         fontSize: 14,
                         color: Colors.grey[500],
                       ),
@@ -278,7 +278,7 @@ class _ZonesScreenState extends State<ZonesScreen> {
                 child: Text(
                   zone?.nameAr ?? "",
                   style: const TextStyle(
-                    fontFamily: 'Tajawal',
+                    fontFamily: 'IBMPlexSansArabic',
                     color: Colors.white,
                     fontSize: 16,
                     fontWeight: FontWeight.w700,

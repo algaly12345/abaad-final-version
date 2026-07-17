@@ -37,7 +37,7 @@ class ZoneSheet extends StatelessWidget {
                       child: Text(
                       "name ather",
                         style: TextStyle(
-                            fontFamily: 'WorkSans',
+                            fontFamily: 'IBMPlexSansArabic',
                             fontSize: 12.0,
                             fontWeight: FontWeight.w500),
                       ),
@@ -76,7 +76,7 @@ class ZoneSheet extends StatelessWidget {
                 child: Text(
                   "name",
                   style: TextStyle(
-                      fontFamily: 'WorkSans',
+                      fontFamily: 'IBMPlexSansArabic',
                       fontSize: 11.0,
                       fontWeight: FontWeight.w400),
                 ),

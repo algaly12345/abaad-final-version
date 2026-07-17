@@ -159,6 +159,21 @@ import 'package:url_launcher/url_launcher.dart';
 class DrawerMenu extends StatefulWidget {
   const DrawerMenu({super.key});
 
+  /// يجلب بيانات المستخدم إن كانت ناقصة — يُستدعى من initState() (أول بناء)
+  /// ومن onDrawerChanged() في كل Scaffold يحتضن هذه القائمة (كل فتح للقائمة).
+  /// السبب: الـ Drawer widget يُبنى مرة واحدة فقط طوال عمر الـ Scaffold ولا
+  /// يُعاد بناؤه عند كل فتح/إغلاق، فإن فشل الجلب الأول (مثلاً بسبب سباق مع
+  /// حفظ التوكن مباشرة بعد تسجيل الدخول) يبقى عالقاً بلا بيانات حتى إعادة
+  /// تشغيل التطبيق بالكامل — بدون إعادة محاولة عند كل فتح للقائمة.
+  static void ensureUserDataLoaded() {
+    final userController = Get.find<UserController>();
+    if (Get.find<AuthController>().isLoggedIn() &&
+        userController.userInfoModel == null &&
+        !userController.isLoading) {
+      userController.getUserInfo();
+    }
+  }
+
   @override
   State<DrawerMenu> createState() => _DrawerMenuState();
 }
@@ -167,14 +182,9 @@ class _DrawerMenuState extends State<DrawerMenu> {
   @override
   void initState() {
     super.initState();
-    final userController = Get.find<UserController>();
-    if (Get.find<AuthController>().isLoggedIn() &&
-        userController.userInfoModel == null &&
-        !userController.isLoading) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) userController.getUserInfo();
-      });
-    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) DrawerMenu.ensureUserDataLoaded();
+    });
   }
 
   @override

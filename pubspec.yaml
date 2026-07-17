@@ -305,19 +305,19 @@ flutter:
     #- assets/map/
 
   fonts:
-    - family: Tajawal
+    - family: IBMPlexSansArabic
       fonts:
-        - asset: assets/font/Tajawal-ExtraLight.ttf
+        - asset: assets/font/IBMPlexSansArabic-Thin.ttf
+          weight: 100
+        - asset: assets/font/IBMPlexSansArabic-ExtraLight.ttf
           weight: 200
-        - asset: assets/font/Tajawal-Light.ttf
+        - asset: assets/font/IBMPlexSansArabic-Light.ttf
           weight: 300
-        - asset: assets/font/Tajawal-Regular.ttf
+        - asset: assets/font/IBMPlexSansArabic-Regular.ttf
           weight: 400
-        - asset: assets/font/Tajawal-Medium.ttf
+        - asset: assets/font/IBMPlexSansArabic-Medium.ttf
           weight: 500
-        - asset: assets/font/Tajawal-Bold.ttf
+        - asset: assets/font/IBMPlexSansArabic-SemiBold.ttf
+          weight: 600
+        - asset: assets/font/IBMPlexSansArabic-Bold.ttf
           weight: 700
-        - asset: assets/font/Tajawal-ExtraBold.ttf
-          weight: 800
-        - asset: assets/font/Tajawal-Black.ttf
-          weight: 900

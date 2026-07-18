@@ -1,6 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <network-security-config>
+    <!-- عنوان IP المحلي لسيرفر XAMPP يتغيّر كلما تغيّرت شبكة جهاز التطوير —
+         BASE_URL الحالي في app_constants.dart يشير لـ 10.135.230.199، لكن هذا
+         الملف كان يسمح بالاتصال غير المشفّر (HTTP) لعنوان 192.168.1.131
+         القديم فقط، فيرفض النظام أي طلب HTTP لعنوان مختلف
+         (net::ERR_CLEARTEXT_NOT_PERMITTED) — أُبقي العنوان القديم للتوافق مع
+         أجهزة تطوير أخرى، وأُضيف العنوان الحالي. عند تغيّر شبكتك مجدداً حدّث
+         BASE_URL هنا وفي app_constants.dart معاً. -->
     <domain-config cleartextTrafficPermitted="true">
         <domain includeSubdomains="true">192.168.1.131</domain>
+        <domain includeSubdomains="true">10.135.230.199</domain>
     </domain-config>
 </network-security-config>

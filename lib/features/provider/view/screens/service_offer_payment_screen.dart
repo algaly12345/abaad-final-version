@@ -25,6 +25,30 @@ class _ServiceOfferPaymentScreenState extends State<ServiceOfferPaymentScreen> {
   bool _isLoading = true;
   bool _isChecking = false;
 
+  // صفحة الدفع نفسها (نموذج Moyasar + صفحة النتيجة) يقدّمها الباكند كـ HTML
+  // عبر WebView — لا يمكن التحكم بملفاتها من هنا. بدل تعديل الباكند، نحقن CSS
+  // تعيد تلوين/تشكيل نفس عناصرها (بأسماء أصنافها الفعلية من moyasar.css
+  // ومن قالب الباكند) لتطابق نظام تصميم التطبيق، بالكامل من كود فلاتر.
+  static const String _themeOverrideCss = '''
+    body { background:#F6F8FD !important; font-family: -apple-system, 'Segoe UI', Tahoma, Arial, sans-serif !important; }
+    .pay-amount { color:#1A2340 !important; font-weight:800 !important; }
+    .pay-sub { color:#64748B !important; }
+    .mysr-form-moyasarForm { background:#FFFFFF; border-radius:16px; box-shadow:0 4px 16px rgba(15,30,60,.06); padding:16px; }
+    .mysr-form-label { color:#1A2340 !important; font-weight:600 !important; font-size:13px !important; }
+    .mysr-form-input, .mysr-form-cardInfoElement {
+      border:1px solid #E8ECF0 !important; border-radius:12px !important;
+      background:#FFFFFF !important; box-shadow:none !important;
+    }
+    .mysr-form-input:focus, .mysr-form-cardInfoElement:focus-within { border-color:#1A3C5E !important; }
+    .mysr-form-button { background:#1A3C5E !important; border-radius:12px !important; font-weight:700 !important; box-shadow:none !important; }
+    .mysr-form-methodButton { border-radius:12px !important; }
+    .box { background:#FFFFFF; border-radius:16px; box-shadow:0 4px 16px rgba(15,30,60,.06); padding:32px 24px; }
+    .icon { display:inline-flex; align-items:center; justify-content:center; width:64px; height:64px; border-radius:50%; }
+    body[data-status="paid"] .icon { background:rgba(31,170,89,.1); }
+    body[data-status="failed"] .icon { background:rgba(229,57,53,.1); }
+    .msg { color:#1A2340 !important; }
+  ''';
+
   @override
   void initState() {
     super.initState();
@@ -39,10 +63,23 @@ class _ServiceOfferPaymentScreenState extends State<ServiceOfferPaymentScreen> {
           onPageFinished: (url) {
             setState(() => _isLoading = false);
             _checkIfCallback(url);
+            _injectThemeOverride();
           },
         ),
       )
       ..loadRequest(Uri.parse(widget.paymentUrl));
+  }
+
+  void _injectThemeOverride() {
+    _controller.runJavaScript('''
+      (function() {
+        if (document.getElementById('app-theme-override')) return;
+        var s = document.createElement('style');
+        s.id = 'app-theme-override';
+        s.innerHTML = `$_themeOverrideCss`;
+        document.head.appendChild(s);
+      })();
+    ''');
   }
 
   // رابط الـ callback القادم من الباكند يحتوي على "/callback" دائمًا
@@ -101,12 +138,28 @@ class _ServiceOfferPaymentScreenState extends State<ServiceOfferPaymentScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final primary = Theme.of(context).primaryColor;
     return Scaffold(
       appBar: const GradientModuleAppBar(title: 'الدفع'),
       body: Stack(
         children: [
           WebViewWidget(controller: _controller),
-          if (_isLoading) const Center(child: CircularProgressIndicator()),
+          if (_isLoading)
+            Container(
+              color: AppColors.background(context),
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    CircularProgressIndicator(color: primary),
+                    const SizedBox(height: Spacing.lg),
+                    Text('جاري تحميل صفحة الدفع...',
+                        style: AppTypography.small
+                            .copyWith(color: AppColors.textSecondary(context))),
+                  ],
+                ),
+              ),
+            ),
         ],
       ),
     );

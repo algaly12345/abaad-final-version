@@ -374,6 +374,11 @@ class ServiceOfferController extends GetxController implements GetxService {
     return false;
   }
 
+  // لا تُصفَّر بيانات فرد/منشأة (entityType وما يتبعها) هنا: تُجمَع في
+  // ProviderUpgradeScreen مباشرة قبل الانتقال لهذا المعالج وتُرسَل معه في
+  // storeOffer()، فتصفيرها في resetAll() (المستدعاة في initState() لهذا
+  // المعالج) كانت تمحو تلك البيانات فور دخول المستخدم للخطوة الأولى — فيصل
+  // للمراجعة النهائية ويُرفض submitOffer() بصمت لأن entityType أصبح null.
   void resetAll() {
     _selectedServiceTypeIndex = -1;
     _selectedPlanIndex = _servicePlans.isNotEmpty ? 0 : -1;
@@ -383,11 +388,6 @@ class ServiceOfferController extends GetxController implements GetxService {
     _offerType = 'discount';
     _pickedImage = null;
     _priceCalculation = null;
-    _entityType = null;
-    _organizationIdType = null;
-    identityNumberController.clear();
-    freelanceMembershipController.clear();
-    commercialRegistrationController.clear();
     update();
   }
 }

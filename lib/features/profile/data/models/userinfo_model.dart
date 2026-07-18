@@ -29,6 +29,7 @@ class UserInfoModel {
   String? accountVerification = "";
   String? advertiserNo = "";
   String? unified_number = "";
+  ProviderIdentity? provider;
 
   UserInfoModel({
     this.id,
@@ -83,6 +84,9 @@ class UserInfoModel {
 
     estateCount = json['estate_count'];
     agent = json['agent'] != null ? Userinfo.fromJson(json['agent']) : null;
+    provider = json['provider'] != null
+        ? ProviderIdentity.fromJson(json['provider'])
+        : null;
 
     // 🛠️ حماية المحفظة والنقاط من قيم الـ null
     walletBalance = json['wallet_balance'] != null
@@ -203,4 +207,37 @@ class Userinfo {
     data['fal_license_number'] = falLicenseNumber;
     return data;
   }
+}
+
+/// بيانات هوية مزوّد الخدمة (فرد/منشأة) كما تُخزَّن في جدول service_providers
+/// بالباكند — تُقرأ هنا بدل الاعتماد على حالة محلية في التطبيق (راجع
+/// ServiceOfferController.hydrateEntityFromProvider) حتى لا يُطلَب من
+/// مزوّد معتمد إعادة إدخالها في كل عرض جديد.
+class ProviderIdentity {
+  String? identityType; // 'individual' أو 'company'
+  String? identityNumber;
+  String? commercialRegistrationNo;
+
+  ProviderIdentity({
+    this.identityType,
+    this.identityNumber,
+    this.commercialRegistrationNo,
+  });
+
+  ProviderIdentity.fromJson(Map<String, dynamic> json) {
+    identityType = json['identity_type'];
+    identityNumber = json['identity_number'];
+    commercialRegistrationNo = json['commercial_registration_no'];
+  }
+
+  // القيم الوهمية ('pending') تُخلَّف من مسارات تسجيل قديمة (AgentController/
+  // RegisterController) ولا تمثّل بيانات حقيقية أدخلها المستخدم — تُعامَل هنا
+  // كبيانات غير مكتملة.
+  bool get isComplete =>
+      (identityType == 'individual' &&
+          (identityNumber?.isNotEmpty ?? false) &&
+          identityNumber != 'pending') ||
+      (identityType == 'company' &&
+          (commercialRegistrationNo?.isNotEmpty ?? false) &&
+          commercialRegistrationNo != 'pending');
 }

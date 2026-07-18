@@ -1,4 +1,5 @@
-﻿import 'package:abaad_flutter/features/provider/data/models/service_offer_setup_model.dart';
+﻿import 'package:abaad_flutter/features/profile/data/models/userinfo_model.dart';
+import 'package:abaad_flutter/features/provider/data/models/service_offer_setup_model.dart';
 import 'package:abaad_flutter/features/provider/data/repositories/service_offer_repo.dart';
 import 'package:abaad_flutter/shared/widgets/custom_snackbar.dart';
 import 'package:flutter/widgets.dart';
@@ -27,6 +28,11 @@ class ServiceOfferController extends GetxController implements GetxService {
   final TextEditingController commercialRegistrationController =
       TextEditingController();
 
+  // صحيح فقط عندما جاءت بيانات الهوية من ملف مزوّد الخدمة المحفوظ بالباكند
+  // (hydrateEntityFromProvider) بدل إدخال جديد عبر ProviderUpgradeScreen —
+  // تُستخدَم في submitOffer() لتخطي إعادة التحقق من صيغة بيانات محفوظة سلفاً.
+  bool _identityAlreadyOnFile = false;
+
   String? get entityType => _entityType;
   String? get organizationIdType => _organizationIdType;
 
@@ -40,6 +46,20 @@ class ServiceOfferController extends GetxController implements GetxService {
   void setOrganizationIdType(String type) {
     _organizationIdType = type;
     commercialRegistrationController.clear();
+    update();
+  }
+
+  /// يعبّئ بيانات الهوية من ملف مزوّد الخدمة المحفوظ بالباكند (service_providers)
+  /// بدل مطالبة مزوّد معتمد سلفاً بإعادة إدخالها عبر ProviderUpgradeScreen.
+  void hydrateEntityFromProvider(ProviderIdentity provider) {
+    _entityType = provider.identityType == 'company' ? 'organization' : 'individual';
+    if (provider.identityType == 'individual') {
+      identityNumberController.text = provider.identityNumber ?? '';
+    } else {
+      commercialRegistrationController.text =
+          provider.commercialRegistrationNo ?? '';
+    }
+    _identityAlreadyOnFile = true;
     update();
   }
 
@@ -273,50 +293,54 @@ class ServiceOfferController extends GetxController implements GetxService {
       showCustomSnackBar('اختر فرد أو منشأة');
       return null;
     }
-    if (_entityType == 'individual') {
-      final identityNumber = identityNumberController.text.trim();
-      if (identityNumber.isEmpty) {
-        showCustomSnackBar('رقم الهوية الوطنية مطلوب');
-        return null;
-      }
-      if (!RegExp(r'^[12]\d{9}$').hasMatch(identityNumber)) {
-        showCustomSnackBar('رقم الهوية يجب أن يتكون من 10 أرقام ويبدأ بـ 1 أو 2');
-        return null;
-      }
-      final freelanceNumber = freelanceMembershipController.text.trim();
-      if (freelanceNumber.isEmpty) {
-        showCustomSnackBar('رقم وثيقة العمل الحر مطلوب');
-        return null;
-      }
-      if (!RegExp(r'^FL-\d+$').hasMatch(freelanceNumber)) {
-        showCustomSnackBar(
-          'رقم وثيقة العمل الحر يجب أن يبدأ بـ FL- متبوعاً بأرقام (مثال: FL-240629681)',
-        );
-        return null;
-      }
-    } else if (_entityType == 'organization') {
-      if (_organizationIdType == null) {
-        showCustomSnackBar('اختر رقم السجل التجاري أو الرقم الموحد');
-        return null;
-      }
-      final registrationNumber = commercialRegistrationController.text.trim();
-      if (registrationNumber.isEmpty) {
-        showCustomSnackBar(
-          _organizationIdType == 'unified'
-              ? 'الرقم الموحد مطلوب'
-              : 'رقم السجل التجاري مطلوب',
-        );
-        return null;
-      }
-      final isUnified = _organizationIdType == 'unified';
-      final regex = isUnified ? RegExp(r'^70\d{8}$') : RegExp(r'^\d{10}$');
-      if (!regex.hasMatch(registrationNumber)) {
-        showCustomSnackBar(
-          isUnified
-              ? 'الرقم الموحد يجب أن يتكون من 10 أرقام ويبدأ بـ 70'
-              : 'رقم السجل التجاري يجب أن يتكون من 10 أرقام',
-        );
-        return null;
+    // بيانات جاءت من ملف مزوّد الخدمة المحفوظ بالباكند (hydrateEntityFromProvider)
+    // مؤكَّد صحة صيغتها سلفاً — لا داعي لإعادة التحقق منها هنا مرة أخرى.
+    if (!_identityAlreadyOnFile) {
+      if (_entityType == 'individual') {
+        final identityNumber = identityNumberController.text.trim();
+        if (identityNumber.isEmpty) {
+          showCustomSnackBar('رقم الهوية الوطنية مطلوب');
+          return null;
+        }
+        if (!RegExp(r'^[12]\d{9}$').hasMatch(identityNumber)) {
+          showCustomSnackBar('رقم الهوية يجب أن يتكون من 10 أرقام ويبدأ بـ 1 أو 2');
+          return null;
+        }
+        final freelanceNumber = freelanceMembershipController.text.trim();
+        if (freelanceNumber.isEmpty) {
+          showCustomSnackBar('رقم وثيقة العمل الحر مطلوب');
+          return null;
+        }
+        if (!RegExp(r'^FL-\d+$').hasMatch(freelanceNumber)) {
+          showCustomSnackBar(
+            'رقم وثيقة العمل الحر يجب أن يبدأ بـ FL- متبوعاً بأرقام (مثال: FL-240629681)',
+          );
+          return null;
+        }
+      } else if (_entityType == 'organization') {
+        if (_organizationIdType == null) {
+          showCustomSnackBar('اختر رقم السجل التجاري أو الرقم الموحد');
+          return null;
+        }
+        final registrationNumber = commercialRegistrationController.text.trim();
+        if (registrationNumber.isEmpty) {
+          showCustomSnackBar(
+            _organizationIdType == 'unified'
+                ? 'الرقم الموحد مطلوب'
+                : 'رقم السجل التجاري مطلوب',
+          );
+          return null;
+        }
+        final isUnified = _organizationIdType == 'unified';
+        final regex = isUnified ? RegExp(r'^70\d{8}$') : RegExp(r'^\d{10}$');
+        if (!regex.hasMatch(registrationNumber)) {
+          showCustomSnackBar(
+            isUnified
+                ? 'الرقم الموحد يجب أن يتكون من 10 أرقام ويبدأ بـ 70'
+                : 'رقم السجل التجاري يجب أن يتكون من 10 أرقام',
+          );
+          return null;
+        }
       }
     }
 

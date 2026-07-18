@@ -1,8 +1,10 @@
 import 'dart:io';
 
+import 'package:abaad_flutter/features/profile/controller/user_controller.dart';
 import 'package:abaad_flutter/features/provider/controller/service_offer_controller.dart';
 import 'package:abaad_flutter/features/provider/data/models/service_offer_setup_model.dart';
 import 'package:abaad_flutter/core/routes/route_helper.dart';
+import 'package:abaad_flutter/features/provider/view/screens/provider_upgrade_screen.dart';
 import 'package:abaad_flutter/features/services/view/screens/services_catalog_screen.dart'
     show serviceCategoryIcon;
 import 'package:abaad_flutter/shared/theme/design_system.dart';
@@ -37,8 +39,21 @@ class _AddPropertyServiceOfferScreenState
     // البناء لنفس الإطار، فيسبب خطأ "setState()/markNeedsBuild() called
     // during build".
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      Get.find<ServiceOfferController>().resetAll();
-      Get.find<ServiceOfferController>().loadSetupData();
+      final offerController = Get.find<ServiceOfferController>();
+      offerController.resetAll();
+      offerController.loadSetupData();
+
+      // لا تلمس entityType إن كانت مُعبّأة للتوّ في نفس الجلسة عبر
+      // ProviderUpgradeScreen (مسار المستخدم الجديد) — الفحص هنا فقط لمزوّد
+      // معتمد دخل مباشرة (زر "خدماتي") بلا بيانات هوية محلية بعد.
+      if (offerController.entityType == null) {
+        final provider = Get.find<UserController>().userInfoModel?.provider;
+        if (provider != null && provider.isComplete) {
+          offerController.hydrateEntityFromProvider(provider);
+        } else {
+          Get.off(() => const ProviderUpgradeScreen());
+        }
+      }
     });
   }
 
@@ -521,6 +536,9 @@ class _WizardScreenState extends State<_WizardScreen> {
       priceOrDiscountValue: _valueCtrl.text,
     );
     if (result != null && result.paymentUrl != null) {
+      // يعيد جلب الملف الشخصي كي تصل بيانات الهوية المحفوظة للتوّ بالباكند
+      // (service_providers) محلياً، فلا تُطلَب مجدداً في أي عرض لاحق.
+      Get.find<UserController>().getUserInfo();
       Get.toNamed(
         RouteHelper.getServiceOfferPaymentRoute(),
         arguments: {

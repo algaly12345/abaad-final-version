@@ -50,7 +50,9 @@ class ServiceOfferRepo {
       'description': description,
       'service_plan_id': servicePlanId.toString(),
       'subscription_duration': subscriptionDuration.toString(),
-      'entity_type': entityType,
+      // الباكند يخزّن 'company' لا 'organization' في service_providers.identity_type
+      // — يبقى الاسم الداخلي بالفلاتر 'organization' كما هو، والترجمة هنا فقط.
+      'entity_type': entityType == 'organization' ? 'company' : entityType,
     };
 
     if (servicePrice != null) fields['service_price'] = servicePrice;

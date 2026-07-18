@@ -48,7 +48,7 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
               _buildHeader(context, primary, activeCount),
 
               // ─── Scrollable content ────────────────────────────────────
-              Flexible(
+              Expanded(
                 child: SingleChildScrollView(
                   controller: _scrollController,
                   padding: const EdgeInsets.only(bottom: Spacing.lg),
@@ -276,62 +276,64 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
   Widget _buildFooter(BuildContext context, Color primary,
       ServicesController controller, int activeCount) {
     return Container(
-      padding: EdgeInsets.fromLTRB(
-        Spacing.lg,
-        Spacing.md,
-        Spacing.lg,
-        Spacing.md + MediaQuery.of(context).padding.bottom,
-      ),
       decoration: BoxDecoration(
         color: AppColors.surface(context),
         border: Border(top: BorderSide(color: AppColors.divider(context))),
       ),
-      child: Row(
-        children: [
-          Expanded(
-            flex: 2,
-            child: SizedBox(
-              height: ButtonSpec.primaryHeight,
-              child: OutlinedButton(
-                onPressed: () => controller.clearFilters(),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: AppColors.textSecondary(context),
-                  side: BorderSide(color: AppColors.border(context), width: 1.4),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(ButtonSpec.radius)),
-                ),
-                child: Text(
-                  'reset_fields'.tr,
-                  style: AppTypography.smallBold
-                      .copyWith(fontSize: 13.5, color: AppColors.textSecondary(context)),
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(width: Spacing.md),
-          Expanded(
-            flex: 3,
-            child: SizedBox(
-              height: ButtonSpec.primaryHeight,
-              child: ElevatedButton(
-                onPressed: () => controller.applyFilters(),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: primary,
-                  foregroundColor: Colors.white,
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(ButtonSpec.radius)),
-                ),
-                child: Text(
-                  activeCount > 0
-                      ? '${'apply_filters'.tr} ($activeCount)'
-                      : 'apply_filters'.tr,
-                  style: AppTypography.bodyBold.copyWith(fontSize: 14.5, color: Colors.white),
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding:
+              const EdgeInsets.fromLTRB(Spacing.lg, Spacing.md, Spacing.lg, Spacing.md),
+          child: Row(
+            children: [
+              Expanded(
+                flex: 2,
+                child: SizedBox(
+                  height: ButtonSpec.primaryHeight,
+                  child: OutlinedButton(
+                    onPressed: () => controller.clearFilters(),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.textSecondary(context),
+                      side: BorderSide(color: AppColors.border(context), width: 1.4),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(ButtonSpec.radius)),
+                    ),
+                    child: Text(
+                      'reset_fields'.tr,
+                      style: AppTypography.smallBold.copyWith(
+                          fontSize: 13.5, color: AppColors.textSecondary(context)),
+                    ),
+                  ),
                 ),
               ),
-            ),
+              const SizedBox(width: Spacing.md),
+              Expanded(
+                flex: 3,
+                child: SizedBox(
+                  height: ButtonSpec.primaryHeight,
+                  child: ElevatedButton(
+                    onPressed: () => controller.applyFilters(),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: primary,
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(ButtonSpec.radius)),
+                    ),
+                    child: Text(
+                      activeCount > 0
+                          ? '${'apply_filters'.tr} ($activeCount)'
+                          : 'apply_filters'.tr,
+                      style: AppTypography.bodyBold
+                          .copyWith(fontSize: 14.5, color: Colors.white),
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -350,6 +352,26 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
 
 // ─── زر دائري صغير موحّد (إغلاق الورقة) — مقاس ثابت 32×32 يوازن بصريًا مع
 // SizedBox(width: 32) بالطرف الآخر من رأس الورقة فيبقى العنوان مركزًا تمامًا ─
+
+// ─── يزيل توهّج التمرير الزائد (glow) وشريط التمرير الافتراضي عن كل القوائم
+// الأفقية (نوع العقار/الترتيب/نطاق البحث/مزود الخدمة) لمظهر أنظف عند وصول
+// المستخدم لحافة القائمة ────────────────────────────────────────────────────
+
+class _NoGlowBehavior extends ScrollBehavior {
+  const _NoGlowBehavior();
+
+  @override
+  Widget buildOverscrollIndicator(
+      BuildContext context, Widget child, ScrollableDetails details) {
+    return child;
+  }
+
+  @override
+  Widget buildScrollbar(
+      BuildContext context, Widget child, ScrollableDetails details) {
+    return child;
+  }
+}
 
 class _RoundIconButton extends StatelessWidget {
   final IconData icon;
@@ -481,7 +503,7 @@ class _Divider extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: Spacing.xl - 2),
+      padding: const EdgeInsets.symmetric(vertical: Spacing.xl),
       child: Divider(
           height: 1,
           thickness: 1,
@@ -661,44 +683,47 @@ class _ChipRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return SizedBox(
       height: 40,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsetsDirectional.only(start: Spacing.lg, end: Spacing.lg),
-        itemCount: options.length,
-        separatorBuilder: (_, __) => const SizedBox(width: Spacing.sm + 2),
-        itemBuilder: (context, i) {
-          final opt = options[i];
-          final isSelected = selected.contains(opt);
-          return Material(
-            color: isSelected ? primary.withValues(alpha: 0.1) : AppColors.background(context),
-            borderRadius: BorderRadius.circular(ChipSpec.radius + 4),
-            child: InkWell(
-              onTap: () => onTap(opt),
+      child: ScrollConfiguration(
+        behavior: const _NoGlowBehavior(),
+        child: ListView.separated(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsetsDirectional.only(start: Spacing.lg, end: Spacing.lg),
+          itemCount: options.length,
+          separatorBuilder: (_, __) => const SizedBox(width: Spacing.sm + 2),
+          itemBuilder: (context, i) {
+            final opt = options[i];
+            final isSelected = selected.contains(opt);
+            return Material(
+              color: isSelected ? primary.withValues(alpha: 0.1) : AppColors.background(context),
               borderRadius: BorderRadius.circular(ChipSpec.radius + 4),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 180),
-                padding: const EdgeInsets.symmetric(horizontal: Spacing.lg, vertical: 9),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(ChipSpec.radius + 4),
-                  border: Border.all(
-                    color: isSelected ? primary : AppColors.border(context),
-                    width: isSelected ? 1.4 : 1,
+              child: InkWell(
+                onTap: () => onTap(opt),
+                borderRadius: BorderRadius.circular(ChipSpec.radius + 4),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 180),
+                  padding: const EdgeInsets.symmetric(horizontal: Spacing.lg, vertical: 9),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(ChipSpec.radius + 4),
+                    border: Border.all(
+                      color: isSelected ? primary : AppColors.border(context),
+                      width: isSelected ? 1.4 : 1,
+                    ),
                   ),
-                ),
-                child: Center(
-                  child: Text(
-                    opt,
-                    style: (isSelected ? AppTypography.smallBold : AppTypography.smallMedium)
-                        .copyWith(
-                      fontSize: 12.5,
-                      color: isSelected ? primary : AppColors.textSecondary(context),
+                  child: Center(
+                    child: Text(
+                      opt,
+                      style: (isSelected ? AppTypography.smallBold : AppTypography.smallMedium)
+                          .copyWith(
+                        fontSize: 12.5,
+                        color: isSelected ? primary : AppColors.textSecondary(context),
+                      ),
                     ),
                   ),
                 ),
               ),
-            ),
-          );
-        },
+            );
+          },
+        ),
       ),
     );
   }
@@ -722,26 +747,29 @@ class _CategoryList extends StatelessWidget {
 
     return SizedBox(
       height: 118,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsetsDirectional.only(start: Spacing.lg, end: Spacing.lg),
-        itemCount: categories.length,
-        separatorBuilder: (_, __) => const SizedBox(width: Spacing.sm + 2),
-        itemBuilder: (context, i) {
-          final cat = categories[i];
-          final label = cat.nameAr ?? cat.name ?? '';
-          final isSelected = controller.selectedCategories.contains(cat.id);
-          return _TypeOptionCard(
-            icon: serviceCategoryIcon(label),
-            label: label,
-            isSelected: isSelected,
-            primary: primary,
-            width: cardWidth,
-            onTap: () {
-              if (cat.id != null) controller.toggleCategory(cat.id!);
-            },
-          );
-        },
+      child: ScrollConfiguration(
+        behavior: const _NoGlowBehavior(),
+        child: ListView.separated(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsetsDirectional.only(start: Spacing.lg, end: Spacing.lg),
+          itemCount: categories.length,
+          separatorBuilder: (_, __) => const SizedBox(width: Spacing.sm + 2),
+          itemBuilder: (context, i) {
+            final cat = categories[i];
+            final label = cat.nameAr ?? cat.name ?? '';
+            final isSelected = controller.selectedCategories.contains(cat.id);
+            return _TypeOptionCard(
+              icon: serviceCategoryIcon(label),
+              label: label,
+              isSelected: isSelected,
+              primary: primary,
+              width: cardWidth,
+              onTap: () {
+                if (cat.id != null) controller.toggleCategory(cat.id!);
+              },
+            );
+          },
+        ),
       ),
     );
   }
@@ -827,18 +855,33 @@ class _PriceBox extends StatelessWidget {
         border: Border.all(color: AppColors.border(context)),
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Text(
             label,
+            textAlign: TextAlign.center,
             style: AppTypography.caption
                 .copyWith(fontSize: 10.5, color: AppColors.textSecondary(context)),
           ),
-          const SizedBox(height: 2),
-          Text(
-            '${value.toStringAsFixed(0)} ر.س',
-            style: AppTypography.smallBold
-                .copyWith(fontSize: 13, color: AppColors.textPrimary(context)),
+          const SizedBox(height: 3),
+          // ترتيب صريح (رقم ثم "ر.س") بدل دمجهما في نص واحد — يمنع خوارزمية
+          // Bidi من إعادة ترتيب الرقم والعملة عندما يحيط بهما سياق عربي RTL.
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            textDirection: TextDirection.ltr,
+            children: [
+              Text(
+                value.toStringAsFixed(0),
+                style: AppTypography.smallBold
+                    .copyWith(fontSize: 13, color: AppColors.textPrimary(context)),
+              ),
+              const SizedBox(width: 3),
+              Text(
+                'ر.س',
+                style: AppTypography.smallBold
+                    .copyWith(fontSize: 13, color: AppColors.textPrimary(context)),
+              ),
+            ],
           ),
         ],
       ),
@@ -1665,64 +1708,71 @@ class _ProviderChips extends StatelessWidget {
     final providers = controller.filtersData!.providers!;
     return SizedBox(
       height: 40,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsetsDirectional.only(start: Spacing.lg, end: Spacing.lg),
-        itemCount: providers.length,
-        separatorBuilder: (_, __) => const SizedBox(width: Spacing.sm + 2),
-        itemBuilder: (context, i) {
-          final p = providers[i];
-          final isSelected = controller.selectedProviders.contains(p.id);
-          return Material(
-            color: isSelected ? primary.withValues(alpha: 0.1) : AppColors.background(context),
-            borderRadius: BorderRadius.circular(ChipSpec.radius + 4),
-            child: InkWell(
-              onTap: () {
-                if (p.id != null) controller.toggleProvider(p.id!);
-              },
+      child: ScrollConfiguration(
+        behavior: const _NoGlowBehavior(),
+        child: ListView.separated(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsetsDirectional.only(start: Spacing.lg, end: Spacing.lg),
+          itemCount: providers.length,
+          separatorBuilder: (_, __) => const SizedBox(width: Spacing.sm + 2),
+          itemBuilder: (context, i) {
+            final p = providers[i];
+            final isSelected = controller.selectedProviders.contains(p.id);
+            return Material(
+              color: isSelected ? primary.withValues(alpha: 0.1) : AppColors.background(context),
               borderRadius: BorderRadius.circular(ChipSpec.radius + 4),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 180),
-                padding: const EdgeInsets.symmetric(horizontal: Spacing.md, vertical: 8),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(ChipSpec.radius + 4),
-                  border: Border.all(
-                    color: isSelected ? primary : AppColors.border(context),
-                    width: isSelected ? 1.4 : 1,
+              child: InkWell(
+                onTap: () {
+                  if (p.id != null) controller.toggleProvider(p.id!);
+                },
+                borderRadius: BorderRadius.circular(ChipSpec.radius + 4),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 180),
+                  padding: const EdgeInsets.symmetric(horizontal: Spacing.md, vertical: 8),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(ChipSpec.radius + 4),
+                    border: Border.all(
+                      color: isSelected ? primary : AppColors.border(context),
+                      width: isSelected ? 1.4 : 1,
+                    ),
+                  ),
+                  // الرمز (Avatar) دائمًا أول عنصر في الصف — في سياق RTL هذا
+                  // يضعه تلقائيًا على جهة البداية (اليمين)، مطابقةً لبقية
+                  // الرقائق ذات الأيقونة القيادية في هذه الورقة.
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      CircleAvatar(
+                        radius: 11,
+                        backgroundColor: isSelected
+                            ? primary.withValues(alpha: 0.2)
+                            : Colors.grey.shade200,
+                        backgroundImage: (p.image != null && p.image!.isNotEmpty)
+                            ? NetworkImage(p.image!)
+                            : null,
+                        child: (p.image == null || p.image!.isEmpty)
+                            ? Icon(Icons.storefront_rounded,
+                                size: 11,
+                                color: isSelected ? primary : Colors.grey.shade500)
+                            : null,
+                      ),
+                      const SizedBox(width: 5),
+                      Text(
+                        p.name ?? '',
+                        style:
+                            (isSelected ? AppTypography.smallBold : AppTypography.smallMedium)
+                                .copyWith(
+                          fontSize: 12,
+                          color: isSelected ? primary : AppColors.textSecondary(context),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    CircleAvatar(
-                      radius: 11,
-                      backgroundColor: isSelected
-                          ? primary.withValues(alpha: 0.2)
-                          : Colors.grey.shade200,
-                      backgroundImage: (p.image != null && p.image!.isNotEmpty)
-                          ? NetworkImage(p.image!)
-                          : null,
-                      child: (p.image == null || p.image!.isEmpty)
-                          ? Icon(Icons.storefront_rounded,
-                              size: 11,
-                              color: isSelected ? primary : Colors.grey.shade500)
-                          : null,
-                    ),
-                    const SizedBox(width: 5),
-                    Text(
-                      p.name ?? '',
-                      style: (isSelected ? AppTypography.smallBold : AppTypography.smallMedium)
-                          .copyWith(
-                        fontSize: 12,
-                        color: isSelected ? primary : AppColors.textSecondary(context),
-                      ),
-                    ),
-                  ],
-                ),
               ),
-            ),
-          );
-        },
+            );
+          },
+        ),
       ),
     );
   }

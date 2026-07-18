@@ -1152,7 +1152,7 @@ class _ServiceCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Row 1: العنوان (أكبر وأوضح) + رقاقة المسافة أسفله مباشرة
+                    // العنوان
                     Text(
                       service.title ?? '',
                       style: robotoBold.copyWith(
@@ -1160,23 +1160,16 @@ class _ServiceCard extends StatelessWidget {
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    // رقاقة مسافة صغيرة (بدل صفّ إحصاءات ضخم يهيمن على البطاقة) —
-                    // الحقل الوحيد المتوفّر فعليًا من الباكند حاليًا (راجع
-                    // ServiceOfferResource::distance_km)؛ لا تقييم هنا لعدم وجود
-                    // نظام مراجعات فعلي بعد (provider.rating يبقى null دائمًا).
-                    if (service.distanceKm != null) ...[
-                      const SizedBox(height: 8),
-                      _DistanceChip(distanceKm: service.distanceKm!),
-                    ],
                     const SizedBox(height: 16),
-                    Container(
+                    Divider(
                       height: 1,
+                      thickness: 1,
                       color: Theme.of(context).dividerColor.withValues(alpha: 0.5),
                     ),
                     const SizedBox(height: 16),
-                    // Row 2: مزوّد الخدمة بأسلوب ListTile — صورة حقيقية إن
-                    // وُجدت (ثقة أعلى للعميل) + الاسم، بلا سهم كشف زائد
-                    // (البطاقة كلها قابلة للضغط أصلاً فلا معنى لسهم منفصل).
+                    // مزوّد الخدمة (صورة + اسم) ورقاقة المسافة معًا في نفس الصف
+                    // — بدل رقاقة معزولة أسفل العنوان مباشرة، فتُقرأ المسافة
+                    // كبيانات ملحقة بمزوّد الخدمة لا كعنصر منفصل عنه بصريًا.
                     Row(
                       children: [
                         _ProviderAvatar(provider: provider, primary: primary),
@@ -1190,16 +1183,20 @@ class _ServiceCard extends StatelessWidget {
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
+                        if (service.distanceKm != null) ...[
+                          const SizedBox(width: 8),
+                          _DistanceChip(distanceKm: service.distanceKm!),
+                        ],
                       ],
                     ),
-                    // وسم نوع الخدمة (كان يُعرض فوق الصورة سابقًا) مدمج مع
-                    // وسوم فئات العرض في مجموعة واحدة أسفل صفّ مزوّد الخدمة
-                    // مباشرة — بدل شارة منفصلة تُثقل الصورة بعنصر إضافي فوقها.
+                    // وسوم نوع الخدمة/الفئات: Wrap بدل Row لمنع تجاوز عرض
+                    // البطاقة على الشاشات الصغيرة عند تعدّد الوسوم أو طولها.
                     if (_tagLabels(service).isNotEmpty) ...[
                       const SizedBox(height: 8),
                       Wrap(
-                        spacing: 6,
-                        runSpacing: 6,
+                        alignment: WrapAlignment.start,
+                        spacing: 8,
+                        runSpacing: 8,
                         children: _tagLabels(service)
                             .map((l) => _TagChip(label: l))
                             .toList(),

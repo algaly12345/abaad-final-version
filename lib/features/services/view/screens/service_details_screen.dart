@@ -1,6 +1,7 @@
 import 'package:abaad_flutter/features/services/controller/services_controller.dart';
 import 'package:abaad_flutter/features/provider/data/models/service_offer_model.dart';
 import 'package:abaad_flutter/shared/helpers/date_converter.dart';
+import 'package:abaad_flutter/shared/theme/design_system.dart';
 import 'package:abaad_flutter/shared/utils/styles.dart';
 import 'package:abaad_flutter/shared/widgets/custom_image.dart';
 import 'package:flutter/material.dart';
@@ -53,11 +54,6 @@ String? _zonesSummary(List<ZoneData>? zones) {
   if (zones.length == 1) return zones.first.nameAr ?? zones.first.name;
   return '${zones.length} مناطق';
 }
-
-Color _textColor(BuildContext context) =>
-    Theme.of(context).brightness == Brightness.dark
-        ? Colors.white
-        : const Color(0xFF1A2340);
 
 /// شاشة تفاصيل الخدمة — إعادة تصميم مسطّحة (Uber/Airbnb): SliverAppBar بصورة
 /// الخدمة بدل صفحة قابلة للسحب فوق صورة ملء الشاشة، وجسم أبيض متصل تفصل بين
@@ -185,7 +181,7 @@ class _ServiceSliverAppBar extends StatelessWidget {
       pinned: true,
       elevation: 0,
       backgroundColor: Theme.of(context).cardColor,
-      foregroundColor: _textColor(context),
+      foregroundColor: AppColors.textPrimary(context),
       leading: Padding(
         padding: const EdgeInsets.all(10),
         child: _CircleIconButton(
@@ -301,7 +297,7 @@ class _TitleAndLocation extends StatelessWidget {
         Text(
           service.title ?? '',
           style: robotoBold.copyWith(
-              fontSize: 20, color: _textColor(context), height: 1.3),
+              fontSize: 20, color: AppColors.textPrimary(context), height: 1.3),
         ),
         if (zonesLabel != null) ...[
           const SizedBox(height: 10),
@@ -381,7 +377,7 @@ class _PriceRow extends StatelessWidget {
                     decoration: TextDecoration.lineThrough,
                   )
                 : robotoBold.copyWith(
-                    fontSize: large ? 18 : 16, color: _textColor(context)),
+                    fontSize: large ? 18 : 16, color: AppColors.textPrimary(context)),
           ),
       ],
     );
@@ -420,7 +416,7 @@ class _ChipsSection extends StatelessWidget {
       children: [
         Text(title,
             style:
-                robotoBold.copyWith(fontSize: 16, color: _textColor(context))),
+                robotoBold.copyWith(fontSize: 16, color: AppColors.textPrimary(context))),
         const SizedBox(height: 12),
         Wrap(
           spacing: 8,
@@ -472,7 +468,7 @@ class _AboutSection extends StatelessWidget {
       children: [
         Text('service_details'.tr,
             style:
-                robotoBold.copyWith(fontSize: 16, color: _textColor(context))),
+                robotoBold.copyWith(fontSize: 16, color: AppColors.textPrimary(context))),
         const SizedBox(height: 10),
         Text(
           text,
@@ -504,7 +500,7 @@ class _AdditionalInfoSection extends StatelessWidget {
       children: [
         Text('additional_info'.tr,
             style:
-                robotoBold.copyWith(fontSize: 16, color: _textColor(context))),
+                robotoBold.copyWith(fontSize: 16, color: AppColors.textPrimary(context))),
         const SizedBox(height: 12),
         Row(
           children: [
@@ -585,7 +581,7 @@ class _InfoTile extends StatelessWidget {
           const SizedBox(height: 2),
           Text(
             value,
-            style: robotoBold.copyWith(fontSize: 13, color: _textColor(context)),
+            style: robotoBold.copyWith(fontSize: 13, color: AppColors.textPrimary(context)),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
@@ -597,7 +593,7 @@ class _InfoTile extends StatelessWidget {
 
 // ─── مزوّد الخدمة: الاسم + الصورة الرمزية + زر الاتصال في صفّ واحد بأسلوب
 // ListTile، بدل بطاقة منفصلة — الاتصال انتقل إلى هنا مباشرةً بجانب اسم
-// المزوّد (بدل زرّ عريض قائم بذاته أعلى الصفحة)؛ "طلب الخدمة" (واتساب) بقي
+// المزوّد (بدل زرّ عريض قائم بذاته أعلى الصفحة)؛ "تواصل واتساب" (واتساب) بقي
 // وحده في شريط الـCTA السفلي ─────────────────────────────────────────────────
 
 class _ProviderSection extends StatelessWidget {
@@ -621,7 +617,7 @@ class _ProviderSection extends StatelessWidget {
       children: [
         Text('service_provider'.tr,
             style:
-                robotoBold.copyWith(fontSize: 16, color: _textColor(context))),
+                robotoBold.copyWith(fontSize: 16, color: AppColors.textPrimary(context))),
         ListTile(
           contentPadding: EdgeInsets.zero,
           leading: Container(
@@ -644,7 +640,7 @@ class _ProviderSection extends StatelessWidget {
           ),
           title: Text(
             provider.name ?? '',
-            style: robotoBold.copyWith(fontSize: 15, color: _textColor(context)),
+            style: robotoBold.copyWith(fontSize: 15, color: AppColors.textPrimary(context)),
           ),
           subtitle: hasPhone
               ? Text(provider.phone!,
@@ -735,11 +731,11 @@ class _ContactChip extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 15, color: _textColor(context)),
+            Icon(icon, size: 15, color: AppColors.textPrimary(context)),
             const SizedBox(width: 6),
             Text(label,
                 style: robotoMedium.copyWith(
-                    fontSize: 12, color: _textColor(context))),
+                    fontSize: 12, color: AppColors.textPrimary(context))),
           ],
         ),
       ),
@@ -748,7 +744,7 @@ class _ContactChip extends StatelessWidget {
 }
 
 // ─── شريط الـCTA السفلي الثابت: خلفية بيضاء + ظلّ علوي ناعم. السعر/الخصم
-// يمين الصفّ (RTL) بعرضه الطبيعي، وزرّ "طلب الخدمة" الأساسي يملأ الباقي
+// يمين الصفّ (RTL) بعرضه الطبيعي، وزرّ "تواصل واتساب" الأساسي يملأ الباقي
 // (~65-70% حسب طول نص السعر) يسارًا ─────────────────────────────────────────
 
 class _StickyBottomBar extends StatelessWidget {
@@ -795,7 +791,7 @@ class _StickyBottomBar extends StatelessWidget {
                           borderRadius: BorderRadius.circular(14)),
                     ),
                     icon: const Icon(Icons.chat_rounded, size: 18),
-                    label: Text('طلب الخدمة',
+                    label: Text('تواصل واتساب',
                         style: robotoBold.copyWith(fontSize: 14.5, color: Colors.white)),
                   ),
                 ),

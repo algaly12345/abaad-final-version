@@ -1,6 +1,5 @@
 import 'package:abaad_flutter/features/provider/controller/service_offer_controller.dart';
 import 'package:abaad_flutter/shared/theme/design_system.dart';
-import 'package:abaad_flutter/shared/widgets/gradient_module_app_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:webview_flutter/webview_flutter.dart';
@@ -136,30 +135,80 @@ class _ServiceOfferPaymentScreenState extends State<ServiceOfferPaymentScreen> {
     );
   }
 
+  Widget _buildTopBar(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardColor,
+        border: Border(
+          bottom: BorderSide(color: Theme.of(context).dividerColor),
+        ),
+      ),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),
+      child: SafeArea(
+        bottom: false,
+        child: Row(
+          children: [
+            InkWell(
+              onTap: () => Get.back(),
+              borderRadius: BorderRadius.circular(14),
+              child: Container(
+                width: 48,
+                height: 48,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Theme.of(context).dividerColor),
+                ),
+                child: Icon(Icons.arrow_back_ios_new_rounded,
+                    size: 18, color: Theme.of(context).primaryColor),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                'الدفع',
+                style: AppTypography.title
+                    .copyWith(color: AppColors.textPrimary(context)),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final primary = Theme.of(context).primaryColor;
     return Scaffold(
-      appBar: const GradientModuleAppBar(title: 'الدفع'),
-      body: Stack(
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      body: Column(
         children: [
-          WebViewWidget(controller: _controller),
-          if (_isLoading)
-            Container(
-              color: AppColors.background(context),
-              child: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    CircularProgressIndicator(color: primary),
-                    const SizedBox(height: Spacing.lg),
-                    Text('جاري تحميل صفحة الدفع...',
-                        style: AppTypography.small
-                            .copyWith(color: AppColors.textSecondary(context))),
-                  ],
-                ),
-              ),
+          _buildTopBar(context),
+          Expanded(
+            child: Stack(
+              children: [
+                WebViewWidget(controller: _controller),
+                if (_isLoading)
+                  Container(
+                    color: AppColors.background(context),
+                    child: Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          CircularProgressIndicator(color: primary),
+                          const SizedBox(height: Spacing.lg),
+                          Text('جاري تحميل صفحة الدفع...',
+                              style: AppTypography.small.copyWith(
+                                  color: AppColors.textSecondary(context))),
+                        ],
+                      ),
+                    ),
+                  ),
+              ],
             ),
+          ),
         ],
       ),
     );

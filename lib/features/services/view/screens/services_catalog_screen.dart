@@ -1324,7 +1324,7 @@ class _ProviderAvatar extends StatelessWidget {
   }
 }
 
-// ─── أزرار الإجراءات: زر رئيسي عريض "طلب الخدمة" (يفتح واتساب مباشرة — بدون
+// ─── أزرار الإجراءات: زر رئيسي عريض "تواصل واتساب" (يفتح واتساب مباشرة — بدون
 // شاشة تفاصيل ولا نظام طلبات خلفي، بحسب الاتفاق) إلى جانب زرَّي أيقونة مربّعين
 // صغيرين للاتصال/الخريطة، كلّها في صفّ واحد — الزرّ الرئيسي أوّل عنصر في
 // أبناء Row فيقع أقصى اليمين بصريًا (اتجاه RTL) آخذًا معظم العرض، والزرّان
@@ -1350,6 +1350,7 @@ class _ServiceActionButtons extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final zone = _mappableZone;
+    final primary = Theme.of(context).primaryColor;
     return Row(
       children: [
         Expanded(
@@ -1360,7 +1361,7 @@ class _ServiceActionButtons extends StatelessWidget {
                 'https://wa.me/${_cleanPhoneForWhatsapp(provider.phone!)}',
               ),
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.green.shade600,
+                backgroundColor: primary,
                 foregroundColor: Colors.white,
                 elevation: 0,
                 shape: RoundedRectangleBorder(
@@ -1369,21 +1370,21 @@ class _ServiceActionButtons extends StatelessWidget {
               ),
               icon: const Icon(Icons.chat_rounded, size: 18),
               label:
-                  Text('طلب الخدمة', style: robotoBold.copyWith(fontSize: 13.5)),
+                  Text('تواصل واتساب', style: robotoBold.copyWith(fontSize: 13.5)),
             ),
           ),
         ),
         const SizedBox(width: 8),
         _SquareIconButton(
           icon: Icons.call_rounded,
-          color: Colors.blue.shade600,
+          color: primary,
           onTap: () => _launchUrl('tel:${provider.phone}'),
         ),
         if (zone != null) ...[
           const SizedBox(width: 8),
           _SquareIconButton(
             icon: Icons.map_outlined,
-            color: Colors.deepOrange.shade400,
+            color: primary,
             onTap: () => _launchUrl(
               'https://www.google.com/maps/search/?api=1&query=${zone.latitude},${zone.longitude}',
             ),

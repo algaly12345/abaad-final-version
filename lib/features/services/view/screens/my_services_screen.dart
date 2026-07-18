@@ -3,9 +3,9 @@ import 'package:abaad_flutter/features/provider/controller/provider_permission_c
 import 'package:abaad_flutter/features/services/controller/services_controller.dart';
 import 'package:abaad_flutter/features/provider/data/models/service_offer_model.dart';
 import 'package:abaad_flutter/core/routes/route_helper.dart';
+import 'package:abaad_flutter/shared/theme/design_system.dart';
 import 'package:abaad_flutter/shared/utils/styles.dart';
 import 'package:abaad_flutter/shared/widgets/custom_image.dart';
-import 'package:abaad_flutter/shared/widgets/gradient_module_app_bar.dart';
 import 'package:abaad_flutter/shared/widgets/not_logged_in_screen.dart';
 import 'package:abaad_flutter/features/services/view/screens/service_details_screen.dart';
 import 'package:flutter/material.dart';
@@ -55,8 +55,89 @@ class _MyServicesScreenState extends State<MyServicesScreen>
     );
   }
 
+  // ─── الشريط العلوي: نفس بنية شريط "دليل الخدمات" حرفيًا — خلفية cardColor
+  // مسطّحة بلا تدرّج/ظل، حدّ سفلي رفيع فقط، وزرّ رجوع دائري بحدّ خفيف ولون
+  // Primary (راجع _BackHomeButton في services_catalog_screen.dart) ──────────
+  Widget _buildTopBar(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardColor,
+        border: Border(
+          bottom: BorderSide(color: Theme.of(context).dividerColor),
+        ),
+      ),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),
+      child: SafeArea(
+        bottom: false,
+        child: Row(
+          children: [
+            InkWell(
+              onTap: () => Get.back(),
+              borderRadius: BorderRadius.circular(14),
+              child: Container(
+                width: 48,
+                height: 48,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Theme.of(context).dividerColor),
+                ),
+                child: Icon(Icons.arrow_back_ios_new_rounded,
+                    size: 18, color: Theme.of(context).primaryColor),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                'my_services'.tr,
+                style: robotoBold.copyWith(
+                    fontSize: 17, color: AppColors.textPrimary(context)),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ─── شريط التبويبات: يقع مباشرة أسفل الشريط العلوي بنفس خلفيته الفاتحة
+  // (وليس داخل رأس داكن) — مؤشّر سفلي بلون Primary يميّز التبويب المحدَّد،
+  // بنفس خط/ألوان بقية الشاشة ────────────────────────────────────────────
+  Widget _buildTabBar(BuildContext context, Color primary) {
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardColor,
+        border: Border(
+          bottom: BorderSide(color: Theme.of(context).dividerColor),
+        ),
+      ),
+      child: TabBar(
+        controller: _tabController,
+        isScrollable: true,
+        labelColor: primary,
+        unselectedLabelColor: Colors.grey.shade500,
+        labelStyle: robotoBold.copyWith(fontSize: 13),
+        unselectedLabelStyle: robotoRegular.copyWith(fontSize: 13),
+        indicatorColor: primary,
+        indicatorWeight: 3,
+        indicatorSize: TabBarIndicatorSize.label,
+        dividerColor: Colors.transparent,
+        tabs: [
+          Tab(text: 'active_status'.tr),
+          Tab(text: 'under_review'.tr),
+          Tab(text: 'rejected_status'.tr),
+          Tab(text: 'expired_status'.tr),
+        ],
+      ),
+    );
+  }
+
   Widget _buildContent(BuildContext context) {
     final primary = Theme.of(context).primaryColor;
+    final canCreate =
+        Get.find<ProviderPermissionController>().canCreateServices;
 
     final content = GetBuilder<ServicesController>(
       builder: (controller) {
@@ -115,47 +196,32 @@ class _MyServicesScreenState extends State<MyServicesScreen>
       },
     );
 
-    final tabBar = TabBar(
-      controller: _tabController,
-      labelColor: Colors.white,
-      unselectedLabelColor: Colors.white.withValues(alpha: 0.65),
-      indicatorColor: Colors.white,
-      indicatorWeight: 3,
-      labelStyle: robotoMedium.copyWith(fontSize: 13),
-      unselectedLabelStyle: robotoRegular.copyWith(fontSize: 13),
-      isScrollable: true,
-      tabs: [
-        Tab(text: 'active_status'.tr),
-        Tab(text: 'under_review'.tr),
-        Tab(text: 'rejected_status'.tr),
-        Tab(text: 'expired_status'.tr),
-      ],
-    );
-
-    final canCreate =
-        Get.find<ProviderPermissionController>().canCreateServices;
-
+    // زرّ الإضافة العائم — بنفس تنسيق زرّ "إضافة خدمة" في نظام التصميم
+    // (services_hub_screen.dart): خلفية Primary، أيقونة + نص أبيض عريض،
+    // في أسفل يمين الشاشة (الموضع الافتراضي لـ FloatingActionButton.extended).
     final fab = canCreate
         ? FloatingActionButton.extended(
-            onPressed: () =>
-                Get.toNamed(RouteHelper.getAddServiceOfferRoute()),
             backgroundColor: primary,
             foregroundColor: Colors.white,
             elevation: 4,
-            icon: const Icon(Icons.add_rounded),
+            onPressed: () =>
+                Get.toNamed(RouteHelper.getAddServiceOfferRoute()),
+            icon: const Icon(Icons.add_business),
             label: Text('add_service'.tr,
-                style: robotoMedium.copyWith(fontSize: 13)),
+                style: robotoBold.copyWith(color: Colors.white, fontSize: 13)),
           )
         : null;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F6F9),
-      appBar: GradientModuleAppBar(
-        title: 'my_services'.tr,
-        bottom: tabBar,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      body: Column(
+        children: [
+          _buildTopBar(context),
+          _buildTabBar(context, primary),
+          Expanded(child: content),
+        ],
       ),
       floatingActionButton: fab,
-      body: content,
     );
   }
 }
@@ -232,22 +298,19 @@ class _ServiceCard extends StatelessWidget {
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(18),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.06),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
-            ),
-          ],
+          color: Theme.of(context).cardColor,
+          borderRadius: BorderRadius.circular(AppRadius.extraLarge),
+          boxShadow: AppShadows.soft(
+              blur: 16,
+              opacity:
+                  Theme.of(context).brightness == Brightness.dark ? 0.28 : 0.06),
         ),
         child: Row(
           children: [
             // Image
             ClipRRect(
               borderRadius: const BorderRadius.horizontal(
-                  right: Radius.circular(18)),
+                  right: Radius.circular(AppRadius.extraLarge)),
               child: CustomImage(
                 image: service.image ?? '',
                 width: 90,
@@ -270,7 +333,7 @@ class _ServiceCard extends StatelessWidget {
                             service.title ?? '',
                             style: robotoBold.copyWith(
                                 fontSize: 13,
-                                color: const Color(0xFF1A2340)),
+                                color: AppColors.textPrimary(context)),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -398,25 +461,36 @@ class _EmptyTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            width: 80,
-            height: 80,
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.1),
-              shape: BoxShape.circle,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 96,
+              height: 96,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    color.withValues(alpha: 0.1),
+                    color.withValues(alpha: 0.04),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, size: 42, color: color.withValues(alpha: 0.6)),
             ),
-            child: Icon(icon, size: 40, color: color.withValues(alpha: 0.6)),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            message,
-            style: robotoMedium.copyWith(
-                fontSize: 15, color: Colors.grey.shade600),
-          ),
-        ],
+            const SizedBox(height: 22),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: robotoBold.copyWith(
+                  fontSize: 16, color: AppColors.textPrimary(context)),
+            ),
+          ],
+        ),
       ),
     );
   }

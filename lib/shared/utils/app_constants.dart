@@ -14,7 +14,7 @@ class AppConstants {
 
   // فعّل هذا للاختبار المحلي
 
-  static const String BASE_URL = 'http://10.142.190.73';
+  static const String BASE_URL = 'http://10.142.190.214';
 
   // static const String BASE_URL = 'https://baad.arabengksa.com';
   static const String LAND_SERVICE_URL =
@@ -25,6 +25,8 @@ class AppConstants {
   static const String TOKEN = 'abaad_token';
   static const String STARTUP_PERMISSIONS_REQUESTED =
       'startup_permissions_requested';
+  static const String SERVICE_OFFER_TERMS_AGREED =
+      'service_offer_terms_agreed';
   static const String COUNTRY_CODE = 'country_code';
   static const String LANGUAGE_CODE = 'language_code';
   // static const String ZONE_ID = 'zoneId';
@@ -80,6 +82,8 @@ class AppConstants {
       '/api/v1/provider-subscriptions/calculate-price';
   static const String PROVIDER_STORE_OFFER_URI =
       '/api/v1/provider-subscriptions/store-offer';
+  static const String PROVIDER_UPDATE_IDENTITY_URI =
+      '/api/v1/provider-subscriptions/update-identity';
   static const String PROVIDER_SUBSCRIPTION_STATUS_PREFIX =
       '/api/v1/provider-subscriptions/';
   static const String PROVIDER_PERMISSIONS_URI = '/api/v1/provider/permissions';

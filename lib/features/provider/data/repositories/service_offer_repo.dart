@@ -23,6 +23,22 @@ class ServiceOfferRepo {
     });
   }
 
+  /// حفظ فوري لبيانات هوية مزوّد الخدمة (فرد/منشأة) — يُستدعى من
+  /// ProviderUpgradeScreen مباشرة بدل انتظار إتمام معالج "إضافة خدمة".
+  Future<Response> updateIdentity({
+    required String entityType, // 'individual' أو 'organization'
+    String? identityNumber,
+    String? commercialRegistrationNo,
+  }) async {
+    return await apiClient.postData(AppConstants.PROVIDER_UPDATE_IDENTITY_URI, {
+      // الباكند يخزّن 'company' لا 'organization' في service_providers.identity_type.
+      'identity_type': entityType == 'organization' ? 'company' : entityType,
+      if (identityNumber != null) 'identity_number': identityNumber,
+      if (commercialRegistrationNo != null)
+        'commercial_registration_no': commercialRegistrationNo,
+    });
+  }
+
   /// يبني الحقول بصيغة categories[0]، categories[1]... حتى يفهمها
   /// Laravel كمصفوفة عند الإرسال بصيغة multipart/form-data.
   Future<Response> storeOffer({
@@ -36,6 +52,8 @@ class ServiceOfferRepo {
     required int subscriptionDuration,
     required List<int> categories,
     required List<int> zones,
+    required double latitude,
+    required double longitude,
     required XFile image,
     required String entityType, // 'individual' أو 'organization'
     String? identityNumber,
@@ -53,6 +71,8 @@ class ServiceOfferRepo {
       // الباكند يخزّن 'company' لا 'organization' في service_providers.identity_type
       // — يبقى الاسم الداخلي بالفلاتر 'organization' كما هو، والترجمة هنا فقط.
       'entity_type': entityType == 'organization' ? 'company' : entityType,
+      'latitude': latitude.toString(),
+      'longitude': longitude.toString(),
     };
 
     if (servicePrice != null) fields['service_price'] = servicePrice;

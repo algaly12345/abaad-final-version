@@ -383,6 +383,16 @@
   "zones_and_categories": "المناطق والفئات",
   "zones_categories_subtitle": "حدد أين ستظهر خدمتك ولأي نوع عقار",
 
+  "offer_location": "موقع الخدمة",
+  "offer_location_subtitle": "حدد موقع الخدمة على الخارطة أو استخدم موقعك الحالي",
+  "use_current_location": "استخدام موقعي الحالي",
+  "selected_location": "الموقع المحدد",
+  "resolving_location": "جاري تحديد الموقع...",
+  "location_required_hint": "يرجى تحديد الموقع على الخارطة",
+  "location_service_disabled": "يرجى تفعيل خدمة الموقع في جهازك",
+  "location_permission_denied": "لم يتم منح إذن الموقع",
+  "location_fetch_failed": "تعذر تحديد موقعك، حاول مرة أخرى",
+
   "review": "المراجعة",
   "review_and_duration": "مراجعة الطلب",
   "review_subtitle": "راجع تفاصيل عرضك قبل إتمام الدفع",

@@ -63,6 +63,107 @@ class ServiceOfferController extends GetxController implements GetxService {
     update();
   }
 
+  /// تحقّق من اختيار فرد/منشأة وصحة صيغة بيانات الهوية المدخلة — مشترك بين
+  /// saveIdentityNow() (الحفظ الفوري من ProviderUpgradeScreen) وsubmitOffer()
+  /// (كتأكيد إضافي غير ضار عند إرسال العرض). يعرض رسالة الخطأ المناسبة
+  /// ويعيد false عند أول مخالفة، أو true لو كانت البيانات محفوظة سلفاً
+  /// (identityAlreadyOnFile) فلا داعي لإعادة التحقق من صيغتها.
+  bool _validateEntityIdentity() {
+    if (_entityType == null) {
+      showCustomSnackBar('اختر فرد أو منشأة');
+      return false;
+    }
+    if (_identityAlreadyOnFile) {
+      return true;
+    }
+    if (_entityType == 'individual') {
+      final identityNumber = identityNumberController.text.trim();
+      if (identityNumber.isEmpty) {
+        showCustomSnackBar('رقم الهوية الوطنية مطلوب');
+        return false;
+      }
+      if (!RegExp(r'^[12]\d{9}$').hasMatch(identityNumber)) {
+        showCustomSnackBar('رقم الهوية يجب أن يتكون من 10 أرقام ويبدأ بـ 1 أو 2');
+        return false;
+      }
+      final freelanceNumber = freelanceMembershipController.text.trim();
+      if (freelanceNumber.isEmpty) {
+        showCustomSnackBar('رقم وثيقة العمل الحر مطلوب');
+        return false;
+      }
+      if (!RegExp(r'^FL-\d+$').hasMatch(freelanceNumber)) {
+        showCustomSnackBar(
+          'رقم وثيقة العمل الحر يجب أن يبدأ بـ FL- متبوعاً بأرقام (مثال: FL-240629681)',
+        );
+        return false;
+      }
+    } else if (_entityType == 'organization') {
+      if (_organizationIdType == null) {
+        showCustomSnackBar('اختر رقم السجل التجاري أو الرقم الموحد');
+        return false;
+      }
+      final registrationNumber = commercialRegistrationController.text.trim();
+      if (registrationNumber.isEmpty) {
+        showCustomSnackBar(
+          _organizationIdType == 'unified'
+              ? 'الرقم الموحد مطلوب'
+              : 'رقم السجل التجاري مطلوب',
+        );
+        return false;
+      }
+      final isUnified = _organizationIdType == 'unified';
+      final regex = isUnified ? RegExp(r'^70\d{8}$') : RegExp(r'^\d{10}$');
+      if (!regex.hasMatch(registrationNumber)) {
+        showCustomSnackBar(
+          isUnified
+              ? 'الرقم الموحد يجب أن يتكون من 10 أرقام ويبدأ بـ 70'
+              : 'رقم السجل التجاري يجب أن يتكون من 10 أرقام',
+        );
+        return false;
+      }
+    }
+    return true;
+  }
+
+  /// حفظ فوري لبيانات الهوية في service_providers بمجرد إكمالها في
+  /// ProviderUpgradeScreen، بدل انتظار إتمام معالج "إضافة خدمة" بالكامل —
+  /// فلا تُفقَد لو غادر المستخدم المعالج قبل إكماله.
+  Future<bool> saveIdentityNow() async {
+    if (!_validateEntityIdentity()) {
+      return false;
+    }
+    if (_identityAlreadyOnFile) {
+      return true;
+    }
+
+    _isSubmitting = true;
+    update();
+
+    final response = await serviceOfferRepo.updateIdentity(
+      entityType: _entityType!,
+      identityNumber:
+          _entityType == 'individual' ? identityNumberController.text.trim() : null,
+      commercialRegistrationNo: _entityType == 'organization'
+          ? commercialRegistrationController.text.trim()
+          : null,
+    );
+
+    _isSubmitting = false;
+    update();
+
+    if (response.statusCode == 200 && response.body['status'] == 'success') {
+      _identityAlreadyOnFile = true;
+      update();
+      return true;
+    }
+
+    final message = (response.body is Map)
+        ? (response.body['message'] ?? 'فشل حفظ بيانات الهوية')
+        : 'فشل حفظ بيانات الهوية';
+    showCustomSnackBar(message);
+    return false;
+  }
+
   List<ServiceTypeModel> _serviceTypes = [];
   List<OfferCategoryModel> _categories = [];
   List<OfferZoneModel> _zones = [];
@@ -76,6 +177,12 @@ class ServiceOfferController extends GetxController implements GetxService {
 
   String _offerType = 'discount'; // discount | price
   XFile? _pickedImage;
+
+  // موقع هذا العرض تحديداً (لا موقع مزوّد الخدمة العام) — يُختار في خطوة
+  // "الموقع" من المعالج، إما عبر الموقع الحالي أو التقاط نقطة من الخارطة.
+  double? _selectedLatitude;
+  double? _selectedLongitude;
+  String? _selectedAddress;
 
   PriceCalculationModel? _priceCalculation;
 
@@ -93,6 +200,9 @@ class ServiceOfferController extends GetxController implements GetxService {
   int get selectedDuration => _selectedDuration;
   String get offerType => _offerType;
   XFile? get pickedImage => _pickedImage;
+  double? get selectedLatitude => _selectedLatitude;
+  double? get selectedLongitude => _selectedLongitude;
+  String? get selectedAddress => _selectedAddress;
   PriceCalculationModel? get priceCalculation => _priceCalculation;
 
   ServicePlanModel? get selectedPlan =>
@@ -229,6 +339,16 @@ class ServiceOfferController extends GetxController implements GetxService {
     update();
   }
 
+  /// يُستدعى من خطوة "الموقع" بالمعالج عند تحريك الخارطة أو التقاط الموقع
+  /// الحالي — [address] اختياري (نتيجة عكس ترميز جغرافي) ويُعرض فقط، لا يؤثر
+  /// على ما يُرسَل للباكند (latitude/longitude هما مصدر الحقيقة الوحيد).
+  void setSelectedLocation(double latitude, double longitude, {String? address}) {
+    _selectedLatitude = latitude;
+    _selectedLongitude = longitude;
+    _selectedAddress = address;
+    update();
+  }
+
   Future<void> recalculatePrice() async {
     final plan = selectedPlan;
     if (plan?.id == null) return;
@@ -289,59 +409,12 @@ class ServiceOfferController extends GetxController implements GetxService {
       showCustomSnackBar('يجب اختيار منطقة واحدة على الأقل');
       return null;
     }
-    if (_entityType == null) {
-      showCustomSnackBar('اختر فرد أو منشأة');
+    if (_selectedLatitude == null || _selectedLongitude == null) {
+      showCustomSnackBar('يجب تحديد موقع الخدمة على الخارطة');
       return null;
     }
-    // بيانات جاءت من ملف مزوّد الخدمة المحفوظ بالباكند (hydrateEntityFromProvider)
-    // مؤكَّد صحة صيغتها سلفاً — لا داعي لإعادة التحقق منها هنا مرة أخرى.
-    if (!_identityAlreadyOnFile) {
-      if (_entityType == 'individual') {
-        final identityNumber = identityNumberController.text.trim();
-        if (identityNumber.isEmpty) {
-          showCustomSnackBar('رقم الهوية الوطنية مطلوب');
-          return null;
-        }
-        if (!RegExp(r'^[12]\d{9}$').hasMatch(identityNumber)) {
-          showCustomSnackBar('رقم الهوية يجب أن يتكون من 10 أرقام ويبدأ بـ 1 أو 2');
-          return null;
-        }
-        final freelanceNumber = freelanceMembershipController.text.trim();
-        if (freelanceNumber.isEmpty) {
-          showCustomSnackBar('رقم وثيقة العمل الحر مطلوب');
-          return null;
-        }
-        if (!RegExp(r'^FL-\d+$').hasMatch(freelanceNumber)) {
-          showCustomSnackBar(
-            'رقم وثيقة العمل الحر يجب أن يبدأ بـ FL- متبوعاً بأرقام (مثال: FL-240629681)',
-          );
-          return null;
-        }
-      } else if (_entityType == 'organization') {
-        if (_organizationIdType == null) {
-          showCustomSnackBar('اختر رقم السجل التجاري أو الرقم الموحد');
-          return null;
-        }
-        final registrationNumber = commercialRegistrationController.text.trim();
-        if (registrationNumber.isEmpty) {
-          showCustomSnackBar(
-            _organizationIdType == 'unified'
-                ? 'الرقم الموحد مطلوب'
-                : 'رقم السجل التجاري مطلوب',
-          );
-          return null;
-        }
-        final isUnified = _organizationIdType == 'unified';
-        final regex = isUnified ? RegExp(r'^70\d{8}$') : RegExp(r'^\d{10}$');
-        if (!regex.hasMatch(registrationNumber)) {
-          showCustomSnackBar(
-            isUnified
-                ? 'الرقم الموحد يجب أن يتكون من 10 أرقام ويبدأ بـ 70'
-                : 'رقم السجل التجاري يجب أن يتكون من 10 أرقام',
-          );
-          return null;
-        }
-      }
+    if (!_validateEntityIdentity()) {
+      return null;
     }
 
     _isSubmitting = true;
@@ -358,6 +431,8 @@ class ServiceOfferController extends GetxController implements GetxService {
       subscriptionDuration: _selectedDuration,
       categories: _selectedCategoryIds.toList(),
       zones: _selectedZoneIds.toList(),
+      latitude: _selectedLatitude!,
+      longitude: _selectedLongitude!,
       image: _pickedImage!,
       entityType: _entityType!,
       identityNumber: _entityType == 'individual'
@@ -412,6 +487,9 @@ class ServiceOfferController extends GetxController implements GetxService {
     _offerType = 'discount';
     _pickedImage = null;
     _priceCalculation = null;
+    _selectedLatitude = null;
+    _selectedLongitude = null;
+    _selectedAddress = null;
     update();
   }
 }

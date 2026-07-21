@@ -386,6 +386,16 @@
   "zones_and_categories": "Zones & Categories",
   "zones_categories_subtitle": "Specify where your service will appear and for what property type",
 
+  "offer_location": "Service Location",
+  "offer_location_subtitle": "Set the service location on the map or use your current location",
+  "use_current_location": "Use My Current Location",
+  "selected_location": "Selected Location",
+  "resolving_location": "Resolving location...",
+  "location_required_hint": "Please select a location on the map",
+  "location_service_disabled": "Please enable location services on your device",
+  "location_permission_denied": "Location permission was not granted",
+  "location_fetch_failed": "Couldn't determine your location, try again",
+
   "review": "Review",
   "review_and_duration": "Review Order",
   "review_subtitle": "Review your offer details before completing payment",

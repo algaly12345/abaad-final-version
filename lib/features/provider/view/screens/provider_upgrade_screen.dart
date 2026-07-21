@@ -1,5 +1,6 @@
 import 'package:abaad_flutter/core/routes/route_helper.dart';
 import 'package:abaad_flutter/features/auth/controller/auth_controller.dart';
+import 'package:abaad_flutter/features/profile/controller/user_controller.dart';
 import 'package:abaad_flutter/features/provider/controller/service_offer_controller.dart';
 import 'package:abaad_flutter/shared/theme/design_system.dart';
 import 'package:abaad_flutter/shared/widgets/not_logged_in_screen.dart';
@@ -51,7 +52,13 @@ class _ProviderUpgradeScreenState extends State<ProviderUpgradeScreen> {
     _offerController.setEntityType(type);
   }
 
-  void _continue() {
+  // حفظ بيانات الهوية فوراً في service_providers قبل المتابعة، بدل انتظار
+  // إتمام معالج "إضافة خدمة" بالكامل — فلا تُفقَد لو غادر المستخدم المعالج
+  // قبل إكماله. saveIdentityNow() تعرض رسالة الخطأ بنفسها لو فشل الحفظ.
+  Future<void> _continue() async {
+    final saved = await _offerController.saveIdentityNow();
+    if (!saved) return;
+    Get.find<UserController>().getUserInfo();
     Get.toNamed(RouteHelper.getAddServiceOfferRoute());
   }
 
@@ -205,6 +212,7 @@ class _ProviderUpgradeScreenState extends State<ProviderUpgradeScreen> {
           padding: const EdgeInsets.all(Spacing.pagePadding),
           child: DSPrimaryButton(
             label: 'continue_label'.tr,
+            loading: _offerController.isSubmitting,
             onPressed: _canContinue ? _continue : null,
           ),
         ),

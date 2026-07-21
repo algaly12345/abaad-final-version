@@ -5,13 +5,18 @@ import 'package:abaad_flutter/features/provider/controller/service_offer_control
 import 'package:abaad_flutter/features/provider/data/models/service_offer_setup_model.dart';
 import 'package:abaad_flutter/core/routes/route_helper.dart';
 import 'package:abaad_flutter/features/provider/view/screens/provider_upgrade_screen.dart';
+import 'package:abaad_flutter/features/services/controller/nearby_location_helper.dart';
 import 'package:abaad_flutter/features/services/view/screens/services_catalog_screen.dart'
     show serviceCategoryIcon;
 import 'package:abaad_flutter/shared/theme/design_system.dart';
+import 'package:abaad_flutter/shared/utils/app_constants.dart';
 import 'package:abaad_flutter/shared/widgets/app_dropdown.dart';
 import 'package:abaad_flutter/shared/widgets/package_option_card.dart';
 import 'package:flutter/material.dart';
+import 'package:geocoding/geocoding.dart';
 import 'package:get/get.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // ENTRY POINT
@@ -27,7 +32,18 @@ class AddPropertyServiceOfferScreen extends StatefulWidget {
 
 class _AddPropertyServiceOfferScreenState
     extends State<AddPropertyServiceOfferScreen> {
-  bool _agreedToTerms = false;
+  // تُقرأ من SharedPreferences (محفوظة على الجهاز) بدل أن تبدأ دومًا false —
+  // فور موافقة المستخدم مرة واحدة، لا تُعرض له شاشة الشروط ثانية في أي زيارة
+  // لاحقة لهذا المعالج على نفس الجهاز.
+  bool _agreedToTerms =
+      Get.find<SharedPreferences>().getBool(AppConstants.SERVICE_OFFER_TERMS_AGREED) ??
+          false;
+
+  void _acceptTerms() {
+    Get.find<SharedPreferences>()
+        .setBool(AppConstants.SERVICE_OFFER_TERMS_AGREED, true);
+    setState(() => _agreedToTerms = true);
+  }
 
   @override
   void initState() {
@@ -60,7 +76,7 @@ class _AddPropertyServiceOfferScreenState
   @override
   Widget build(BuildContext context) {
     if (!_agreedToTerms) {
-      return _TermsScreen(onAccepted: () => setState(() => _agreedToTerms = true));
+      return _TermsScreen(onAccepted: _acceptTerms);
     }
     return const _WizardScreen();
   }
@@ -436,7 +452,7 @@ class _WizardScreen extends StatefulWidget {
 
 class _WizardScreenState extends State<_WizardScreen> {
   int _step = 0;
-  final int _totalSteps = 4;
+  final int _totalSteps = 5;
   final PageController _pageController = PageController();
 
   final TextEditingController _titleCtrl = TextEditingController();
@@ -447,12 +463,14 @@ class _WizardScreenState extends State<_WizardScreen> {
     'service'.tr,
     'package'.tr,
     'zones'.tr,
+    'location'.tr,
     'review'.tr,
   ];
   static const _stepIcons = [
     Icons.miscellaneous_services_outlined,
     Icons.workspace_premium_outlined,
     Icons.map_outlined,
+    Icons.pin_drop_outlined,
     Icons.rate_review_outlined,
   ];
 
@@ -524,6 +542,8 @@ class _WizardScreenState extends State<_WizardScreen> {
       case 2:
         return c.selectedZoneIds.isNotEmpty &&
             c.selectedCategoryIds.isNotEmpty;
+      case 3:
+        return c.selectedLatitude != null && c.selectedLongitude != null;
       default:
         return true;
     }
@@ -594,6 +614,7 @@ class _WizardScreenState extends State<_WizardScreen> {
                     ),
                     _Step2Plan(controller: c, primary: primary),
                     _Step3ZoneCategory(controller: c, primary: primary),
+                    _StepLocation(controller: c, primary: primary),
                     _Step4Review(
                       titleCtrl: _titleCtrl,
                       valueCtrl: _valueCtrl,
@@ -1534,7 +1555,238 @@ class _SelectTextCard extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// STEP 4: Review & Duration
+// STEP 4: Location
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// موقع العرض نفسه (لا موقع مزوّد الخدمة العام) — خارطة بدبّوس ثابت في
+/// المنتصف يتحرّك معه المستخدم بسحب الخارطة (نمط شائع لالتقاط نقطة، بدل
+/// دبّوس Marker منفصل يُسحب فوق الخارطة)، بالإضافة لزرّ "موقعي الحالي" يقرأ
+/// GPS الجهاز عبر NearbyLocationHelper الموجود مسبقاً (مستقل عن
+/// LocationController القديم المرتبط بتدفّق عنوان/تسجيل مختلف كليًا).
+class _StepLocation extends StatefulWidget {
+  final ServiceOfferController controller;
+  final Color primary;
+  const _StepLocation({required this.controller, required this.primary});
+
+  @override
+  State<_StepLocation> createState() => _StepLocationState();
+}
+
+class _StepLocationState extends State<_StepLocation> {
+  // مركز افتراضي (الرياض) يُستخدم فقط قبل ورود إحداثيات محفوظة سلفًا أو
+  // موقع GPS فعلي — لا يعتمد على أي إعداد خادم كي تبقى الخطوة مستقلة تمامًا.
+  static const LatLng _fallbackCenter = LatLng(24.7136, 46.6753);
+
+  GoogleMapController? _mapController;
+  CameraPosition? _cameraPosition;
+  bool _locating = false;
+  bool _resolvingAddress = false;
+  bool _autoLocateAttempted = false;
+
+  LatLng get _initialCenter {
+    final lat = widget.controller.selectedLatitude;
+    final lng = widget.controller.selectedLongitude;
+    return (lat != null && lng != null) ? LatLng(lat, lng) : _fallbackCenter;
+  }
+
+  Future<void> _resolveAddress(LatLng position) async {
+    setState(() => _resolvingAddress = true);
+    String? address;
+    try {
+      final placemarks =
+          await placemarkFromCoordinates(position.latitude, position.longitude);
+      if (placemarks.isNotEmpty) {
+        final p = placemarks.first;
+        address = [p.subLocality, p.locality, p.administrativeArea]
+            .where((s) => s != null && s.trim().isNotEmpty)
+            .join('، ');
+      }
+    } catch (_) {
+      // فشل عكس الترميز الجغرافي لا يمنع حفظ الإحداثيات نفسها — تبقى
+      // latitude/longitude مصدر الحقيقة الوحيد، والنص هنا عرض تجميلي فقط.
+    }
+    if (!mounted) return;
+    setState(() => _resolvingAddress = false);
+    widget.controller
+        .setSelectedLocation(position.latitude, position.longitude, address: address);
+  }
+
+  Future<void> _onMapCreated(GoogleMapController mapController) async {
+    _mapController = mapController;
+    final hadSavedLocation = widget.controller.selectedLatitude != null;
+    // يلتقط المركز الافتراضي فورًا كي يصبح الزرّ "التالي" مفعّلاً حتى قبل
+    // اكتمال قراءة GPS أو أي تحريك يدوي للخارطة.
+    await _resolveAddress(_initialCenter);
+
+    // لا تُحاول تحديد GPS تلقائيًا لو كان هناك موقع محفوظ سلفًا (المستخدم
+    // عاد لهذه الخطوة بعد اختياره) — يبقى كما تركه المستخدم بدل استبداله
+    // بصمت بموقعه الحالي.
+    if (hadSavedLocation || _autoLocateAttempted) return;
+    _autoLocateAttempted = true;
+    final position = await NearbyLocationHelper.resolveCurrentPosition(silent: true);
+    if (position == null || !mounted) return;
+    final target = LatLng(position.latitude, position.longitude);
+    await _mapController?.animateCamera(CameraUpdate.newLatLng(target));
+  }
+
+  Future<void> _useCurrentLocation() async {
+    setState(() => _locating = true);
+    final position = await NearbyLocationHelper.resolveCurrentPosition();
+    if (!mounted) return;
+    setState(() => _locating = false);
+    if (position == null) return;
+    final target = LatLng(position.latitude, position.longitude);
+    await _mapController?.animateCamera(CameraUpdate.newLatLng(target));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final controller = widget.controller;
+    final primary = widget.primary;
+    final hasLocation = controller.selectedLatitude != null;
+
+    // بلا SingleChildScrollView: هذه الخطوة تحديدًا يجب أن تملأ كامل ارتفاع
+    // الصفحة بلا فراغ أسفلها (خارطة تفاعلية لا محتوى نصّي يحتاج تمريرًا)،
+    // فالخارطة تتمدد عبر Expanded بدل ارتفاع ثابت (280) كان يترك فراغًا
+    // رماديًا كبيرًا أسفل البطاقة على الشاشات الطويلة.
+    return Padding(
+      padding: const EdgeInsets.all(Spacing.pagePadding),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _StepHeader(
+            icon: Icons.pin_drop_outlined,
+            title: 'offer_location'.tr,
+            subtitle: 'offer_location_subtitle'.tr,
+            primary: primary,
+          ),
+          const SizedBox(height: Spacing.lg),
+
+          Expanded(
+            child: _Card(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(AppRadius.medium),
+                      child: Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          GoogleMap(
+                            initialCameraPosition:
+                                CameraPosition(target: _initialCenter, zoom: 15),
+                            zoomControlsEnabled: false,
+                            myLocationButtonEnabled: false,
+                            mapToolbarEnabled: false,
+                            onMapCreated: _onMapCreated,
+                            onCameraMove: (position) => _cameraPosition = position,
+                            onCameraIdle: () {
+                              if (_cameraPosition != null) {
+                                _resolveAddress(_cameraPosition!.target);
+                              }
+                            },
+                          ),
+                          // دبّوس ثابت في منتصف الخارطة — الإزاحة العمودية تجعل
+                          // رأسه الحاد (لا مركزه الهندسي) يشير لنقطة المركز
+                          // الفعلية، بدل أن يبدو الدبّوس عائمًا فوقها بلا دقة.
+                          IgnorePointer(
+                            child: Transform.translate(
+                              offset: const Offset(0, -18),
+                              child: Icon(Icons.location_on, size: 44, color: primary),
+                            ),
+                          ),
+                          Positioned(
+                            bottom: Spacing.md,
+                            left: Spacing.md,
+                            child: _MapLocateButton(
+                              loading: _locating,
+                              primary: primary,
+                              onTap: _useCurrentLocation,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: Spacing.md),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(
+                        Icons.location_on_outlined,
+                        size: IconSpec.small,
+                        color: hasLocation ? primary : AppColors.textSecondary(context),
+                      ),
+                      const SizedBox(width: Spacing.sm),
+                      Expanded(
+                        child: _resolvingAddress
+                            ? Text(
+                                'resolving_location'.tr,
+                                style: AppTypography.caption
+                                    .copyWith(color: AppColors.textSecondary(context)),
+                              )
+                            : Text(
+                                controller.selectedAddress ??
+                                    (hasLocation
+                                        ? '${controller.selectedLatitude!.toStringAsFixed(5)}, '
+                                            '${controller.selectedLongitude!.toStringAsFixed(5)}'
+                                        : 'location_required_hint'.tr),
+                                style: AppTypography.smallMedium.copyWith(
+                                  color: hasLocation
+                                      ? AppColors.textPrimary(context)
+                                      : AppColors.textSecondary(context),
+                                ),
+                              ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// زرّ عائم دائري فوق الخارطة لالتقاط الموقع الحالي عبر GPS — منفصل عن
+/// _MapFab/FloatingActionButton القياسي كي يطابق ظل/نصف قطر النظام
+/// (AppShadows/AppRadius) بدل مظهر Material الافتراضي.
+class _MapLocateButton extends StatelessWidget {
+  final bool loading;
+  final Color primary;
+  final VoidCallback onTap;
+  const _MapLocateButton(
+      {required this.loading, required this.primary, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: AppColors.surface(context),
+      shape: const CircleBorder(),
+      elevation: 2,
+      child: InkWell(
+        customBorder: const CircleBorder(),
+        onTap: loading ? null : onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: loading
+              ? SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2, color: primary),
+                )
+              : Icon(Icons.my_location_rounded, color: primary, size: 22),
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// STEP 5: Review & Duration
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _Step4Review extends StatelessWidget {
@@ -1605,6 +1857,13 @@ class _Step4Review extends StatelessWidget {
                   controller.selectedCategoryIds.isEmpty
                       ? 'not_selected'.tr
                       : '${controller.selectedCategoryIds.length} نوع',
+                ),
+                _ReviewRow(
+                  'location'.tr,
+                  controller.selectedAddress ??
+                      (controller.selectedLatitude != null
+                          ? '${controller.selectedLatitude!.toStringAsFixed(5)}, ${controller.selectedLongitude!.toStringAsFixed(5)}'
+                          : 'not_selected'.tr),
                 ),
                 if (controller.expiryDateText.isNotEmpty)
                   _ReviewRow(

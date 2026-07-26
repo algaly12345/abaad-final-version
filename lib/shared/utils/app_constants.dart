@@ -14,7 +14,7 @@ class AppConstants {
 
   // فعّل هذا للاختبار المحلي
 
-  static const String BASE_URL = 'http://10.142.190.214';
+  static const String BASE_URL = 'http://10.110.10.232';
 
   // static const String BASE_URL = 'https://baad.arabengksa.com';
   static const String LAND_SERVICE_URL =
@@ -25,8 +25,7 @@ class AppConstants {
   static const String TOKEN = 'abaad_token';
   static const String STARTUP_PERMISSIONS_REQUESTED =
       'startup_permissions_requested';
-  static const String SERVICE_OFFER_TERMS_AGREED =
-      'service_offer_terms_agreed';
+  static const String SERVICE_OFFER_TERMS_AGREED = 'service_offer_terms_agreed';
   static const String COUNTRY_CODE = 'country_code';
   static const String LANGUAGE_CODE = 'language_code';
   // static const String ZONE_ID = 'zoneId';
@@ -102,6 +101,11 @@ class AppConstants {
   static const String ADD_WISH_LIST_URI = '/api/v1/wish-list/add?';
   static const String REMOVE_WISH_LIST_URI = '/api/v1/wish-list/remove';
   static const String WALLET_TRANSACTION_URL = '/api/v1/wallet/transactions';
+  static const String REFERRAL_MY_LINK_URL = '/api/v1/referrals/my-link';
+  static const String REFERRAL_LIST_URL = '/api/v1/referrals';
+  static const String REFERRAL_SUMMARY_URL = '/api/v1/referrals/summary';
+  static const String REFERRAL_WITHDRAWALS_URL =
+      '/api/v1/referrals/withdrawals';
   static const String LOYALTY_TRANSACTION_URL =
       '/api/v1/loyalty-point/transactions';
   static const String LOYALTY_POINT_TRANSFER_URL =

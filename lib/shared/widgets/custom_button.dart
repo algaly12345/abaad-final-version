@@ -92,16 +92,19 @@ class CustomButton extends StatelessWidget {
                             Icon(icon, color: fgColor, size: 18),
                             const SizedBox(width: 8),
                           ],
-                          Text(
-                            buttonText,
-                            style: TextStyle(
-                              fontFamily: 'IBMPlexSansArabic',
-                              fontSize: fontSize ?? 15,
-                              fontWeight: isBold
-                                  ? FontWeight.w700
-                                  : FontWeight.w500,
-                              color: fgColor,
-                              letterSpacing: 0.3,
+                          Flexible(
+                            child: Text(
+                              buttonText,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontFamily: 'IBMPlexSansArabic',
+                                fontSize: fontSize ?? 15,
+                                fontWeight: isBold
+                                    ? FontWeight.w700
+                                    : FontWeight.w500,
+                                color: fgColor,
+                                letterSpacing: 0.3,
+                              ),
                             ),
                           ),
                         ],

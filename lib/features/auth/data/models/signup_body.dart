@@ -42,7 +42,7 @@ class SignUpBody {
     data['password'] = password;
     data['ref_code'] = refCode;
     data['zone_id'] = zone_id;
-    data['city_id'] = refCode;
+    data['city_id'] = city_id;
     data['membership_type'] = membershipType;
     data['unified_number']=unifiedNumber;
     return data;

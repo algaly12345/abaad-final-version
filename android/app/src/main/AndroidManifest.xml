@@ -39,6 +39,18 @@
             <category android:name="android.intent.category.LAUNCHER"/>
         </intent-filter>
 
+        <!-- رابط الإحالة الفعلي abaadapp.sa/ref/CODE (App Links). assetlinks.json
+             على الباكند يحمل حاليًا بصمة مفتاح debug.keystore (نفسه المستخدم
+             مؤقتًا لبناء release أيضًا — انظر build.gradle.kts). بعد اعتماد
+             مفتاح release حقيقي عبر key.properties، يجب إضافة بصمته الجديدة
+             لقائمة ANDROID_SHA256_FINGERPRINTS في .env على السيرفر الفعلي. -->
+        <intent-filter android:autoVerify="true">
+            <action android:name="android.intent.action.VIEW"/>
+            <category android:name="android.intent.category.DEFAULT"/>
+            <category android:name="android.intent.category.BROWSABLE"/>
+            <data android:scheme="https" android:host="abaadapp.sa" android:pathPrefix="/ref"/>
+        </intent-filter>
+
         <meta-data
             android:name="io.flutter.embedding.android.NormalTheme"
             android:resource="@style/NormalTheme"/>

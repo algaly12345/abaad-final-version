@@ -299,6 +299,9 @@ import 'package:url_strategy/url_strategy.dart';
 import 'package:abaad_flutter/features/estate/controller/estate_controller.dart';
 import 'package:abaad_flutter/shared/data/models/estate_model.dart';
 import 'package:abaad_flutter/core/di/get_di.dart' as di;
+import 'dart:async';
+import 'package:app_links/app_links.dart';
+import 'package:abaad_flutter/shared/utils/referral_code_storage.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -356,9 +359,53 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
+  final AppLinks _appLinks = AppLinks();
+  StreamSubscription<Uri>? _referralLinkSubscription;
+
   @override
   void initState() {
     super.initState();
+    _initReferralDeepLink();
+  }
+
+  @override
+  void dispose() {
+    _referralLinkSubscription?.cancel();
+    super.dispose();
+  }
+
+  /// يستقبل رابط الإحالة الفعلي https://abaadapp.sa/ref/CODE عند وجود
+  /// التطبيق مثبَّتًا (فتح مباشر عبر App Links). uriLinkStream في app_links
+  /// v7 يغطي حالتي الفتح البارد (Cold Start) والفتح والتطبيق شغّال أصلاً
+  /// بنفس الـ stream — لا حاجة لاستدعاء منفصل لأول رابط.
+  Future<void> _initReferralDeepLink() async {
+    if (!GetPlatform.isMobile) return;
+
+    // ترحيل تلقائي بعد تثبيت جديد (أندرويد فقط) — لا يتعارض مع الاستماع
+    // للرابط المباشر أدناه، فقط يغطي حالة "لم يكن التطبيق مثبَّتًا وقت الضغط".
+    unawaited(ReferralCodeStorage.captureFromPlayInstallReferrer());
+
+    try {
+      _referralLinkSubscription = _appLinks.uriLinkStream.listen((Uri uri) {
+        _handleReferralLink(uri);
+      });
+    } catch (e) {
+      debugPrint('Referral deep link error: $e');
+    }
+  }
+
+  void _handleReferralLink(Uri uri) async {
+    if (uri.host != 'abaadapp.sa') return;
+    if (uri.pathSegments.length < 2 || uri.pathSegments.first != 'ref') return;
+
+    final String code = uri.pathSegments[1];
+    if (code.isEmpty) return;
+
+    await ReferralCodeStorage.save(code);
+
+    if (!Get.find<AuthController>().isLoggedIn()) {
+      Get.toNamed(RouteHelper.getSignUpRoute());
+    }
   }
 
   Future<void> openEstateDialog(int estateId) async {

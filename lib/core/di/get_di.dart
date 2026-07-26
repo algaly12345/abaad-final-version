@@ -14,6 +14,7 @@ import 'package:abaad_flutter/shared/controllers/splash_controller.dart';
 import 'package:abaad_flutter/shared/controllers/theme_controller.dart';
 import 'package:abaad_flutter/features/profile/controller/user_controller.dart';
 import 'package:abaad_flutter/features/wallet/controller/wallet_controller.dart';
+import 'package:abaad_flutter/features/referrals/controller/referral_controller.dart';
 import 'package:abaad_flutter/features/favourite/controller/wishlist_controller.dart';
 import 'package:abaad_flutter/features/zones/controller/zone_controller.dart';
 import 'package:abaad_flutter/core/api/api_client.dart';
@@ -32,6 +33,7 @@ import 'package:abaad_flutter/features/onboarding/data/repositories/onboarding_r
 import 'package:abaad_flutter/features/services/data/repositories/services_repo.dart';
 import 'package:abaad_flutter/features/profile/data/repositories/user_repo.dart';
 import 'package:abaad_flutter/features/wallet/data/repositories/wallet_repo.dart';
+import 'package:abaad_flutter/features/referrals/data/repositories/referral_repo.dart';
 import 'package:abaad_flutter/features/favourite/data/repositories/wishlist_repo.dart';
 import 'package:abaad_flutter/features/zones/data/repositories/zone_repo.dart';
 import 'package:abaad_flutter/shared/utils/app_constants.dart';
@@ -80,6 +82,7 @@ Future<Map<String, Map<String, String>>> init() async {
   );
   Get.lazyPut(() => WishListRepo(apiClient: Get.find()));
   Get.lazyPut(() => WalletRepo(apiClient: Get.find()));
+  Get.lazyPut(() => ReferralRepo(apiClient: Get.find()));
   // Controller
   Get.lazyPut(() => ThemeController(sharedPreferences: Get.find()));
   Get.lazyPut(() => SplashController(splashRepo: Get.find()));
@@ -107,6 +110,7 @@ Future<Map<String, Map<String, String>>> init() async {
   Get.lazyPut(() => ChatController(chatRepo: Get.find()));
   Get.lazyPut(() => WishListController(wishListRepo: Get.find()));
   Get.lazyPut(() => WalletController(walletRepo: Get.find()));
+  Get.lazyPut(() => ReferralController(referralRepo: Get.find()));
 
   Get.lazyPut(() => ServiceOfferRepo(apiClient: Get.find()));
   Get.lazyPut(() => ServiceOfferController(serviceOfferRepo: Get.find()));

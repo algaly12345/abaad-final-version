@@ -7,6 +7,7 @@ import 'package:abaad_flutter/shared/helpers/responsive_helper.dart';
 import 'package:abaad_flutter/core/routes/route_helper.dart';
 import 'package:abaad_flutter/shared/theme/design_system.dart';
 import 'package:abaad_flutter/shared/utils/images.dart';
+import 'package:abaad_flutter/shared/utils/referral_code_storage.dart';
 import 'package:abaad_flutter/shared/widgets/app_dropdown.dart';
 import 'package:abaad_flutter/shared/widgets/custom_snackbar.dart';
 import 'package:abaad_flutter/shared/widgets/web_menu_bar.dart';
@@ -39,6 +40,22 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
   String? _registrationType = 'individual';
   String? _selectedUserType;
+
+  @override
+  void initState() {
+    super.initState();
+    _prefillReferralCode();
+  }
+
+  /// يعبّي كود الإحالة تلقائيًا لو وصل عبر رابط abaadapp.sa/ref/CODE (فتح
+  /// مباشر أو ترحيل بعد تثبيت جديد عبر Play Install Referrer) — انظر
+  /// ReferralCodeStorage و main.dart.
+  Future<void> _prefillReferralCode() async {
+    final String? code = await ReferralCodeStorage.consume();
+    if (code != null && code.isNotEmpty && mounted) {
+      setState(() => _referCodeController.text = code);
+    }
+  }
 
   @override
   void dispose() {
@@ -251,6 +268,46 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                           inputFormatters: [
                                             FilteringTextInputFormatter.digitsOnly,
                                           ],
+                                        ),
+                                      ],
+
+                                      // Applied referral code (read-only confirmation, only when auto-filled via link)
+                                      if (_referCodeController.text.isNotEmpty) ...[
+                                        const SizedBox(height: Spacing.md),
+                                        _fieldLabel('applied_referral_code'.tr),
+                                        const SizedBox(height: Spacing.sm),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: FieldSpec.padding,
+                                            vertical: FieldSpec.padding,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFFF0FDF4),
+                                            borderRadius:
+                                                BorderRadius.circular(FieldSpec.radius),
+                                            border: Border.all(
+                                              color: const Color(0xFF86EFAC),
+                                            ),
+                                          ),
+                                          child: Row(
+                                            children: [
+                                              const Icon(
+                                                Icons.check_circle,
+                                                color: Color(0xFF16A34A),
+                                                size: IconSpec.small,
+                                              ),
+                                              const SizedBox(width: Spacing.sm),
+                                              Expanded(
+                                                child: Text(
+                                                  _referCodeController.text,
+                                                  style: AppTypography.bodyBold
+                                                      .copyWith(
+                                                          color: const Color(
+                                                              0xFF15803D)),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
                                         ),
                                       ],
 
@@ -493,7 +550,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
       showCustomSnackBar('please_enter_unified_number'.tr);
       return;
     }
-    if (referCode.isNotEmpty && referCode.length != 10) {
+    // لا نفرض طولًا ثابتًا: أكواد قديمة قبل توحيد التوليد (مثل "SP-9361")
+    // أقصر من الصيغة الجديدة (10 أحرف بدون شرطة) — السيرفر هو من يتحقق من
+    // وجود الكود فعليًا عند التسجيل، هذا فقط تحقق أولي من شكل معقول للقيمة.
+    if (referCode.isNotEmpty && (referCode.length < 3 || referCode.length > 20)) {
       showCustomSnackBar('referral_code_invalid'.tr);
       return;
     }

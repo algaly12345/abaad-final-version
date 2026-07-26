@@ -6,7 +6,7 @@
 	<string>development</string>
 	<key>com.apple.developer.associated-domains</key>
 	<array>
-		<string>applinks:app.abaadapp.sa</string>
+		<string>applinks:abaadapp.sa</string>
 	</array>
 </dict>
 </plist>

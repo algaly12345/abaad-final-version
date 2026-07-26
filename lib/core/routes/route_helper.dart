@@ -46,6 +46,7 @@ import 'package:abaad_flutter/features/onboarding/view/screens/splash_screen.dar
 import 'package:abaad_flutter/features/support/view/screens/support_screen.dart';
 import 'package:abaad_flutter/features/update/view/screens/update_screen.dart';
 import 'package:abaad_flutter/features/wallet/view/screens/wallet_screen.dart';
+import 'package:abaad_flutter/features/referrals/view/screens/referral_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -79,6 +80,7 @@ class RouteHelper {
   static const String messages = '/messages';
   static const String conversation = '/conversation';
   static const String wallet = '/wallet';
+  static const String referrals = '/referrals';
   static const String feature = '/feature';
   static const String marketer = '/profile-agent';
   static const String html = '/html';
@@ -111,6 +113,7 @@ class RouteHelper {
   static String getConversationRoute(int id) => conversation;
   static String getWalletRoute(bool fromWallet) =>
       '$wallet?page=${fromWallet ? 'wallet' : 'loyalty_points'}';
+  static String getReferralsRoute() => referrals;
   static String getPickMapRoute(String page, bool canRoute) =>
       '$pickMap?page=$page&route=${canRoute.toString()}';
   static String getSupportRoute() => support;
@@ -271,6 +274,10 @@ class RouteHelper {
         fromWallet: Get.parameters['page'] == 'wallet',
         key: null,
       ),
+    ),
+    GetPage(
+      name: referrals,
+      page: () => const ReferralScreen(),
     ),
     GetPage(
       name: signIn,

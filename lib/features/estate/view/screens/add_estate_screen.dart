@@ -271,7 +271,7 @@ class _AddEstateScreenState extends State<AddEstateScreen> {
 
   Future<void> getAddressFromLatLang(double lat, double log) async {
     //print("omeromer");
-    List<Placemark> placemark = await placemarkFromCoordinates(lat, log);
+    List<Placemark> placemark = await Geocoding().placemarkFromCoordinates(lat, log);
     Placemark place = placemark[0];
     String address = 'Address : ${place.locality},${place.country}';
     district = place.subLocality!;

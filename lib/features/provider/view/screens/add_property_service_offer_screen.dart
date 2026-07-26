@@ -1594,7 +1594,7 @@ class _StepLocationState extends State<_StepLocation> {
     String? address;
     try {
       final placemarks =
-          await placemarkFromCoordinates(position.latitude, position.longitude);
+          await Geocoding().placemarkFromCoordinates(position.latitude, position.longitude);
       if (placemarks.isNotEmpty) {
         final p = placemarks.first;
         address = [p.subLocality, p.locality, p.administrativeArea]

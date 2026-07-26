@@ -48,7 +48,7 @@ class _SelectLocationViewState extends State<SelectLocationView> {
   Future<void> getAddressFromLatLang(double lat, double log) async {
     //print("omeromer");
     List<Placemark> placemark =
-    await placemarkFromCoordinates(lat, log);
+    await Geocoding().placemarkFromCoordinates(lat, log);
     Placemark place = placemark[0];
     String  address= 'Address : ${place.locality},${place.country}';
 

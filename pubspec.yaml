@@ -100,6 +100,12 @@ dependencies:
   flutter_widget_from_html_core: any
   share_plus: any
   url_launcher: any
+  # رابط الإحالة الفعلي (abaadapp.sa/ref/CODE) — استقبال App Links.
+  app_links: ^6.4.1
+  # قراءة Play Install Referrer: يترحّل كود الإحالة تلقائيًا لمن نزّل
+  # التطبيق من رابط abaadapp.sa/ref/CODE ولم يكن مثبَّتًا عنده مسبقًا
+  # (أندرويد فقط — انظر ReferralCodeStorage).
+  play_install_referrer: ^0.5.0
   any_link_preview: any
   tutorial_coach_mark: any
   webview_flutter: any
@@ -114,9 +120,6 @@ dependencies:
   pin_code_fields: any
   html: any
   collection: any
-  # app_links stays override-only: only referenced in commented-out code in
-  # main.dart, and its native module hardcodes an outdated compileSdk that
-  # breaks the build once actually compiled. Not worth fixing for dead code.
   firebase_messaging: any
   camera_web: any
   connectivity_for_web: any
@@ -216,7 +219,6 @@ dependency_overrides:
   html: any
   collection: any
 
-  app_links: ^3.5.0
 #  firebase_messaging: ^15.1.5
 #  firebase_core: ^3.8.0
 

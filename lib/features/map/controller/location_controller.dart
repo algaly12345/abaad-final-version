@@ -465,7 +465,7 @@ class LocationController extends GetxController implements GetxService {
 
   Future<void> fetchLocationData(double latitude, double longitude) async {
     try {
-      List<Placemark> placemarks = await placemarkFromCoordinates(latitude, longitude);
+      List<Placemark> placemarks = await Geocoding().placemarkFromCoordinates(latitude, longitude);
       if (placemarks.isNotEmpty) {
         Placemark placemark = placemarks[0];
         city.value = placemark.locality ?? "";

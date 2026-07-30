@@ -1,7 +1,9 @@
 import 'package:abaad_flutter/features/auth/controller/auth_controller.dart';
+import 'package:abaad_flutter/features/profile/controller/user_controller.dart';
 import 'package:abaad_flutter/features/referrals/controller/referral_controller.dart';
 import 'package:abaad_flutter/features/referrals/data/models/referral_model.dart';
 import 'package:abaad_flutter/features/referrals/view/widgets/referral_withdrawal_sheet.dart';
+import 'package:abaad_flutter/features/provider/view/screens/provider_upgrade_screen.dart';
 import 'package:abaad_flutter/shared/helpers/price_converter.dart';
 import 'package:abaad_flutter/shared/helpers/responsive_helper.dart';
 import 'package:abaad_flutter/shared/utils/dimensions.dart';
@@ -25,56 +27,138 @@ class ReferralScreen extends StatefulWidget {
 
 class _ReferralScreenState extends State<ReferralScreen> {
   final bool _isLoggedIn = Get.find<AuthController>().isLoggedIn();
+  bool _loadedForProvider = false;
 
   @override
   void initState() {
     super.initState();
-    if (_isLoggedIn) {
-      Get.find<ReferralController>().loadAll();
+    if (_isLoggedIn && Get.find<UserController>().userInfoModel == null) {
+      Get.find<UserController>().getUserInfo();
     }
   }
 
+  /// برنامج الإحالة حصراً لمزوّدي الخدمة — نفس الشرط المستخدم لإظهار عنصر
+  /// القائمة في DrawerMenu. هذا الفحص يمنع أي عميل عادي وصل للمسار مباشرة
+  /// (رابط عميق، إعادة بناء الحالة، ...) من رؤية بياناته أو استدعاء
+  /// endpoints الإحالة المحمية بـ provider.api على الباكند فتُرجع 403.
+  bool _isProvider(UserController userController) =>
+      userController.userInfoModel?.userType == 'provider';
+
+  /// نفس المبدأ المطبَّق قبل AddPropertyServiceOfferScreen (راجع
+  /// ServiceOfferController.hydrateEntityFromProvider وProviderUpgradeScreen):
+  /// مزوّد قديم لم يُكمل هويته (رقم هوية فردي أو سجل تجاري) بعد لا يُعامَل
+  /// كمزوّد فعلي هنا أيضاً — نفس isComplete المشتقة في ProviderIdentity.
+  bool _hasCompleteIdentity(UserController userController) =>
+      userController.userInfoModel?.provider?.isComplete ?? false;
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Theme.of(context).cardColor,
-      appBar: CustomAppBar(title: 'referral_program'.tr, isBackButtonExist: true),
-      body: !_isLoggedIn
-          ? const NotLoggedInScreen()
-          : GetBuilder<ReferralController>(
-              builder: (controller) {
-                if (controller.isLoading && controller.summary == null) {
-                  return const Center(child: CircularProgressIndicator());
-                }
+    if (!_isLoggedIn) {
+      return Scaffold(
+        appBar: CustomAppBar(title: 'referral_program'.tr, isBackButtonExist: true),
+        body: const NotLoggedInScreen(),
+      );
+    }
 
-                return RefreshIndicator(
-                  onRefresh: () => controller.loadAll(),
-                  child: SingleChildScrollView(
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    padding: EdgeInsets.all(Dimensions.PADDING_SIZE_DEFAULT),
-                    child: Center(
-                      child: SizedBox(
-                        width: Dimensions.WEB_MAX_WIDTH,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            _referralCodeCard(context, controller),
-                            SizedBox(height: Dimensions.PADDING_SIZE_OVER_LARGE),
-                            _summaryRow(context, controller),
-                            SizedBox(height: Dimensions.PADDING_SIZE_LARGE),
-                            _availableBalanceCard(context, controller),
-                            SizedBox(height: Dimensions.PADDING_SIZE_OVER_LARGE),
-                            TitleWidget(title: 'referred_providers'.tr),
-                            SizedBox(height: Dimensions.PADDING_SIZE_SMALL),
-                            _referralsList(context, controller),
-                          ],
-                        ),
+    return GetBuilder<UserController>(
+      builder: (userController) {
+        if (userController.userInfoModel == null) {
+          return Scaffold(
+            appBar: CustomAppBar(title: 'referral_program'.tr, isBackButtonExist: true),
+            body: const Center(child: CircularProgressIndicator()),
+          );
+        }
+
+        if (!_isProvider(userController)) {
+          return Scaffold(
+            appBar: CustomAppBar(title: 'referral_program'.tr, isBackButtonExist: true),
+            body: _providerOnlyScreen(context),
+          );
+        }
+
+        if (!_hasCompleteIdentity(userController)) {
+          // نفس تحويل AddPropertyServiceOfferScreen بالضبط لمزوّد لم يُكمل
+          // هويته بعد: يُستبدَل بشاشة إكمال الهوية بدل عرض صفحة الإحالة.
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            Get.off(() => const ProviderUpgradeScreen());
+          });
+          return Scaffold(
+            appBar: CustomAppBar(title: 'referral_program'.tr, isBackButtonExist: true),
+            body: const Center(child: CircularProgressIndicator()),
+          );
+        }
+
+        if (!_loadedForProvider) {
+          _loadedForProvider = true;
+          Get.find<ReferralController>().loadAll();
+        }
+
+        return Scaffold(
+          backgroundColor: Theme.of(context).cardColor,
+          appBar: CustomAppBar(title: 'referral_program'.tr, isBackButtonExist: true),
+          body: GetBuilder<ReferralController>(
+            builder: (controller) {
+              if (controller.isLoading && controller.summary == null) {
+                return const Center(child: CircularProgressIndicator());
+              }
+
+              return RefreshIndicator(
+                onRefresh: () => controller.loadAll(),
+                child: SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: EdgeInsets.all(Dimensions.PADDING_SIZE_DEFAULT),
+                  child: Center(
+                    child: SizedBox(
+                      width: Dimensions.WEB_MAX_WIDTH,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          _referralCodeCard(context, controller),
+                          SizedBox(height: Dimensions.PADDING_SIZE_OVER_LARGE),
+                          _summaryRow(context, controller),
+                          SizedBox(height: Dimensions.PADDING_SIZE_LARGE),
+                          _availableBalanceCard(context, controller),
+                          SizedBox(height: Dimensions.PADDING_SIZE_OVER_LARGE),
+                          TitleWidget(title: 'referred_providers'.tr),
+                          SizedBox(height: Dimensions.PADDING_SIZE_SMALL),
+                          _referralsList(context, controller),
+                        ],
                       ),
                     ),
                   ),
-                );
-              },
+                ),
+              );
+            },
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _providerOnlyScreen(BuildContext context) {
+    final theme = Theme.of(context);
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.storefront_outlined, size: 72, color: theme.disabledColor),
+            const SizedBox(height: 20),
+            Text(
+              'referral_provider_only_title'.tr,
+              style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+              textAlign: TextAlign.center,
             ),
+            const SizedBox(height: 10),
+            Text(
+              'referral_provider_only_desc'.tr,
+              style: theme.textTheme.bodyMedium?.copyWith(color: theme.disabledColor),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
     );
   }
 

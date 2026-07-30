@@ -502,6 +502,8 @@
   "account_actions": "Account Actions",
   "delete_account": "Delete Account",
   "referral_program": "Referral Program",
+  "referral_provider_only_title": "Available for service providers only",
+  "referral_provider_only_desc": "The referral program and its rewards are exclusive to registered service providers.",
   "your_referral_link": "Your referral link",
   "your_referral_code": "Referral code",
   "pending_commissions": "Pending commissions",

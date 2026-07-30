@@ -499,6 +499,8 @@
   "account_actions": "إجراءات الحساب",
   "delete_account": "حذف الحساب",
   "referral_program": "برنامج الإحالة",
+  "referral_provider_only_title": "متاح لمزوّدي الخدمة فقط",
+  "referral_provider_only_desc": "برنامج الإحالة ومكافآته مخصّصة لمزوّدي الخدمة المسجَّلين في التطبيق.",
   "your_referral_link": "رابط الإحالة الخاص بك",
   "your_referral_code": "كود الإحالة",
   "pending_commissions": "عمولات قيد الانتظار",

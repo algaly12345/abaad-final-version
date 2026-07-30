@@ -133,9 +133,13 @@ class _SignInScreenState extends State<SignInScreen> {
                                     height: AvatarSpec.profile,
                                     decoration: BoxDecoration(
                                       color: Colors.white,
-                                      borderRadius:
-                                          BorderRadius.circular(AppRadius.extraLarge),
-                                      boxShadow: AppShadows.soft(blur: 14, opacity: 0.1),
+                                      borderRadius: BorderRadius.circular(
+                                        AppRadius.extraLarge,
+                                      ),
+                                      boxShadow: AppShadows.soft(
+                                        blur: 14,
+                                        opacity: 0.1,
+                                      ),
                                     ),
                                     child: Center(
                                       child: Image.asset(
@@ -149,27 +153,36 @@ class _SignInScreenState extends State<SignInScreen> {
                                   // ── Title ──────────────────────────────
                                   Text(
                                     'sign_in'.tr,
-                                    style: AppTypography.h3
-                                        .copyWith(color: Colors.white),
+                                    style: AppTypography.h3.copyWith(
+                                      color: Colors.white,
+                                    ),
                                   ),
                                   const SizedBox(height: Spacing.xs),
                                   Text(
                                     'enter_phone_subtitle'.tr,
                                     textAlign: TextAlign.center,
                                     style: AppTypography.small.copyWith(
-                                      color: Colors.white.withValues(alpha: 0.85),
+                                      color: Colors.white.withValues(
+                                        alpha: 0.85,
+                                      ),
                                     ),
                                   ),
                                   const SizedBox(height: Spacing.xl),
 
                                   // ── Form Card ──────────────────────────
                                   Container(
-                                    padding: const EdgeInsets.all(CardSpec.padding),
+                                    padding: const EdgeInsets.all(
+                                      CardSpec.padding,
+                                    ),
                                     decoration: BoxDecoration(
                                       color: Colors.white,
-                                      borderRadius:
-                                          BorderRadius.circular(AppRadius.large),
-                                      boxShadow: AppShadows.soft(blur: 12, opacity: 0.08),
+                                      borderRadius: BorderRadius.circular(
+                                        AppRadius.large,
+                                      ),
+                                      boxShadow: AppShadows.soft(
+                                        blur: 12,
+                                        opacity: 0.08,
+                                      ),
                                     ),
                                     child: Column(
                                       crossAxisAlignment:
@@ -178,8 +191,9 @@ class _SignInScreenState extends State<SignInScreen> {
                                         // Label
                                         Text(
                                           'phone'.tr,
-                                          style: AppTypography.small
-                                              .copyWith(color: const Color(0xFF374151)),
+                                          style: AppTypography.small.copyWith(
+                                            color: const Color(0xFF374151),
+                                          ),
                                         ),
                                         const SizedBox(height: Spacing.sm),
 
@@ -233,14 +247,19 @@ class _SignInScreenState extends State<SignInScreen> {
                                         Icon(
                                           Icons.person_outline_rounded,
                                           size: IconSpec.small,
-                                          color: primary.withValues(alpha: 0.75),
+                                          color: primary.withValues(
+                                            alpha: 0.75,
+                                          ),
                                         ),
                                         const SizedBox(width: Spacing.xs),
                                         Text(
                                           'continue_as_guest'.tr,
-                                          style: AppTypography.smallMedium.copyWith(
-                                            color: primary.withValues(alpha: 0.9),
-                                          ),
+                                          style: AppTypography.smallMedium
+                                              .copyWith(
+                                                color: primary.withValues(
+                                                  alpha: 0.9,
+                                                ),
+                                              ),
                                         ),
                                       ],
                                     ),
@@ -284,8 +303,9 @@ class _SignInScreenState extends State<SignInScreen> {
                 const SizedBox(width: Spacing.xs),
                 Text(
                   '+966',
-                  style: AppTypography.bodyBold
-                      .copyWith(color: const Color(0xFF1A2340)),
+                  style: AppTypography.bodyBold.copyWith(
+                    color: const Color(0xFF1A2340),
+                  ),
                 ),
               ],
             ),
@@ -298,7 +318,9 @@ class _SignInScreenState extends State<SignInScreen> {
               keyboardType: TextInputType.number,
               textDirection: TextDirection.ltr,
               textAlign: TextAlign.left,
-              style: AppTypography.body.copyWith(color: const Color(0xFF1A2340)),
+              style: AppTypography.body.copyWith(
+                color: const Color(0xFF1A2340),
+              ),
               cursorColor: primary,
               inputFormatters: [
                 FilteringTextInputFormatter.digitsOnly,
@@ -340,7 +362,9 @@ class _SignInScreenState extends State<SignInScreen> {
       filled: true,
       fillColor: const Color(0xFFF9FAFB),
       contentPadding: const EdgeInsets.symmetric(
-          horizontal: FieldSpec.padding, vertical: FieldSpec.padding),
+        horizontal: FieldSpec.padding,
+        vertical: FieldSpec.padding,
+      ),
       border: border,
       enabledBorder: border,
       focusedBorder: border.copyWith(
@@ -363,7 +387,7 @@ class _SignInScreenState extends State<SignInScreen> {
     final String phone = _phoneController.text.trim();
     final String fullPhone = '+966$phone';
 
-    authController.login(fullPhone, 'string').then((status) {
+    authController.login(fullPhone, '1234567').then((status) {
       if (status.isSuccess) {
         final String token = status.token ?? status.message;
 
@@ -372,7 +396,7 @@ class _SignInScreenState extends State<SignInScreen> {
           return;
         }
 
-        final List<int> encoded = utf8.encode('string');
+        final List<int> encoded = utf8.encode('1234567');
         final String data = base64Encode(encoded);
 
         Get.toNamed(

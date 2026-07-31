@@ -230,7 +230,7 @@ class ApiClient extends GetxService {
 
     try {
       if(kDebugMode) {
-        // debugPrint('====> API Call: $uri\nHeader: $_mainHeaders');
+         debugPrint('====> API Call: $uri\nHeader: $_mainHeaders');
       }
       http.Response response = await http.get(
         Uri.parse(appBaseUrl+uri),
@@ -239,7 +239,7 @@ class ApiClient extends GetxService {
       return handleResponse(response, uri, handleError, showToaster: showToaster);
     } catch (e) {
       if (kDebugMode) {
-        // print('----------------${e.toString()}');
+        print('----------------${e.toString()}');
       }
       return  Response(statusCode: 1, statusText: noInternetMessage);
     }
@@ -249,8 +249,8 @@ class ApiClient extends GetxService {
   Future<Response> postData(String uri, dynamic body, {Map<String, String>? headers, bool handleError = true}) async {
     try {
       if(kDebugMode) {
-        // debugPrint('====> API Call: $uri\nHeader: $_mainHeaders');
-        // log('====> API Body: $body');
+        debugPrint('====> API Call: $uri\nHeader: $_mainHeaders');
+        log('====> API Body: $body');
       }
       http.Response response = await http.post(
         Uri.parse(appBaseUrl+uri),
@@ -325,8 +325,8 @@ class ApiClient extends GetxService {
   Future<Response> putData(String uri, dynamic body, {Map<String, String>? headers, bool handleError = true}) async {
     try {
       if(kDebugMode) {
-        // debugPrint('====> API Call: $uri\nHeader: $_mainHeaders');
-        // debugPrint('====> API Body: $body');
+        debugPrint('====> API Call: $uri\nHeader: $_mainHeaders');
+        debugPrint('====> API Body: $body');
       }
       http.Response response = await http.put(
         Uri.parse(appBaseUrl+uri),
@@ -376,9 +376,8 @@ class ApiClient extends GetxService {
     }
     if(foundation.kDebugMode) {
       if(response0.statusCode == 500) {
-      //  debugPrint('====> API Response: [${response0.statusCode}] $uri\n${(response0.body.toString().substring(0, 500))}');
-      } else {
-       // debugPrint('====> API Response: [${response0.statusCode}] $uri\n${response0.body}');
+        debugPrint('====> API Response: [${response0.statusCode}] $uri\n${(response0.body.toString().substring(0, 500))}');
+      } else {debugPrint('====> API Response: [${response0.statusCode}] $uri\n${response0.body}');
       }
     }
     if(handleError) {

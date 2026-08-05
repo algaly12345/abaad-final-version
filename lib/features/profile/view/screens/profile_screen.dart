@@ -18,6 +18,9 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
+  static const Color _brandDark = Color(0xFF1A3C5E);
+  static const Color _brandLight = Color(0xFF2E6DA4);
+
   @override
   void initState() {
     super.initState();
@@ -36,8 +39,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
       return const NotLoggedInScreen();
     }
 
-    final primary = Theme.of(context).primaryColor;
-
     return Scaffold(
       backgroundColor: const Color(0xFFF4F6F9),
       body: GetBuilder<UserController>(
@@ -45,7 +46,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           if (userCtrl.isLoading && userCtrl.userInfoModel == null) {
             return Scaffold(
               appBar: AppBar(
-                backgroundColor: primary,
+                backgroundColor: _brandDark,
                 title: Text('profile'.tr,
                     style: robotoBold.copyWith(color: Colors.white)),
                 centerTitle: true,
@@ -70,9 +71,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
             slivers: [
               // ── Gradient SliverAppBar ────────────────────────────────────
               SliverAppBar(
-                expandedHeight: 240,
+                expandedHeight: 260,
                 pinned: true,
-                backgroundColor: primary,
+                backgroundColor: _brandDark,
                 foregroundColor: Colors.white,
                 elevation: 0,
                 centerTitle: true,
@@ -82,114 +83,155 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
                 flexibleSpace: FlexibleSpaceBar(
                   background: Container(
-                    decoration: BoxDecoration(
+                    decoration: const BoxDecoration(
                       gradient: LinearGradient(
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
-                        colors: [primary, primary.withValues(alpha: 0.72)],
+                        colors: [_brandLight, _brandDark],
                       ),
                     ),
-                    child: SafeArea(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const SizedBox(height: 40),
+                    child: Stack(
+                      children: [
+                        // زخرفة دائرية شفافة أعلى يمين الهيدر — تكسر رتابة اللون المصمت
+                        Positioned(
+                          top: -30,
+                          right: -30,
+                          child: Container(
+                            width: 140,
+                            height: 140,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Colors.white.withValues(alpha: 0.06),
+                            ),
+                          ),
+                        ),
+                        Positioned(
+                          top: 40,
+                          left: -20,
+                          child: Container(
+                            width: 80,
+                            height: 80,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Colors.white.withValues(alpha: 0.05),
+                            ),
+                          ),
+                        ),
 
-                          // Avatar
-                          Stack(
-                            alignment: Alignment.bottomRight,
+                        SafeArea(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Container(
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  border: Border.all(
-                                      color: Colors.white, width: 3),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color:
-                                          Colors.black.withValues(alpha: 0.2),
-                                      blurRadius: 12,
+                              const SizedBox(height: 34),
+
+                              // Avatar
+                              Stack(
+                                alignment: Alignment.bottomRight,
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(3),
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      color: Colors.white,
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color:
+                                          Colors.black.withValues(alpha: 0.18),
+                                          blurRadius: 16,
+                                          offset: const Offset(0, 6),
+                                        ),
+                                      ],
                                     ),
-                                  ],
-                                ),
-                                child: ClipOval(
-                                  child: CustomImage(
-                                    image: imageUrl,
-                                    height: 90,
-                                    width: 90,
-                                    fit: BoxFit.cover,
-                                  ),
-                                ),
-                              ),
-                              GestureDetector(
-                                onTap: () => Get.toNamed(
-                                    RouteHelper.getUpdateProfileRoute()),
-                                child: Container(
-                                  padding: const EdgeInsets.all(6),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    shape: BoxShape.circle,
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.black
-                                            .withValues(alpha: 0.15),
-                                        blurRadius: 6,
+                                    child: ClipOval(
+                                      child: CustomImage(
+                                        image: imageUrl,
+                                        height: 92,
+                                        width: 92,
+                                        fit: BoxFit.cover,
                                       ),
-                                    ],
+                                    ),
                                   ),
-                                  child: Icon(Icons.edit_rounded,
-                                      size: 14, color: primary),
-                                ),
+                                  GestureDetector(
+                                    onTap: () => Get.toNamed(
+                                        RouteHelper.getUpdateProfileRoute()),
+                                    child: Container(
+                                      padding: const EdgeInsets.all(7),
+                                      decoration: BoxDecoration(
+                                        color: _brandLight,
+                                        shape: BoxShape.circle,
+                                        border: Border.all(
+                                            color: Colors.white, width: 2),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: Colors.black
+                                                .withValues(alpha: 0.15),
+                                            blurRadius: 6,
+                                          ),
+                                        ],
+                                      ),
+                                      child: const Icon(Icons.edit_rounded,
+                                          size: 14, color: Colors.white),
+                                    ),
+                                  ),
+                                ],
                               ),
+                              const SizedBox(height: 12),
+
+                              // Name
+                              Text(
+                                user?.name ?? '',
+                                style: robotoBold.copyWith(
+                                    fontSize: 19, color: Colors.white),
+                              ),
+
+                              // Phone
+                              if ((user?.phone ?? '').isNotEmpty)
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 4),
+                                  child: Text(
+                                    user!.phone!,
+                                    style: robotoRegular.copyWith(
+                                      fontSize: 13,
+                                      color: Colors.white.withValues(alpha: 0.82),
+                                    ),
+                                  ),
+                                ),
+
+                              // Membership badge
+                              if (showMembership)
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 10),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 14, vertical: 5),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withValues(alpha: 0.16),
+                                      borderRadius: BorderRadius.circular(20),
+                                      border: Border.all(
+                                        color: Colors.white.withValues(alpha: 0.35),
+                                      ),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        const Icon(Icons.verified_rounded,
+                                            size: 13, color: Colors.white),
+                                        const SizedBox(width: 5),
+                                        Text(
+                                          membershipType,
+                                          style: robotoMedium.copyWith(
+                                            fontSize: 11,
+                                            color: Colors.white,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
                             ],
                           ),
-                          const SizedBox(height: 10),
-
-                          // Name
-                          Text(
-                            user?.name ?? '',
-                            style: robotoBold.copyWith(
-                                fontSize: 18, color: Colors.white),
-                          ),
-
-                          // Phone
-                          if ((user?.phone ?? '').isNotEmpty)
-                            Padding(
-                              padding: const EdgeInsets.only(top: 3),
-                              child: Text(
-                                user!.phone!,
-                                style: robotoRegular.copyWith(
-                                  fontSize: 13,
-                                  color: Colors.white.withValues(alpha: 0.82),
-                                ),
-                              ),
-                            ),
-
-                          // Membership badge
-                          if (showMembership)
-                            Padding(
-                              padding: const EdgeInsets.only(top: 6),
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 12, vertical: 4),
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withValues(alpha: 0.22),
-                                  borderRadius: BorderRadius.circular(20),
-                                  border: Border.all(
-                                    color: Colors.white.withValues(alpha: 0.5),
-                                  ),
-                                ),
-                                child: Text(
-                                  membershipType,
-                                  style: robotoMedium.copyWith(
-                                    fontSize: 11,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
@@ -205,7 +247,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       _SectionCard(
                         title: 'my_account'.tr,
                         icon: Icons.person_outline_rounded,
-                        primary: primary,
+                        primary: _brandLight,
                         items: [
                           _TileItem(
                             icon: Icons.home_work_outlined,
@@ -228,24 +270,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ],
                       ),
 
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 14),
 
                       // Settings shortcut
                       _SingleTile(
                         icon: Icons.settings_outlined,
-                        color: primary,
+                        color: _brandLight,
                         title: 'app_settings'.tr,
-                        primary: primary,
+                        primary: _brandLight,
                         onTap: () =>
                             Get.toNamed(RouteHelper.getSettingsRoute()),
                       ),
 
-                      const SizedBox(height: 28),
+                      const SizedBox(height: 32),
 
                       // Logout button
                       SizedBox(
                         width: double.infinity,
-                        height: 52,
+                        height: 54,
                         child: OutlinedButton.icon(
                           onPressed: _confirmLogout,
                           icon: Icon(Icons.logout_rounded,
@@ -258,15 +300,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             ),
                           ),
                           style: OutlinedButton.styleFrom(
-                            side: BorderSide(color: Colors.red.shade300),
+                            backgroundColor: Colors.white,
+                            side: BorderSide(color: Colors.red.shade200),
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14),
+                              borderRadius: BorderRadius.circular(16),
                             ),
                           ),
                         ),
                       ),
 
-                      const SizedBox(height: 10),
+                      const SizedBox(height: 14),
 
                       // Delete account
                       TextButton(
@@ -341,12 +384,12 @@ class _SectionCard extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(18),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
+            blurRadius: 14,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
@@ -354,7 +397,7 @@ class _SectionCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 10),
+            padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
             child: Row(
               children: [
                 Icon(icon, size: 15, color: primary),
@@ -364,6 +407,7 @@ class _SectionCard extends StatelessWidget {
                   style: robotoMedium.copyWith(
                     fontSize: 12,
                     color: Colors.grey.shade500,
+                    letterSpacing: 0.3,
                   ),
                 ),
               ],
@@ -402,15 +446,15 @@ class _TileItem extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(16),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         child: Row(
           children: [
             Container(
-              width: 38,
-              height: 38,
+              width: 40,
+              height: 40,
               decoration: BoxDecoration(
                 color: color.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(icon, color: color, size: 20),
             ),
@@ -454,28 +498,28 @@ class _SingleTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(18),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(18),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.04),
-              blurRadius: 10,
-              offset: const Offset(0, 2),
+              blurRadius: 14,
+              offset: const Offset(0, 4),
             ),
           ],
         ),
         child: Row(
           children: [
             Container(
-              width: 38,
-              height: 38,
+              width: 40,
+              height: 40,
               decoration: BoxDecoration(
                 color: color.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(icon, color: color, size: 20),
             ),

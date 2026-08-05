@@ -19,7 +19,7 @@ class MapViewScreen extends StatefulWidget {
   static Future<void> loadData(bool reload) async {
     int offset = 1;
     Get.find<AuthController>().getZoneList();
-  //  Get.find<SplashController>().setNearestEstateIndex(-1, notify: false);
+    //  Get.find<SplashController>().setNearestEstateIndex(-1, notify: false);
   }
 
   @override
@@ -92,6 +92,8 @@ class _MapViewScreenState extends State<MapViewScreen> {
                     // double.parse(Get.find<LocationController>().getUserAddress().longitude),
                   )),
                   myLocationEnabled: false,
+                  myLocationButtonEnabled: false,
+                  mapToolbarEnabled: false,
                   compassEnabled: false,
                   zoomControlsEnabled: true,
 
@@ -120,6 +122,8 @@ class _MapViewScreenState extends State<MapViewScreen> {
                   )),
                   markers: markers,
                   myLocationEnabled: false,
+                  myLocationButtonEnabled: false,
+                  mapToolbarEnabled: false,
                   compassEnabled: false,
                   zoomControlsEnabled: false,
                   onTap: (position) {},
@@ -190,116 +194,116 @@ class _MapViewScreenState extends State<MapViewScreen> {
       // );
       _customMarkersZone.add(
           MarkerData(
-        marker: Marker(markerId: MarkerId('id-$index0'),
-            position: latLng,
-            onTap: () async {
-              await prefs.setInt("visible", 1);
-              // _controller.animateCamera(
-              //     CameraUpdate.newCameraPosition(CameraPosition(target: LatLng(
-              //       double.parse(zone[index].latitude),
-              //       double.parse(zone[index].longitude),
-              //
-              //     ), zoom: 11)));
-              // Future.delayed(Duration(seconds: 1), () {
-              // Get.offNamed(RouteHelper.getAccessLocationRoute('verification'));
-              Get.find<CategoryController>().setFilterIndex(zone[index].id,0,"0","0",0,0,0,"");
-              Get.toNamed(RouteHelper.getCategoryRoute(zone[index].id,zone[index].longitude,zone[index].latitude));
-              // });
+            marker: Marker(markerId: MarkerId('id-$index0'),
+                position: latLng,
+                onTap: () async {
+                  await prefs.setInt("visible", 1);
+                  // _controller.animateCamera(
+                  //     CameraUpdate.newCameraPosition(CameraPosition(target: LatLng(
+                  //       double.parse(zone[index].latitude),
+                  //       double.parse(zone[index].longitude),
+                  //
+                  //     ), zoom: 11)));
+                  // Future.delayed(Duration(seconds: 1), () {
+                  // Get.offNamed(RouteHelper.getAccessLocationRoute('verification'));
+                  Get.find<CategoryController>().setFilterIndex(zone[index].id,0,"0","0",0,0,0,"");
+                  Get.toNamed(RouteHelper.getCategoryRoute(zone[index].id,zone[index].longitude,zone[index].latitude));
+                  // });
 
-            }),
-        child: SafeArea(
+                }),
+            child: SafeArea(
 
 
-          child: Directionality(
-            textDirection: isArabic ? TextDirection.rtl : TextDirection.ltr,
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // // الدائرة
-                // Container(
-                //   height: 30,
-                //   width: 30,
-                //   decoration: BoxDecoration(
-                //     shape: BoxShape.circle,
-                //     gradient: const LinearGradient(
-                //       colors: [Color(0xFFFFFFFF), Color(0xFFF4F7FF)],
-                //       begin: Alignment.topLeft,
-                //       end: Alignment.bottomRight,
-                //     ),
-                //     border: Border.all(
-                //       color: Color(0xFF3785FA),
-                //       width: 1.5,
-                //     ),
-                //     boxShadow: [
-                //       BoxShadow(
-                //         color: Colors.blue.withOpacity(0.2),
-                //         blurRadius: 3,
-                //         offset: Offset(1, 2),
-                //       ),
-                //     ],
-                //   ),
-                //   child: Center(
-                //     child: Text(
-                //       zone[index].estate_count.toString(),
-                //       style: const TextStyle(
-                //         color: Color(0xFF2A7BF6),
-                //         fontFamily: 'Cairo',
-                //         fontSize: 11,
-                //         fontWeight: FontWeight.bold,
-                //       ),
-                //     ),
-                //   ),
-                // ),
+                child: Directionality(
+                  textDirection: isArabic ? TextDirection.rtl : TextDirection.ltr,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // // الدائرة
+                      // Container(
+                      //   height: 30,
+                      //   width: 30,
+                      //   decoration: BoxDecoration(
+                      //     shape: BoxShape.circle,
+                      //     gradient: const LinearGradient(
+                      //       colors: [Color(0xFFFFFFFF), Color(0xFFF4F7FF)],
+                      //       begin: Alignment.topLeft,
+                      //       end: Alignment.bottomRight,
+                      //     ),
+                      //     border: Border.all(
+                      //       color: Color(0xFF3785FA),
+                      //       width: 1.5,
+                      //     ),
+                      //     boxShadow: [
+                      //       BoxShadow(
+                      //         color: Colors.blue.withOpacity(0.2),
+                      //         blurRadius: 3,
+                      //         offset: Offset(1, 2),
+                      //       ),
+                      //     ],
+                      //   ),
+                      //   child: Center(
+                      //     child: Text(
+                      //       zone[index].estate_count.toString(),
+                      //       style: const TextStyle(
+                      //         color: Color(0xFF2A7BF6),
+                      //         fontFamily: 'Cairo',
+                      //         fontSize: 11,
+                      //         fontWeight: FontWeight.bold,
+                      //       ),
+                      //     ),
+                      //   ),
+                      // ),
 
-                const SizedBox(width: 0),
+                      const SizedBox(width: 0),
 
-                // المستطيل الأزرق باسم المنطقة
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [
-                        Color(0xFF2A7BF6),
-                        Color(0xFF4A9BFF),
-                      ],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                      color: Colors.white,
-                      width: 1,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.15),
-                        blurRadius: 3,
-                        offset: Offset(1, 2),
+                      // المستطيل الأزرق باسم المنطقة
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [
+                              Color(0xFF2A7BF6),
+                              Color(0xFF4A9BFF),
+                            ],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: Colors.white,
+                            width: 1,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.15),
+                              blurRadius: 3,
+                              offset: Offset(1, 2),
+                            ),
+                          ],
+                        ),
+                        constraints: const BoxConstraints(
+                          minWidth: 60,
+                          maxWidth: 120,
+                        ),
+                        child: Text(
+                          isArabic ? zone[index].nameAr : zone[index].name,
+                          textAlign: TextAlign.center,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontFamily: 'IBMPlexSansArabic',
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                            height: 1.2,
+                          ),
+                        ),
                       ),
                     ],
                   ),
-                  constraints: const BoxConstraints(
-                    minWidth: 60,
-                    maxWidth: 120,
-                  ),
-                  child: Text(
-                    isArabic ? zone[index].nameAr : zone[index].name,
-                    textAlign: TextAlign.center,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontFamily: 'IBMPlexSansArabic',
-                      fontSize: 10,
-                      fontWeight: FontWeight.w600,
-                      height: 1.2,
-                    ),
-                  ),
-                ),
-              ],
+                )
             ),
-          )
-        ),
-      ));
+          ));
     }
     // if(!ResponsiveHelper.isWeb() && _controller != null) {
     //   Get.find<LocationController>().zoomToFit(_controller, _latLngs, padding: 0);

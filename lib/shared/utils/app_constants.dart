@@ -6,7 +6,7 @@ class AppConstants {
   static final myLocation = LatLng(51.5090214, -0.1982948);
 
   static const String APP_NAME = 'Baad';
-  static const double APP_VERSION = 7.0;
+  static const double APP_VERSION = 9.0;
   static const String LOGIN_URI = '/api/v1/auth/login';
 
   // عطّل السطر الإنتاجي مؤقتًا

@@ -59,7 +59,7 @@ class _FeatureScreenState extends State<FeatureScreen> {
     Get.find<EstateController>().getEstateDetails(Estate(id:widget.estate.id));
    // selectedUrl = '${AppConstants.BASE_URL}/payment-mobile/pyment?order_id=${widget.orderModel.id}&customer_id=${widget.orderModel.userId}';
 
-     print("--------------------------widget.estate.latitude-----${widget.estate.latitude}");
+     print("--------------------------widget.estate.latitude-----${widget.estate.images}");
 
 
     if(widget.featureId=="6"){
@@ -162,55 +162,121 @@ class _FeatureScreenState extends State<FeatureScreen> {
         body: SafeArea(
           child:  GetBuilder<EstateController>(builder: (estateController) {
             return !estateController.isLoading    ? Center(
-              child:  widget.featureId=="1" ? Container(
+              child:  widget.featureId=="1" ?
+
+
+              Container(
                 width: Dimensions.WEB_MAX_WIDTH,
                 padding: EdgeInsets.all(Dimensions.PADDING_SIZE_SMALL),
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  SizedBox(height: Dimensions.PADDING_SIZE_LARGE),
+                child:GetBuilder<SplashController>(
+                  builder: (splashController) {
+                    String baseUrl =
+                        splashController.configModel?.baseUrls?.estateImageUrl ?? "";
+                    final images = estateController.estate!.images!;
 
+                    // ===== طباعة تشخيصية =====
+                    print("=====================================");
+                    print("BASE URL >>> $baseUrl");
+                    print("IMAGES LIST >>> $images");
+                    print("IMAGES COUNT >>> ${images.length}");
+                    for (var img in images) {
+                      print("IMAGE ITEM >>> $img");
+                      print("FULL URL >>> $baseUrl/$img");
+                    }
+                    print("=====================================");
 
-
-                  Expanded(
-                    child: GridView.builder(
-                      physics: BouncingScrollPhysics(),
-                      itemCount: estateController.estate?.images?.length,
+                    return GridView.builder(
+                      shrinkWrap: true,
+                      physics: NeverScrollableScrollPhysics(),
+                      itemCount: images.length,
                       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: ResponsiveHelper.isDesktop(context) ? 4 : ResponsiveHelper.isTab(context) ? 3 : 2,
-                        childAspectRatio: (1/0.80),
+                        crossAxisCount: ResponsiveHelper.isDesktop(context)
+                            ? 4
+                            : ResponsiveHelper.isTab(context)
+                            ? 3
+                            : 2,
+                        childAspectRatio: (1 / 0.80),
                       ),
                       itemBuilder: (context, index) {
+                        final imageUrl = '$baseUrl/${images[index]}';
+                        print("RENDERING IMAGE [$index] >>> $imageUrl");
+
                         return InkWell(
                           onTap: () {
-                            print("------------------------${widget.estate!.images?[index]}");
+                            showDialog(
+                              context: context,
+                              barrierColor: Colors.black,
+                              builder: (_) => Dialog(
+                                backgroundColor: Colors.transparent,
+                                insetPadding: EdgeInsets.zero,
+                                child: Stack(
+                                  children: [
+                                    Positioned.fill(
+                                      child: InteractiveViewer(
+                                        minScale: 0.5,
+                                        maxScale: 4,
+                                        child: Center(
+                                          child: CustomImage(
+                                            image: imageUrl,
+                                            fit: BoxFit.contain,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    Positioned(
+                                      top: 40,
+                                      right: 20,
+                                      child: IconButton(
+                                        icon: Icon(Icons.close, color: Colors.white, size: 30),
+                                        onPressed: () => Navigator.pop(context),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
                           },
-                          child:   Container(
+                          child: Container(
                             padding: EdgeInsets.all(7),
                             decoration: BoxDecoration(
                               color: Theme.of(context).cardColor,
                               borderRadius: BorderRadius.circular(Dimensions.RADIUS_SMALL),
-                              boxShadow: [BoxShadow(color: Colors.grey[Get.isDarkMode ? 800 : 200]!, spreadRadius: 1, blurRadius: 5)],
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.grey[Get.isDarkMode ? 800 : 200]!,
+                                  spreadRadius: 1,
+                                  blurRadius: 5,
+                                ),
+                              ],
                             ),
                             child: ClipRRect(
                               borderRadius: BorderRadius.circular(Dimensions.RADIUS_SMALL),
-                              child: GetBuilder<SplashController>(builder: (splashController) {
-                                String baseUrl = Get.find<SplashController>().configModel?.baseUrls?.estateImageUrl ?? "";
-                                return CustomImage(
-                                  image: '$baseUrl/${estateController.estate!.images?[index]}',
-                                  fit: BoxFit.cover,
-                                );
-                              },
+                              child: Image.network(
+                                imageUrl,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) {
+                                  print("❌ IMAGE LOAD ERROR for [$imageUrl] >>> $error");
+                                  return Icon(Icons.broken_image, color: Colors.red, size: 40);
+                                },
+                                loadingBuilder: (context, child, progress) {
+                                  if (progress == null) return child;
+                                  return Center(
+                                    child: CircularProgressIndicator(strokeWidth: 2),
+                                  );
+                                },
                               ),
                             ),
                           ),
                         );
                       },
-                    ),
-                  ),
+                    );
+                  },
+                ),
+              )
 
 
 
-                ]),
-              ):widget.featureId=="2"?Center(
+                  :widget.featureId=="2"?Center(
                 child: SizedBox(
                   width: Dimensions.WEB_MAX_WIDTH,
                   child: widget.path!=""?WebViewScreen(  url: widget.path):NoDataScreen(

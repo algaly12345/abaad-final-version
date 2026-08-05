@@ -2,6 +2,7 @@
 
 // import 'package:abaad_chatbot_ui/abaad_chatbot_ui.dart';
 //import 'package:abaad_chatbot_ui/abaad_chatbot_ui.dart';
+import 'package:abaad_chatbot_ui/abaad_chatbot_ui.dart' show AbaadChatbotScreen;
 import 'package:abaad_flutter/features/auth/controller/auth_controller.dart';
 import 'package:abaad_flutter/features/provider/controller/provider_permission_controller.dart';
 import 'package:abaad_flutter/features/home/controller/banner_controller.dart';
@@ -38,6 +39,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 //import 'package:firebase_dynamic_links/firebase_dynamic_links.dart';
 
+import '../../../services/view/screens/services_hub_screen.dart';
 import '../widgets/bottom_sheet_guide.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -55,7 +57,7 @@ class DashboardScreen extends StatefulWidget {
   });
 
   static Future<void> loadData(bool reload) async {
-    //   Get.find<UserController>().getUserInfo();
+
     Get.find<AuthController>().getZoneList();
     Get.find<CategoryController>().getSubCategoryList("0");
     // Get.find<ZoneController>().getCategoryList();
@@ -132,6 +134,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
       MapViewScreen(),
       ZonesScreen(),
       // HomeScreen(),
+
+      ServicesHubScreen(),
       // AbaadChatbotScreen(),
       FavouriteScreen(),
 
@@ -192,135 +196,153 @@ class _DashboardScreenState extends State<DashboardScreen> {
             }
           },
 
-          child: Scaffold(
-            key: _key,
-            appBar: WebMenuBar(
-              ontop: () => _key.currentState?.openDrawer(),
-              fromPage: '',
-            ),
-            drawer: DrawerMenu(),
-            onDrawerChanged: (isOpened) {
-              if (isOpened) DrawerMenu.ensureUserDataLoaded();
-            },
+          // 🔹 Stack خارجي يسمح بوضع زر الشات بوت فوق كل شيء (فوق الـ Scaffold
+          // بالكامل بما فيه bottomNavigationBar) دون التأثير على centerDocked FAB.
+          child: Stack(
+            children: [
+              Scaffold(
+                key: _key,
+                appBar: WebMenuBar(
+                  ontop: () => _key.currentState?.openDrawer(),
+                  fromPage: '',
+                ),
+                drawer: DrawerMenu(),
+                onDrawerChanged: (isOpened) {
+                  if (isOpened) DrawerMenu.ensureUserDataLoaded();
+                },
 
-            floatingActionButton: _pageIndex == 2
-                ? null
-                : SizedBox(
-                    height: 62,
-                    width: 62,
-                    child: FloatingActionButton(
-                      backgroundColor: Colors.transparent,
-                      elevation: 0,
-                      onPressed: () {
-                        final userController = Get.find<UserController>();
-                        if (userController.userInfoModel?.accountVerification != "0") {
-                          Get.toNamed(RouteHelper.getAddLicenseRoute());
-                        } else {
-                          showBottomSheet(context);
-                        }
-                      },
-                      child: Container(
-                        height: 62,
-                        width: 62,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          gradient: const LinearGradient(
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                            colors: [Color(0xFF2E6DA4), Color(0xFF1A3C5E)],
+                floatingActionButton: _pageIndex == 2
+                    ? null
+                    : SizedBox(
+                  height: 62,
+                  width: 62,
+                  child: FloatingActionButton(
+                    backgroundColor: Colors.transparent,
+                    elevation: 0,
+                    onPressed: () {
+                      final userController = Get.find<UserController>();
+                      if (userController.userInfoModel?.accountVerification != "0") {
+                        Get.toNamed(RouteHelper.getAddLicenseRoute());
+                      } else {
+                        showBottomSheet(context);
+                      }
+                    },
+                    child: Container(
+                      height: 62,
+                      width: 62,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: const LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [Color(0xFF2E6DA4), Color(0xFF1A3C5E)],
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFF1A3C5E).withValues(alpha: 0.35),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
                           ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: const Color(0xFF1A3C5E).withValues(alpha: 0.35),
-                              blurRadius: 12,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
-                        ),
-                        child: const Icon(
-                          Icons.add_rounded,
-                          size: 32,
-                          color: Colors.white,
-                        ),
+                        ],
+                      ),
+                      child: const Icon(
+                        Icons.add_rounded,
+                        size: 32,
+                        color: Colors.white,
                       ),
                     ),
                   ),
+                ),
 
-            floatingActionButtonLocation: _pageIndex == 2
-                ? null
-                : FloatingActionButtonLocation.centerDocked,
+                floatingActionButtonLocation: _pageIndex == 2
+                    ? null
+                    : FloatingActionButtonLocation.centerDocked,
 
-            // floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-            bottomNavigationBar: ResponsiveHelper.isDesktop(context)
-                ? const SizedBox()
-                : GetBuilder<AuthController>(
-                    builder: (orderController) {
-                      return Container(
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.06),
-                              blurRadius: 16,
-                              offset: const Offset(0, -4),
+                // floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+                bottomNavigationBar: ResponsiveHelper.isDesktop(context)
+                    ? const SizedBox()
+                    : GetBuilder<AuthController>(
+                  builder: (orderController) {
+                    return Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.06),
+                            blurRadius: 16,
+                            offset: const Offset(0, -4),
+                          ),
+                        ],
+                      ),
+                      child: SafeArea(
+                        child: BottomAppBar(
+                          elevation: 0,
+                          notchMargin: 8,
+                          clipBehavior: Clip.antiAlias,
+                          color: Colors.transparent,
+                          shape: const CircularNotchedRectangle(),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
                             ),
-                          ],
-                        ),
-                        child: SafeArea(
-                          child: BottomAppBar(
-                            elevation: 0,
-                            notchMargin: 8,
-                            clipBehavior: Clip.antiAlias,
-                            color: Colors.transparent,
-                            shape: const CircularNotchedRectangle(),
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 4,
-                              ),
-                              child: Row(
-                                children: [
-                                  BottomNavItem(
-                                    iconData: Images.home,
-                                    name: "home".tr,
-                                    isSelected: _pageIndex == 0,
-                                    onTap: () => _setPage(0),
-                                  ),
-                                  BottomNavItem(
-                                    iconData: Images.menu,
-                                    name: "menu".tr,
-                                    isSelected: _pageIndex == 1,
-                                    onTap: () => _setPage(1),
-                                  ),
-                                  const Expanded(child: SizedBox()),
-                                  BottomNavItem(
-                                    iconData: Images.request,
-                                    name: "request".tr,
-                                    isSelected: _pageIndex == 2,
-                                    onTap: () => _setPage(2),
-                                  ),
-                                  BottomNavItem(
-                                    iconData: Images.heart,
-                                    name: "favorite".tr,
-                                    isSelected: _pageIndex == 3,
-                                    onTap: () => _setPage(3),
-                                  ),
-                                ],
-                              ),
+                            child: Row(
+                              children: [
+                                BottomNavItem(
+                                  iconData: Images.home,
+                                  name: "home".tr,
+                                  isSelected: _pageIndex == 0,
+                                  onTap: () => _setPage(0),
+                                ),
+                                BottomNavItem(
+                                  iconData: Images.menu,
+                                  name: "menu".tr,
+                                  isSelected: _pageIndex == 1,
+                                  onTap: () => _setPage(1),
+                                ),
+                                const Expanded(child: SizedBox()),
+                                BottomNavItem(
+                                  iconData: Images.request,
+                                  name: "services".tr,
+                                  isSelected: _pageIndex == 2,
+                                  onTap: () => _setPage(2),
+                                ),
+                                BottomNavItem(
+                                  iconData: Images.heart,
+                                  name: "favorite".tr,
+                                  isSelected: _pageIndex == 3,
+                                  onTap: () => _setPage(3),
+                                ),
+                              ],
                             ),
                           ),
                         ),
-                      );
-                    },
-                  ),
-            body: PageView.builder(
-              controller: _pageController,
-              itemCount: _screens.length,
-              physics: NeverScrollableScrollPhysics(),
-              itemBuilder: (context, index) {
-                return _screens[index];
-              },
-            ),
+                      ),
+                    );
+                  },
+                ),
+                body: PageView.builder(
+                  controller: _pageController,
+                  itemCount: _screens.length,
+                  physics: NeverScrollableScrollPhysics(),
+                  itemBuilder: (context, index) {
+                    return _screens[index];
+                  },
+                ),
+              ),
+
+              // 🔹 زر الشات بوت العائم — أسفل يمين الشاشة، فوق شريط التنقل السفلي
+              Positioned(
+                right: 16,
+                bottom: ResponsiveHelper.isDesktop(context) ? 40 : 120,
+                child: _ChatbotFab(
+                  onTap: () {
+                    // TODO: استبدل هذا بمسار/إجراء فتح الشات بوت الفعلي عندك
+                    Get.to(() => const AbaadChatbotScreen());
+                  },
+                ),
+              ),
+            ],
           ),
         );
       },
@@ -429,20 +451,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
                                   !userController.isLoading
                                       ? CustomButton(
-                                          onPressed: () {
-                                            userController.validateNafath(
-                                              phoneController.text.trim(),
-                                              context,
-                                            );
-                                          },
-                                          margin: EdgeInsets.all(
-                                            Dimensions.PADDING_SIZE_SMALL,
-                                          ),
-                                          buttonText: 'verification'.tr,
-                                        )
+                                    onPressed: () {
+                                      userController.validateNafath(
+                                        phoneController.text.trim(),
+                                        context,
+                                      );
+                                    },
+                                    margin: EdgeInsets.all(
+                                      Dimensions.PADDING_SIZE_SMALL,
+                                    ),
+                                    buttonText: 'verification'.tr,
+                                  )
                                       : const Center(
-                                          child: CircularProgressIndicator(),
-                                        ),
+                                    child: CircularProgressIndicator(),
+                                  ),
                                 ],
                               ),
                             ),
@@ -598,4 +620,94 @@ Widget listItem(int index, IconData icon, String label, Color color, onTop) {
       ),
     ),
   );
+}
+
+/// زر عائم مخصص لأيقونة الشات بوت مع تأثير لمس، ظل ناعم، وأنيميشن نبض مستمر للأيقونة.
+class _ChatbotFab extends StatefulWidget {
+  final VoidCallback onTap;
+  const _ChatbotFab({required this.onTap});
+
+  @override
+  State<_ChatbotFab> createState() => _ChatbotFabState();
+}
+
+class _ChatbotFabState extends State<_ChatbotFab>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _bounce;
+  late final Animation<double> _rotation;
+
+  @override
+  void initState() {
+    super.initState();
+    // دورة حركة مستمرة: قفزة خفيفة لأعلى مع دوران بسيط، تكرر كل ثانيتين.
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1000),
+    )..repeat(reverse: true);
+
+    _bounce = Tween<double>(begin: 0.0, end: -10.0).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+
+    _rotation = Tween<double>(begin: -0.08, end: 0.08).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 56,
+      width: 56,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF2E6DA4), Color(0xFF1A3C5E)],
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF1A3C5E).withOpacity(0.35),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        shape: const CircleBorder(),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: widget.onTap,
+          child: Center(
+            child: AnimatedBuilder(
+              animation: _controller,
+              builder: (context, child) {
+                return Transform.translate(
+                  offset: Offset(0, _bounce.value),
+                  child: Transform.rotate(
+                    angle: _rotation.value,
+                    child: child,
+                  ),
+                );
+              },
+              child: const Icon(
+                Icons.smart_toy_outlined, // أيقونة الشات بوت
+                size: 28,
+                color: Colors.white,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }

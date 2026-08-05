@@ -526,5 +526,11 @@
   "completed": "Completed",
   "rejected": "Rejected",
   "expired": "Expired",
-  "applied_referral_code": "Referral code applied"
+  "applied_referral_code": "Referral code applied",
+  "good_morning": "Good morning",
+  "good_afternoon": "Good afternoon",
+  "good_evening": "Good evening",
+  "services": "services",
+  "choose_your_preferred_app_language": "اختر اللغة التي تفضل استخدامها داخل التطبيق"
+
 }

@@ -21,20 +21,43 @@ class SplashController extends GetxController implements GetxService {
 
   Future<bool> getConfigData() async {
     _hasConnection = true;
+
+    // الخطوة 1: اعرض الإعدادات المخزَّنة محلياً فوراً إن وُجدت
+    // (يجعل فتح التطبيق فورياً في كل مرة عدا أول تشغيل)
+    final cachedData = splashRepo.getCachedConfigData();
+    if (cachedData != null) {
+      try {
+        _configModel = ConfigModel.fromJson(cachedData);
+        update();
+      } catch (_) {
+        // تجاهل أي خطأ في الكاش القديم، سنعتمد على الشبكة أدناه
+      }
+    }
+
+    // الخطوة 2: اطلب أحدث نسخة من السيرفر (سواء ظهرت نسخة الكاش أو لا)
     Response response = await splashRepo.getConfigData();
     bool isSuccess = false;
-    if(response.statusCode == 200) {
-    //  Get.offAllNamed(RouteHelper.getAccessLocationRoute('verification'));
-      _configModel = ConfigModel.fromJson(response.body);
 
+    if (response.statusCode == 200) {
+      _configModel = ConfigModel.fromJson(response.body);
+      // احفظ النسخة الجديدة للاستخدام الفوري في المرة القادمة
+      splashRepo.cacheConfigData(response.body);
       isSuccess = true;
-    }else {
-     ApiChecker.checkApi(response, showToaster: true);
-      if(response.statusText == ApiClient.noInternetMessage) {
+    } else {
+      // لو فشلت الشبكة لكن لدينا نسخة مخزَّنة، اعتبرها نجاحاً جزئياً
+      // (التطبيق يعمل بالبيانات القديمة بدل التوقف بالكامل)
+      if (cachedData != null) {
+        isSuccess = true;
+      } else {
+        ApiChecker.checkApi(response, showToaster: true);
+        isSuccess = false;
+      }
+
+      if (response.statusText == ApiClient.noInternetMessage) {
         _hasConnection = false;
       }
-      isSuccess = false;
     }
+
     update();
     return isSuccess;
   }
@@ -57,9 +80,8 @@ class SplashController extends GetxController implements GetxService {
 
   void setNearestEstateIndex(int index, {bool notify = true}) {
     _nearestRestaurantIndex = index;
-    if(notify) {
+    if (notify) {
       update();
     }
   }
-
 }

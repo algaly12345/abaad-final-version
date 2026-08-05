@@ -56,11 +56,9 @@ class _ZonesScreenState extends State<ZonesScreen> {
             ? CustomScrollView(
                 slivers: [
                   // Header with gradient
-                  SliverToBoxAdapter(
-                    child: _buildHeader(context, isArabic),
-                  ),
+
                   // Banner
-                  const SliverToBoxAdapter(
+                  const SliverToBoxAdapter                                                                                                                                                                                                                                                                                              (
                     child: Padding(
                       padding: EdgeInsets.symmetric(horizontal: 16),
                       child: BannerView(),
@@ -82,7 +80,7 @@ class _ZonesScreenState extends State<ZonesScreen> {
                           ),
                           const SizedBox(width: 8),
                           Text(
-                            'اختر منطقتك',
+                            'المناطق ',
                             style: TextStyle(
                               fontFamily: 'IBMPlexSansArabic',
                               fontSize: 18,
@@ -126,105 +124,7 @@ class _ZonesScreenState extends State<ZonesScreen> {
     );
   }
 
-  Widget _buildHeader(BuildContext context, bool isArabic) {
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            Theme.of(context).primaryColor,
-            Theme.of(context).primaryColor.withValues(alpha: 0.85),
-          ],
-        ),
-      ),
-      child: SafeArea(
-        bottom: false,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'مرحباً بك',
-                        style: TextStyle(
-                          fontFamily: 'IBMPlexSansArabic',
-                          fontSize: 13,
-                          color: Colors.white.withValues(alpha: 0.8),
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      const Text(
-                        'في أبعاد العقارية',
-                        style: TextStyle(
-                          fontFamily: 'IBMPlexSansArabic',
-                          fontSize: 22,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ],
-                  ),
-                  Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Icon(
-                      Icons.location_city_rounded,
-                      color: Colors.white,
-                      size: 26,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              // Search hint bar
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.08),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.search_rounded,
-                      color: Theme.of(context).primaryColor,
-                      size: 20,
-                    ),
-                    const SizedBox(width: 10),
-                    Text(
-                      'ابحث عن عقارك المثالي...',
-                      style: TextStyle(
-                        fontFamily: 'IBMPlexSansArabic',
-                        fontSize: 14,
-                        color: Colors.grey[500],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
+
 
   Widget _buildZoneCard(BuildContext context, dynamic zone) {
     return GestureDetector(
@@ -254,7 +154,7 @@ class _ZonesScreenState extends State<ZonesScreen> {
             fit: StackFit.expand,
             children: [
               CustomImage(
-                image: "${AppConstants.BASE_URL}/storage/app/public/zone/${zone?.image ?? ''}",
+                image: "https://pub-4ce088f208944decb4e9cf11054558ea.r2.dev/zone/${zone?.image ?? ''}",
                 fit: BoxFit.cover,
               ),
               // Gradient overlay

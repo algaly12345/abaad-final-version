@@ -98,7 +98,7 @@
   "order_place": "عملية سحب",
   "transaction_history": "المعاملات",
   "profile": "معلومات الملف الشخصى",
-  "guest": "زائر",
+  "guest": " داخل كزائر",
   "you_are_not_logged_in": "لم يتم تسجيل الدخول ",
   "sorry": "عفوا",
   "we_are_under_maintenance": "نحن تحت الصيانة",
@@ -523,5 +523,10 @@
   "completed": "مكتملة",
   "rejected": "مرفوضة",
   "expired": "منتهية",
-  "applied_referral_code": "تم تطبيق كود الإحالة"
+  "applied_referral_code": "تم تطبيق كود الإحالة",
+  "good_morning": "صباح الخير",
+  "good_afternoon": "طاب يومك",
+  "good_evening": "مساء الخير",
+  "services": "خدمات",
+  "choose_your_preferred_app_language": "Choose the language you'd like to use in the app"
 }

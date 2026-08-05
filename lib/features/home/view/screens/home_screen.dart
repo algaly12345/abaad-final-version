@@ -586,8 +586,7 @@ class HomeScreen extends StatefulWidget {
   HomeScreen({super.key, required this.zoneId});
 
   final ScrollController scrollController = ScrollController();
-  final bool _ltr = Get.find<LocalizationController>().isLtr;
-  final ConfigModel? _configModel = Get.find<SplashController>().configModel;
+
 
   static Future<void> loadData(bool reload) async {
     Get.find<CategoryController>().getCategoryProductList(

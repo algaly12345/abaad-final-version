@@ -1029,6 +1029,7 @@ class _FiltersScreenState extends State<FiltersScreen>
     return GetBuilder<EstateController>(builder: (restController) {
       return GetBuilder<ZoneController>(builder: (zoneController) {
         return GetBuilder<CategoryController>(builder: (categoryController) {
+
           if (zoneController.subCategoryList == null) {
             return Scaffold(
               body: Center(

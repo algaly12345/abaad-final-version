@@ -19,9 +19,9 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 
 
 
-#version: 2.0.25+2
+#version: 2.0.27+2
 
-version: 1.0.3+70
+version: 1.0.3+71
 
 
 environment:
@@ -38,10 +38,10 @@ dependencies:
   flutter:
     sdk: flutter
 
-#  abaad_chatbot_ui:
-#    git:
-#      url: https://github.com/Abaad-Org/Abaad-Chatbot-UI.git
-#      ref: v0.5.3
+  abaad_chatbot_ui:
+    git:
+      url: https://github.com/Abaad-Org/Abaad-Chatbot-UI.git
+      ref: v0.5.3
 
 # pubspec.yaml
 
@@ -74,7 +74,7 @@ dependencies:
   geolocator: any
   provider: any
   modal_bottom_sheet: any
-  flutter_google_street_view: any
+  flutter_google_street_view: ^3.1.4
   custom_map_markers: any
   flutter_hex_color: any
   cached_network_image: any

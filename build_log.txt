@@ -1,0 +1,41 @@
+Launching lib/main.dart on iPhone 16 Plus in debug mode...
+To ensure your app continues to launch on upcoming iOS versions, UIScene lifecycle support will soon be required. Please see https://flutter.dev/to/uiscene-migration for the migration guide.
+
+The following plugins do not support Swift Package Manager for ios:
+  - flutter_google_street_view
+  - flutter_inappwebview_ios
+  - google_maps_flutter_ios
+  - phone_number
+  - rive_common
+  - share_plus
+This will become an error in a future version of Flutter. Please contact the plugin maintainers to request Swift Package Manager adoption.
+Running Xcode build...                                          
+Xcode build done.                                           39.6s
+Failed to build iOS app
+Error output from Xcode build:
+↳
+Xcode's output:
+↳
+dow' has been explicitly marked deprecated here
+      108 | @property(nullable, nonatomic,readonly) UIWindow *keyWindow API_DEPRECATED("Should not be used for applications that support multiple scenes as it returns a key window across all connected scenes", ios(2.0, 13.0)) API_UNAVAILABLE(visionos, watchos);
+          |                                                   ^
+    2 warnings generated.
+    In file included from /Users/awadabayzeed/.pub-cache/hosted/pub.dev/rive_common-0.4.15/ios/rive-cpp/src/audio/audio_engine.m:3:
+    /Users/awadabayzeed/Downloads/abaad-main/ios/.symlinks/plugins/rive_common/ios/miniaudio/miniaudio.h:60709:56: warning: a function declaration without a prototype is deprecated in all versions of C [-Wstrict-prototypes]
+     60709 | MA_API ma_decoder_config ma_decoder_config_init_default()
+           |                                                        ^
+           |                                                         void
+    1 warning generated.
+    In file included from /Users/awadabayzeed/.pub-cache/hosted/pub.dev/rive_common-0.4.15/ios/rive-cpp/src/audio/audio_engine.m:3:
+    /Users/awadabayzeed/Downloads/abaad-main/ios/.symlinks/plugins/rive_common/ios/miniaudio/miniaudio.h:60709:56: warning: a function declaration without a prototype is deprecated in all versions of C [-Wstrict-prototypes]
+     60709 | MA_API ma_decoder_config ma_decoder_config_init_default()
+           |                                                        ^
+           |                                                         void
+    1 warning generated.
+    ld: write() failed, errno=28 (No space left on device)
+    /Users/awadabayzeed/Downloads/abaad-main/ios/Pods/Pods.xcodeproj: rive_common: clang++: error: linker command failed with exit code 1 (use -v to see invocation)
+    note: Run script build phase 'Run Script' will be run during every build because the option to run the script phase "Based on dependency analysis" is unchecked. (in target 'Runner' from project 'Runner')
+    note: Run script build phase 'Thin Binary' will be run during every build because the option to run the script phase "Based on dependency analysis" is unchecked. (in target 'Runner' from project 'Runner')
+
+Could not build the application for the simulator.
+Error launching application on iPhone 16 Plus.

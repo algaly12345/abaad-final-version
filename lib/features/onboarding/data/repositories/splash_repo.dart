@@ -1,40 +1,57 @@
-﻿import 'package:abaad_flutter/core/api/api_client.dart';
+﻿import 'dart:convert';
+import 'package:abaad_flutter/core/api/api_client.dart';
 import 'package:abaad_flutter/shared/utils/app_constants.dart';
 import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
 
 class SplashRepo {
   ApiClient apiClient;
   final SharedPreferences sharedPreferences;
   SplashRepo({required this.sharedPreferences, required this.apiClient});
 
+  static const String _cachedConfigKey = 'cached_config_data';
+
   Future<Response> getConfigData() async {
     Response response = await apiClient.getData(AppConstants.CONFIG_URI, query: {}, headers: {});
     return response;
   }
 
+  // يقرأ الإعدادات المخزَّنة محلياً فوراً (بدون أي انتظار للشبكة)
+  Map<String, dynamic>? getCachedConfigData() {
+    final cached = sharedPreferences.getString(_cachedConfigKey);
+    if (cached == null) return null;
+    try {
+      return jsonDecode(cached) as Map<String, dynamic>;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  // يحفظ آخر استجابة ناجحة محلياً لاستخدامها فوراً في المرة القادمة
+  Future<void> cacheConfigData(Map<String, dynamic> data) async {
+    await sharedPreferences.setString(_cachedConfigKey, jsonEncode(data));
+  }
+
   Future<bool> initSharedData() {
-    if(!sharedPreferences.containsKey(AppConstants.THEME)) {
+    if (!sharedPreferences.containsKey(AppConstants.THEME)) {
       sharedPreferences.setBool(AppConstants.THEME, false);
     }
-    if(!sharedPreferences.containsKey(AppConstants.COUNTRY_CODE)) {
+    if (!sharedPreferences.containsKey(AppConstants.COUNTRY_CODE)) {
       sharedPreferences.setString(AppConstants.COUNTRY_CODE, AppConstants.languages[0].countryCode);
     }
-    if(!sharedPreferences.containsKey(AppConstants.LANGUAGE_CODE)) {
+    if (!sharedPreferences.containsKey(AppConstants.LANGUAGE_CODE)) {
       sharedPreferences.setString(AppConstants.LANGUAGE_CODE, AppConstants.languages[0].languageCode);
     }
-
-    if(!sharedPreferences.containsKey(AppConstants.SEARCH_HISTORY)) {
+    if (!sharedPreferences.containsKey(AppConstants.SEARCH_HISTORY)) {
       sharedPreferences.setStringList(AppConstants.SEARCH_HISTORY, []);
     }
-    if(!sharedPreferences.containsKey(AppConstants.NOTIFICATION)) {
+    if (!sharedPreferences.containsKey(AppConstants.NOTIFICATION)) {
       sharedPreferences.setBool(AppConstants.NOTIFICATION, true);
     }
-    if(!sharedPreferences.containsKey(AppConstants.INTRO)) {
+    if (!sharedPreferences.containsKey(AppConstants.INTRO)) {
       sharedPreferences.setBool(AppConstants.INTRO, true);
     }
-    if(!sharedPreferences.containsKey(AppConstants.NOTIFICATION_COUNT)) {
+    if (!sharedPreferences.containsKey(AppConstants.NOTIFICATION_COUNT)) {
       sharedPreferences.setInt(AppConstants.NOTIFICATION_COUNT, 0);
     }
     return Future.value(true);
@@ -47,5 +64,4 @@ class SplashRepo {
   bool? showIntro() {
     return sharedPreferences.getBool(AppConstants.INTRO);
   }
-
 }

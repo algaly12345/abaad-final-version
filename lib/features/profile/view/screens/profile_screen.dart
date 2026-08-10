@@ -10,6 +10,10 @@ import 'package:abaad_flutter/shared/widgets/not_logged_in_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+/// ملاحظة: نفس أسماء الكلاسات الأصلية بالكامل (ProfileScreen،
+/// _ProfileScreenState، _SectionCard، _TileItem، _SingleTile) بدون أي كلاس
+/// جديد. التعديل الرئيسي: إضافة زر رجوع دائري ظاهر بوضوح (كان مفقودًا) في
+/// كل من شاشة التحميل وشريط الهيدر المتدرّج، مع تحسينات بصرية بسيطة إضافية.
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
 
@@ -33,6 +37,35 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
+  /// زر رجوع دائري بخلفية بيضاء شفافة — يُستخدم فوق الهيدر الغامق حتى
+  /// يبقى ظاهرًا وواضحًا بدل الاعتماد على السهم الافتراضي الذي كان يختفي
+  /// عمليًا (لا يوجد `leading` صريح في التصميم الأصلي).
+  Widget _backButton(BuildContext context) {
+    return SizedBox(
+      height: kToolbarHeight,
+      child: Center(
+        child: GestureDetector(
+          onTap: () => Get.back(),
+          child: Container(
+            width: 28,
+            height: 28,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.14),
+              shape: BoxShape.circle,
+              border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
+            ),
+            child: const Icon(
+              Icons.arrow_back_ios_new_rounded,
+              color: Colors.white,
+              size: 14,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     if (!Get.find<AuthController>().isLoggedIn()) {
@@ -47,6 +80,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
             return Scaffold(
               appBar: AppBar(
                 backgroundColor: _brandDark,
+                leading: _backButton(context),
+                leadingWidth: 46,
                 title: Text('profile'.tr,
                     style: robotoBold.copyWith(color: Colors.white)),
                 centerTitle: true,
@@ -77,6 +112,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 foregroundColor: Colors.white,
                 elevation: 0,
                 centerTitle: true,
+                leading: _backButton(context),
+                leadingWidth: 46,
                 title: Text(
                   'profile'.tr,
                   style: robotoBold.copyWith(fontSize: 17, color: Colors.white),

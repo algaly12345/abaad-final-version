@@ -216,17 +216,20 @@ class Userinfo {
 class ProviderIdentity {
   String? identityType; // 'individual' أو 'company'
   String? identityNumber;
+  String? freelanceMembershipNumber;
   String? commercialRegistrationNo;
 
   ProviderIdentity({
     this.identityType,
     this.identityNumber,
+    this.freelanceMembershipNumber,
     this.commercialRegistrationNo,
   });
 
   ProviderIdentity.fromJson(Map<String, dynamic> json) {
     identityType = json['identity_type'];
     identityNumber = json['identity_number'];
+    freelanceMembershipNumber = json['freelance_membership_number'];
     commercialRegistrationNo = json['commercial_registration_no'];
   }
 
@@ -237,7 +240,7 @@ class ProviderIdentity {
       (identityType == 'individual' &&
           (identityNumber?.isNotEmpty ?? false) &&
           identityNumber != 'pending') ||
-      (identityType == 'company' &&
-          (commercialRegistrationNo?.isNotEmpty ?? false) &&
-          commercialRegistrationNo != 'pending');
+          (identityType == 'company' &&
+              (commercialRegistrationNo?.isNotEmpty ?? false) &&
+              commercialRegistrationNo != 'pending');
 }

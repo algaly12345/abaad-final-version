@@ -6,15 +6,15 @@ class AppConstants {
   static final myLocation = LatLng(51.5090214, -0.1982948);
 
   static const String APP_NAME = 'Baad';
-  static const double APP_VERSION = 9.0;
+  static const double APP_VERSION = 10.0;
   static const String LOGIN_URI = '/api/v1/auth/login';
 
   // عطّل السطر الإنتاجي مؤقتًا
-  static const String BASE_URL = 'https://app.abaadapp.sa';
+  // static const String BASE_URL = 'https://app.abaadapp.sa';
 
   // فعّل هذا للاختبار المحلي
 
-//  static const String BASE_URL = 'http://10.110.10.232';
+  static const String BASE_URL = 'https://app.abaadapp.sa';
 
   // static const String BASE_URL = 'https://baad.arabengksa.com';
   static const String LAND_SERVICE_URL =
@@ -134,6 +134,9 @@ class AppConstants {
   // static const String token = 'multivendor_token';
 
   static const String verifyLicense = '/api/v1/estate/check-license';
+
+  static const String PROVIDER_UPDATE_LOGO_URI =
+      '/api/v1/provider-subscriptions/update-logo';
 
   static List<int> tips = [0, 5, 10, 15, 20, 30, 50];
 

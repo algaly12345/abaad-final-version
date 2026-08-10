@@ -4,12 +4,14 @@ import 'package:abaad_flutter/features/referrals/controller/referral_controller.
 import 'package:abaad_flutter/features/referrals/data/models/referral_model.dart';
 import 'package:abaad_flutter/features/referrals/view/widgets/referral_withdrawal_sheet.dart';
 import 'package:abaad_flutter/features/provider/view/screens/provider_upgrade_screen.dart';
+import 'package:abaad_flutter/shared/controllers/splash_controller.dart';
 import 'package:abaad_flutter/shared/helpers/price_converter.dart';
 import 'package:abaad_flutter/shared/helpers/responsive_helper.dart';
 import 'package:abaad_flutter/shared/utils/dimensions.dart';
 import 'package:abaad_flutter/shared/utils/styles.dart';
 import 'package:abaad_flutter/shared/widgets/custom_app_bar.dart';
 import 'package:abaad_flutter/shared/widgets/custom_button.dart';
+import 'package:abaad_flutter/shared/widgets/custom_image.dart';
 import 'package:abaad_flutter/shared/widgets/no_data_screen.dart';
 import 'package:abaad_flutter/shared/widgets/not_logged_in_screen.dart';
 import 'package:abaad_flutter/shared/widgets/title_widget.dart';
@@ -295,10 +297,10 @@ class _ReferralScreenState extends State<ReferralScreen> {
               buttonText: 'request_withdrawal'.tr,
               onPressed: available > 0
                   ? () {
-                      ResponsiveHelper.isMobile(context)
-                          ? Get.bottomSheet(ReferralWithdrawalSheet(availableBalance: available))
-                          : Get.dialog(Dialog(child: ReferralWithdrawalSheet(availableBalance: available)));
-                    }
+                ResponsiveHelper.isMobile(context)
+                    ? Get.bottomSheet(ReferralWithdrawalSheet(availableBalance: available))
+                    : Get.dialog(Dialog(child: ReferralWithdrawalSheet(availableBalance: available)));
+              }
                   : null,
             ),
           ),
@@ -325,11 +327,18 @@ class _ReferralScreenState extends State<ReferralScreen> {
       separatorBuilder: (_, __) => Divider(color: Theme.of(context).disabledColor),
       itemBuilder: (context, index) {
         final ReferralItemModel item = items[index];
+        final String imageUrl =
+            '${Get.find<SplashController>().configModel?.baseUrls?.customerImageUrl ?? ''}/${item.referredImage ?? ''}';
+
         return Padding(
           padding: EdgeInsets.symmetric(vertical: Dimensions.PADDING_SIZE_SMALL),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
+              ClipOval(
+                child: CustomImage(image: imageUrl, height: 40, width: 40, fit: BoxFit.cover),
+              ),
+              SizedBox(width: Dimensions.PADDING_SIZE_SMALL),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,

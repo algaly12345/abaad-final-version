@@ -314,6 +314,14 @@ class CategoryController extends GetxController implements GetxService {
 
 
 
+  String _filterCity = "0";
+  String _filterDistrict = "0";
+  String _filterSpace = "0";
+
+  String get filterCity => _filterCity;
+  String get filterDistrict => _filterDistrict;
+  String get filterSpace => _filterSpace;
+
   void setFilterIndex(
       int zoneId,
       int index,
@@ -325,6 +333,10 @@ class CategoryController extends GetxController implements GetxService {
       String type,
       ) {
     print("--------------type $type");
+
+    _filterCity = cityName.isEmpty ? "0" : cityName;
+    _filterDistrict = districts.isEmpty ? "0" : districts;
+    _filterSpace = space.toString();
 
     getCategoryProductList(
       zoneId,

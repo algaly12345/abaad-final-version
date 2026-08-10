@@ -28,12 +28,15 @@ class ServiceOfferRepo {
   Future<Response> updateIdentity({
     required String entityType, // 'individual' أو 'organization'
     String? identityNumber,
+    String? freelanceMembershipNumber,
     String? commercialRegistrationNo,
   }) async {
     return await apiClient.postData(AppConstants.PROVIDER_UPDATE_IDENTITY_URI, {
       // الباكند يخزّن 'company' لا 'organization' في service_providers.identity_type.
       'identity_type': entityType == 'organization' ? 'company' : entityType,
       if (identityNumber != null) 'identity_number': identityNumber,
+      if (freelanceMembershipNumber != null)
+        'freelance_membership_number': freelanceMembershipNumber,
       if (commercialRegistrationNo != null)
         'commercial_registration_no': commercialRegistrationNo,
     });
@@ -70,7 +73,9 @@ class ServiceOfferRepo {
       'subscription_duration': subscriptionDuration.toString(),
       // الباكند يخزّن 'company' لا 'organization' في service_providers.identity_type
       // — يبقى الاسم الداخلي بالفلاتر 'organization' كما هو، والترجمة هنا فقط.
-      'entity_type': entityType == 'organization' ? 'company' : entityType,
+      // المفتاح هنا identity_type (وليس entity_type) لأن StoreOfferRequest في الباكند
+      // يتحقق فقط من identity_type — بهذا يعمل "التأكيد الإضافي" لبيانات الهوية فعليًا.
+      'identity_type': entityType == 'organization' ? 'company' : entityType,
       'latitude': latitude.toString(),
       'longitude': longitude.toString(),
     };
@@ -98,6 +103,17 @@ class ServiceOfferRepo {
     return await apiClient.postMultipartData(
       AppConstants.PROVIDER_STORE_OFFER_URI,
       fields,
+      [MultipartBody('image', image)],
+    );
+  }
+
+  /// رفع/تحديث شعار مزوّد الخدمة (service_providers.image) — منفصل تمامًا
+  /// عن صورة حساب المستخدم العامة (customer/update-profile) وعن صورة العرض
+  /// (storeOffer)، ويظهر في بطاقات قائمة العروض بجانب اسم المزوّد.
+  Future<Response> updateLogo(XFile image) async {
+    return await apiClient.postMultipartData(
+      AppConstants.PROVIDER_UPDATE_LOGO_URI,
+      {},
       [MultipartBody('image', image)],
     );
   }

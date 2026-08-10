@@ -181,7 +181,7 @@ class _TermsScreenState extends State<_TermsScreen> {
                                   height: AvatarSpec.profile,
                                   decoration: BoxDecoration(
                                     color:
-                                        Colors.white.withValues(alpha: 0.15),
+                                    Colors.white.withValues(alpha: 0.15),
                                     shape: BoxShape.circle,
                                     border: Border.all(
                                         color: Colors.white
@@ -205,7 +205,7 @@ class _TermsScreenState extends State<_TermsScreen> {
                                     'service_terms_subtitle'.tr,
                                     style: AppTypography.small.copyWith(
                                       color:
-                                          Colors.white.withValues(alpha: 0.85),
+                                      Colors.white.withValues(alpha: 0.85),
                                       height: 1.55,
                                     ),
                                     textAlign: TextAlign.center,
@@ -228,7 +228,7 @@ class _TermsScreenState extends State<_TermsScreen> {
                     Spacing.pagePadding, Spacing.lg, Spacing.pagePadding, 0),
                 sliver: SliverList(
                   delegate: SliverChildBuilderDelegate(
-                    (context, i) => _TermItem(
+                        (context, i) => _TermItem(
                       icon: _terms[i].$1,
                       title: _terms[i].$2,
                       body: _terms[i].$3,
@@ -342,7 +342,7 @@ class _TermsScreenState extends State<_TermsScreen> {
                             ),
                             child: _isAgreed
                                 ? const Icon(Icons.check_rounded,
-                                    color: Colors.white, size: 14)
+                                color: Colors.white, size: 14)
                                 : null,
                           ),
                           const SizedBox(width: Spacing.md),
@@ -536,8 +536,8 @@ class _WizardScreenState extends State<_WizardScreen> {
             _valueCtrl.text.trim().isNotEmpty &&
             _descCtrl.text.trim().isNotEmpty;
       case 1:
-        // مدة الاشتراك دائماً محددة بقيمة افتراضية (شهر واحد)، فيكفي التحقق
-        // من اختيار الباقة نفسها.
+      // مدة الاشتراك دائماً محددة بقيمة افتراضية (شهر واحد)، فيكفي التحقق
+      // من اختيار الباقة نفسها.
         return c.selectedPlanIndex >= 0;
       case 2:
         return c.selectedZoneIds.isNotEmpty &&
@@ -711,6 +711,11 @@ class _WizardScreenState extends State<_WizardScreen> {
     final isLast = _step == _totalSteps - 1;
     final canNext = _canGoNext(c);
     final total = c.priceCalculation?.totalPrice ?? c.selectedPlan?.price ?? 0;
+    // يظهر الشريط فقط بين خطوة المنتج وخطوة الموقع (الخطوات 2-4 من 5): يُخفى
+    // في خطوة بيانات الخدمة الأولى (السعر ليس القرار الحالي بعد)، وفي خطوة
+    // المراجعة الأخيرة لأن السعر معروض هناك أصلاً ضمن صفّ "المنتج" فلا داعي
+    // لتكراره.
+    final showTotal = total > 0 && _step > 0 && !isLast;
 
     return Container(
       decoration: BoxDecoration(
@@ -726,59 +731,46 @@ class _WizardScreenState extends State<_WizardScreen> {
             Spacing.pagePadding,
             Spacing.md,
           ),
-          child: Row(
-            // بدون هذا المحاذاة (الافتراضي center) كان زرّ "السابق" الثابت
-            // الارتفاع (48) يتمركز رأسياً مقابل عمود السعر+الزرّ الأطول في
-            // خطوة المراجعة (نص "الإجمالي" فوق السعر فوق الزرّ)، فيظهر أعلى
-            // من زرّ "إكمال والدفع" بدل أن يحاذيه في نفس السطر.
-            crossAxisAlignment: CrossAxisAlignment.end,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              if (_step > 0)
-                SizedBox(
-                  height: ButtonSpec.primaryHeight,
-                  child: OutlinedButton(
-                    onPressed: _goBack,
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: Spacing.lg),
-                      side: BorderSide(color: AppColors.border(context)),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(ButtonSpec.radius)),
+              // شريط الإجمالي الثابت: يظهر الآن في كل خطوة بعد اختيار المنتج
+              // بدل الاقتصار على خطوة المراجعة الأخيرة فقط — يبقى السعر
+              // النهائي مرئياً للمستخدم طوال المعالج (نمط شائع في شاشات
+              // الدفع/الحجز متعددة الخطوات).
+              if (showTotal) ...[
+                _StickyTotalBar(controller: c, total: total, primary: primary),
+                const SizedBox(height: Spacing.md),
+              ],
+              Row(
+                children: [
+                  if (_step > 0)
+                    SizedBox(
+                      height: ButtonSpec.primaryHeight,
+                      child: OutlinedButton(
+                        onPressed: _goBack,
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(horizontal: Spacing.lg),
+                          side: BorderSide(color: AppColors.border(context)),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(ButtonSpec.radius)),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(Icons.arrow_back_rounded,
+                                size: IconSpec.small,
+                                color: AppColors.textSecondary(context)),
+                            const SizedBox(width: Spacing.xs),
+                            Text('previous'.tr,
+                                style: AppTypography.smallMedium
+                                    .copyWith(color: AppColors.textSecondary(context))),
+                          ],
+                        ),
+                      ),
                     ),
-                    child: Row(
-                      children: [
-                        Icon(Icons.arrow_back_rounded,
-                            size: IconSpec.small,
-                            color: AppColors.textSecondary(context)),
-                        const SizedBox(width: Spacing.xs),
-                        Text('previous'.tr,
-                            style: AppTypography.smallMedium
-                                .copyWith(color: AppColors.textSecondary(context))),
-                      ],
-                    ),
-                  ),
-                ),
-              if (_step > 0) const SizedBox(width: Spacing.md),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    if (isLast && total > 0) ...[
-                      Text('total'.tr,
-                          style: AppTypography.badge
-                              .copyWith(color: AppColors.textSecondary(context))),
-                      c.isPriceLoading
-                          ? const SizedBox(
-                              height: 18,
-                              width: 18,
-                              child: CircularProgressIndicator(strokeWidth: 2))
-                          : Text(
-                              '${total.toStringAsFixed(0)} ريال',
-                              style: AppTypography.subtitle.copyWith(
-                                  color: primary, fontWeight: FontWeight.w700),
-                            ),
-                    ],
-                    DSPrimaryButton(
+                  if (_step > 0) const SizedBox(width: Spacing.md),
+                  Expanded(
+                    child: DSPrimaryButton(
                       label: isLast ? 'complete_and_pay'.tr : 'next'.tr,
                       icon: isLast
                           ? Icons.payments_outlined
@@ -786,12 +778,84 @@ class _WizardScreenState extends State<_WizardScreen> {
                       loading: c.isSubmitting,
                       onPressed: canNext ? () => _goNext(c) : null,
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// شريط الإجمالي الثابت أعلى أزرار التنقّل — أيقونة + "الإجمالي" ومدة
+/// الاشتراك المختارة على اليمين، والسعر الفعلي القادم من السيرفر (بما فيه
+/// رسوم تجاوز حدّ المناطق) بخط بارز بلون التطبيق على اليسار.
+class _StickyTotalBar extends StatelessWidget {
+  final ServiceOfferController controller;
+  final double total;
+  final Color primary;
+
+  const _StickyTotalBar({
+    required this.controller,
+    required this.total,
+    required this.primary,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final durationLabel = _DurationSelector._options
+        .firstWhere((o) => o.$1 == controller.selectedDuration,
+        orElse: () => _DurationSelector._options.first)
+        .$2
+        .tr;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(
+          horizontal: Spacing.md, vertical: Spacing.sm),
+      decoration: BoxDecoration(
+        color: primary.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(AppRadius.medium),
+        border: Border.all(color: primary.withValues(alpha: 0.18)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 34,
+            height: 34,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+                color: primary.withValues(alpha: 0.12), shape: BoxShape.circle),
+            child: Icon(Icons.payments_outlined, color: primary, size: 18),
+          ),
+          const SizedBox(width: Spacing.sm),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text('total'.tr,
+                    style: AppTypography.captionMedium
+                        .copyWith(color: AppColors.textSecondary(context))),
+                Text(durationLabel,
+                    style: AppTypography.caption
+                        .copyWith(color: AppColors.textSecondary(context))),
+              ],
+            ),
+          ),
+          controller.isPriceLoading
+              ? const SizedBox(
+              height: 18,
+              width: 18,
+              child: CircularProgressIndicator(strokeWidth: 2))
+              : Text(
+            '${total.toStringAsFixed(0)} ريال',
+            style: AppTypography.subtitle
+                .copyWith(color: primary, fontWeight: FontWeight.w800),
+          ),
+        ],
       ),
     );
   }
@@ -850,23 +914,23 @@ class _Step1ServiceInfo extends StatelessWidget {
                     ),
                     child: controller.pickedImage != null
                         ? ClipRRect(
-                            borderRadius: BorderRadius.circular(AppRadius.medium),
-                            child: Image.file(
-                              File(controller.pickedImage!.path),
-                              fit: BoxFit.cover,
-                            ),
-                          )
+                      borderRadius: BorderRadius.circular(AppRadius.medium),
+                      child: Image.file(
+                        File(controller.pickedImage!.path),
+                        fit: BoxFit.cover,
+                      ),
+                    )
                         : Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Icons.add_photo_alternate_outlined,
-                                  size: 40, color: primary.withValues(alpha: 0.5)),
-                              const SizedBox(height: Spacing.sm),
-                              Text('tap_to_choose_image'.tr,
-                                  style: AppTypography.caption
-                                      .copyWith(color: AppColors.textSecondary(context))),
-                            ],
-                          ),
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.add_photo_alternate_outlined,
+                            size: 40, color: primary.withValues(alpha: 0.5)),
+                        const SizedBox(height: Spacing.sm),
+                        Text('tap_to_choose_image'.tr,
+                            style: AppTypography.caption
+                                .copyWith(color: AppColors.textSecondary(context))),
+                      ],
+                    ),
                   ),
                 ),
                 if (controller.pickedImage != null) ...[
@@ -898,7 +962,7 @@ class _Step1ServiceInfo extends StatelessWidget {
                   leadingIcon: Icons.category_outlined,
                   items: List.generate(
                     controller.serviceTypes.length,
-                    (i) => DropdownMenuItem(
+                        (i) => DropdownMenuItem(
                       value: i,
                       child: Text(controller.serviceTypes[i].name ?? ''),
                     ),
@@ -1065,7 +1129,7 @@ class _Step2Plan extends StatelessWidget {
               child: PackageOptionCard(
                 title: plan.name ?? '',
                 priceLabel:
-                    '${plan.price?.toStringAsFixed(0)} ${'sar_per_month'.tr}',
+                '${plan.price?.toStringAsFixed(0)} ${'sar_per_month'.tr}',
                 selected: selected,
                 onTap: () => controller.selectPlan(i),
                 features: [
@@ -1150,8 +1214,8 @@ class _DurationSelector extends StatelessWidget {
                     child: Text(
                       labelKey.tr,
                       style: (selected
-                              ? AppTypography.smallBold
-                              : AppTypography.smallMedium)
+                          ? AppTypography.smallBold
+                          : AppTypography.smallMedium)
                           .copyWith(
                         color: selected
                             ? primary
@@ -1182,7 +1246,7 @@ class _DurationSelector extends StatelessWidget {
                           .copyWith(color: AppColors.textSecondary(context))),
                   Text(controller.expiryDateText,
                       style:
-                          AppTypography.smallBold.copyWith(color: primary)),
+                      AppTypography.smallBold.copyWith(color: primary)),
                 ],
               ),
             ),
@@ -1224,14 +1288,14 @@ class _LiveTotalCard extends StatelessWidget {
           ),
           controller.isPriceLoading
               ? const SizedBox(
-                  height: 18,
-                  width: 18,
-                  child: CircularProgressIndicator(strokeWidth: 2))
+              height: 18,
+              width: 18,
+              child: CircularProgressIndicator(strokeWidth: 2))
               : Text(
-                  '${total.toStringAsFixed(0)} ريال',
-                  style: AppTypography.title
-                      .copyWith(color: primary, fontWeight: FontWeight.w800),
-                ),
+            '${total.toStringAsFixed(0)} ريال',
+            style: AppTypography.title
+                .copyWith(color: primary, fontWeight: FontWeight.w800),
+          ),
         ],
       ),
     );
@@ -1274,7 +1338,7 @@ class _Step3ZoneCategory extends StatelessWidget {
             selectedCount: controller.selectedZoneIds.length,
             primary: primary,
             overLimitWarning: allowedZones > 0 &&
-                    controller.selectedZoneIds.length > allowedZones
+                controller.selectedZoneIds.length > allowedZones
                 ? 'ستُضاف 50 ريال على كل منطقة زيادة عن $allowedZones'
                 : null,
             itemCount: controller.zones.length,
@@ -1302,7 +1366,7 @@ class _Step3ZoneCategory extends StatelessWidget {
               final cat = controller.categories[i];
               final selected = controller.selectedCategoryIds.contains(cat.id);
               final label =
-                  (cat.nameAr?.isNotEmpty ?? false) ? cat.nameAr! : (cat.name ?? '');
+              (cat.nameAr?.isNotEmpty ?? false) ? cat.nameAr! : (cat.name ?? '');
               return _SelectCard(
                 icon: serviceCategoryIcon(label),
                 label: label,
@@ -1537,7 +1601,7 @@ class _SelectTextCard extends StatelessWidget {
             borderRadius: BorderRadius.circular(AppRadius.medium),
             border: selected ? null : Border.all(color: AppColors.border(context)),
             boxShadow:
-                !dark ? AppShadows.soft(blur: 10, opacity: selected ? 0.16 : 0.04) : null,
+            !dark ? AppShadows.soft(blur: 10, opacity: selected ? 0.16 : 0.04) : null,
           ),
           child: Text(
             label,
@@ -1594,7 +1658,7 @@ class _StepLocationState extends State<_StepLocation> {
     String? address;
     try {
       final placemarks =
-          await Geocoding().placemarkFromCoordinates(position.latitude, position.longitude);
+      await Geocoding().placemarkFromCoordinates(position.latitude, position.longitude);
       if (placemarks.isNotEmpty) {
         final p = placemarks.first;
         address = [p.subLocality, p.locality, p.administrativeArea]
@@ -1675,7 +1739,7 @@ class _StepLocationState extends State<_StepLocation> {
                         children: [
                           GoogleMap(
                             initialCameraPosition:
-                                CameraPosition(target: _initialCenter, zoom: 15),
+                            CameraPosition(target: _initialCenter, zoom: 15),
                             zoomControlsEnabled: false,
                             myLocationButtonEnabled: false,
                             mapToolbarEnabled: false,
@@ -1722,22 +1786,22 @@ class _StepLocationState extends State<_StepLocation> {
                       Expanded(
                         child: _resolvingAddress
                             ? Text(
-                                'resolving_location'.tr,
-                                style: AppTypography.caption
-                                    .copyWith(color: AppColors.textSecondary(context)),
-                              )
+                          'resolving_location'.tr,
+                          style: AppTypography.caption
+                              .copyWith(color: AppColors.textSecondary(context)),
+                        )
                             : Text(
-                                controller.selectedAddress ??
-                                    (hasLocation
-                                        ? '${controller.selectedLatitude!.toStringAsFixed(5)}, '
-                                            '${controller.selectedLongitude!.toStringAsFixed(5)}'
-                                        : 'location_required_hint'.tr),
-                                style: AppTypography.smallMedium.copyWith(
-                                  color: hasLocation
-                                      ? AppColors.textPrimary(context)
-                                      : AppColors.textSecondary(context),
-                                ),
-                              ),
+                          controller.selectedAddress ??
+                              (hasLocation
+                                  ? '${controller.selectedLatitude!.toStringAsFixed(5)}, '
+                                  '${controller.selectedLongitude!.toStringAsFixed(5)}'
+                                  : 'location_required_hint'.tr),
+                          style: AppTypography.smallMedium.copyWith(
+                            color: hasLocation
+                                ? AppColors.textPrimary(context)
+                                : AppColors.textSecondary(context),
+                          ),
+                        ),
                       ),
                     ],
                   ),
@@ -1774,10 +1838,10 @@ class _MapLocateButton extends StatelessWidget {
           padding: const EdgeInsets.all(12),
           child: loading
               ? SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(strokeWidth: 2, color: primary),
-                )
+            width: 20,
+            height: 20,
+            child: CircularProgressIndicator(strokeWidth: 2, color: primary),
+          )
               : Icon(Icons.my_location_rounded, color: primary, size: 22),
         ),
       ),
@@ -1811,7 +1875,7 @@ class _Step4Review extends StatelessWidget {
     // فلا داعٍ لتكرار شبكة اختيار المدة هنا.
     final durationLabel = _DurationSelector._options
         .firstWhere((o) => o.$1 == controller.selectedDuration,
-            orElse: () => _DurationSelector._options.first)
+        orElse: () => _DurationSelector._options.first)
         .$2
         .tr;
 
@@ -1843,7 +1907,7 @@ class _Step4Review extends StatelessWidget {
                       : 'سعر ${valueCtrl.text} ريال',
                 ),
                 if (controller.selectedPlan != null)
-                  _ReviewRow('الباقة',
+                  _ReviewRow('المنتج',
                       '${controller.selectedPlan!.name} — ${controller.selectedPlan!.price?.toStringAsFixed(0)} ريال/شهر'),
                 _ReviewRow('subscription_duration'.tr, durationLabel),
                 _ReviewRow(
@@ -1914,12 +1978,12 @@ class _ReviewRow extends StatelessWidget {
 /// حقل نصي محلي بمقاييس النظام (Height 56 / Radius 12) بدل MyTextField
 /// المشترك (Radius 8) — استبدال محصور بهذه الشاشة فقط.
 Widget _dsTextField(
-  BuildContext context, {
-  required String hintText,
-  required TextEditingController controller,
-  TextInputType keyboardType = TextInputType.text,
-  int maxLines = 1,
-}) {
+    BuildContext context, {
+      required String hintText,
+      required TextEditingController controller,
+      TextInputType keyboardType = TextInputType.text,
+      int maxLines = 1,
+    }) {
   return TextFormField(
     controller: controller,
     keyboardType: keyboardType,
@@ -1936,9 +2000,9 @@ class _StepHeader extends StatelessWidget {
   final Color primary;
   const _StepHeader(
       {required this.icon,
-      required this.title,
-      required this.subtitle,
-      required this.primary});
+        required this.title,
+        required this.subtitle,
+        required this.primary});
 
   @override
   Widget build(BuildContext context) {
@@ -2089,14 +2153,14 @@ class _OfferTypeCard extends StatelessWidget {
             children: [
               useRiyalIcon
                   ? Image.asset(
-                      'assets/image/riyals.png',
-                      width: IconSpec.small,
-                      height: IconSpec.small,
-                      color: selected ? primary : unselectedText,
-                    )
+                'assets/image/riyals.png',
+                width: IconSpec.small,
+                height: IconSpec.small,
+                color: selected ? primary : unselectedText,
+              )
                   : Icon(icon,
-                      size: IconSpec.small,
-                      color: selected ? primary : unselectedText),
+                  size: IconSpec.small,
+                  color: selected ? primary : unselectedText),
               const SizedBox(height: Spacing.sm),
               Text(title,
                   style: AppTypography.smallBold.copyWith(
@@ -2142,8 +2206,8 @@ class _LimitBadge extends StatelessWidget {
     final Color bg = over
         ? AppColors.warning.withValues(alpha: 0.12)
         : full
-            ? primary
-            : primary.withValues(alpha: 0.1);
+        ? primary
+        : primary.withValues(alpha: 0.1);
     final Color fg = over ? AppColors.warning : (full ? Colors.white : primary);
 
     return AnimatedContainer(

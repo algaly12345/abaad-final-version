@@ -22,11 +22,11 @@ class ServiceOfferController extends GetxController implements GetxService {
   // شكل تحقق مختلف، فلا نفقد شرط أي منهما بدمجهما بحقل واحد بلا تمييز.
   String? _organizationIdType; // 'commercial' | 'unified'
   final TextEditingController identityNumberController =
-      TextEditingController();
+  TextEditingController();
   final TextEditingController freelanceMembershipController =
-      TextEditingController();
+  TextEditingController();
   final TextEditingController commercialRegistrationController =
-      TextEditingController();
+  TextEditingController();
 
   // صحيح فقط عندما جاءت بيانات الهوية من ملف مزوّد الخدمة المحفوظ بالباكند
   // (hydrateEntityFromProvider) بدل إدخال جديد عبر ProviderUpgradeScreen —
@@ -55,6 +55,7 @@ class ServiceOfferController extends GetxController implements GetxService {
     _entityType = provider.identityType == 'company' ? 'organization' : 'individual';
     if (provider.identityType == 'individual') {
       identityNumberController.text = provider.identityNumber ?? '';
+      freelanceMembershipController.text = provider.freelanceMembershipNumber ?? '';
     } else {
       commercialRegistrationController.text =
           provider.commercialRegistrationNo ?? '';
@@ -142,7 +143,10 @@ class ServiceOfferController extends GetxController implements GetxService {
     final response = await serviceOfferRepo.updateIdentity(
       entityType: _entityType!,
       identityNumber:
-          _entityType == 'individual' ? identityNumberController.text.trim() : null,
+      _entityType == 'individual' ? identityNumberController.text.trim() : null,
+      freelanceMembershipNumber: _entityType == 'individual'
+          ? freelanceMembershipController.text.trim()
+          : null,
       commercialRegistrationNo: _entityType == 'organization'
           ? commercialRegistrationController.text.trim()
           : null,
@@ -207,8 +211,8 @@ class ServiceOfferController extends GetxController implements GetxService {
 
   ServicePlanModel? get selectedPlan =>
       (_selectedPlanIndex >= 0 && _selectedPlanIndex < _servicePlans.length)
-      ? _servicePlans[_selectedPlanIndex]
-      : null;
+          ? _servicePlans[_selectedPlanIndex]
+          : null;
 
   String get expiryDateText {
     final date = DateTime.now().add(Duration(days: 30 * _selectedDuration));
@@ -337,6 +341,69 @@ class ServiceOfferController extends GetxController implements GetxService {
   void removeImage() {
     _pickedImage = null;
     update();
+  }
+
+  // شعار مزوّد الخدمة (service_providers.image) — حالة منفصلة عن _pickedImage
+  // (صورة العرض) حتى لا يتداخل رفع أحدهما مع الآخر.
+  XFile? _pickedLogo;
+  bool _isUploadingLogo = false;
+  XFile? get pickedLogo => _pickedLogo;
+  bool get isUploadingLogo => _isUploadingLogo;
+
+  Future<void> pickLogo() async {
+    try {
+      PermissionStatus status = await Permission.photos.status;
+      if (!status.isGranted && !status.isLimited) {
+        status = await Permission.photos.request();
+      }
+      if (status.isPermanentlyDenied) {
+        showCustomSnackBar('permission_permanently_denied_msg'.tr);
+        await openAppSettings();
+        return;
+      }
+      if (!status.isGranted && !status.isLimited) {
+        showCustomSnackBar('فشل اختيار الصورة، تحقق من الصلاحيات');
+        return;
+      }
+
+      final XFile? image = await ImagePicker().pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 80,
+      );
+      if (image != null) {
+        _pickedLogo = image;
+        update();
+      }
+    } catch (e) {
+      showCustomSnackBar('فشل اختيار الصورة، تحقق من الصلاحيات');
+    }
+  }
+
+  /// يرفع الشعار المختار إلى service_providers.image، ثم يُفرغ الاختيار
+  /// المحلي — استدعاء getUserInfo() بعدها من الشاشة يُحدّث userInfoModel.provider.image
+  /// فيُعرض الشعار الجديد من الباكند بدل الملف المحلي المؤقت.
+  Future<bool> uploadLogo() async {
+    if (_pickedLogo == null) return false;
+
+    _isUploadingLogo = true;
+    update();
+
+    final response = await serviceOfferRepo.updateLogo(_pickedLogo!);
+
+    _isUploadingLogo = false;
+
+    if (response.statusCode == 200 && response.body['status'] == 'success') {
+      _pickedLogo = null;
+      update();
+      return true;
+    }
+
+    update();
+    final message = (response.body is Map)
+        ? (response.body['message'] ?? 'فشل تحديث الشعار')
+        : 'فشل تحديث الشعار';
+    showCustomSnackBar(message);
+    return false;
   }
 
   /// يُستدعى من خطوة "الموقع" بالمعالج عند تحريك الخارطة أو التقاط الموقع

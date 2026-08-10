@@ -1634,6 +1634,7 @@ import 'package:get/get.dart';
 import 'package:abaad_flutter/shared/utils/images.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../widgets/location_search_dialog.dart';
 import '../widgets/permission_dialog.dart';
@@ -1711,6 +1712,7 @@ class _MapViewScreenState extends State<MapScreen> {
   int _lastMarkersHash = -1;
   late double lat;
   late double lot;
+  int? _filterZoneId;
 
   void _onMapTypeButtonPressed() {
     setState(() {
@@ -1752,9 +1754,9 @@ class _MapViewScreenState extends State<MapScreen> {
           .toString()
           : "0",
       0,
-      "0",
-      "0",
-      "0",
+      categoryController.filterCity,
+      categoryController.filterDistrict,
+      categoryController.filterSpace,
       "0",
       northEastLat,
       northEastLng,
@@ -1891,6 +1893,32 @@ class _MapViewScreenState extends State<MapScreen> {
     return '${b.northeast.latitude.toStringAsFixed(4)}_${b.northeast.longitude.toStringAsFixed(4)}_${b.southwest.latitude.toStringAsFixed(4)}_${b.southwest.longitude.toStringAsFixed(4)}';
   }
 
+  Future<void> _applyFilterZoneIfChanged() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    final double? newLat = prefs.getDouble('filter_zone_lat');
+    final double? newLng = prefs.getDouble('filter_zone_lng');
+    final int? newZoneId = prefs.getInt('zone_id');
+
+    if (newLat != null && newLng != null) {
+      lat = newLat;
+      lot = newLng;
+      _filterZoneId = (newZoneId != null && newZoneId != 0)
+          ? newZoneId
+          : widget.mainCategory.id;
+
+      if (_mapReady) {
+        await _controller.animateCamera(
+          CameraUpdate.newCameraPosition(
+            CameraPosition(target: LatLng(lat, lot), zoom: 12),
+          ),
+        );
+        await Future.delayed(const Duration(milliseconds: 600));
+      }
+    }
+
+    await _loadMapEstatesByBounds(reload: true);
+  }
+
   Future<void> _loadMapEstatesByBounds({bool reload = true}) async {
     if (!_mapReady || _isFetchingBounds) return;
 
@@ -1909,7 +1937,7 @@ class _MapViewScreenState extends State<MapScreen> {
       final categoryController = Get.find<CategoryController>();
 
       await categoryController.getMapCategoryProductListByBounds(
-        widget.mainCategory.id,
+        _filterZoneId ?? widget.mainCategory.id,
         categoryController.subCategoryList != null &&
             categoryController.subCategoryList!.isNotEmpty
             ? categoryController
@@ -1917,9 +1945,9 @@ class _MapViewScreenState extends State<MapScreen> {
             .toString()
             : "0",
         0,
-        "0",
-        "0",
-        "0",
+        categoryController.filterCity,
+        categoryController.filterDistrict,
+        categoryController.filterSpace,
         "0",
         bounds.northeast.latitude,
         bounds.northeast.longitude,
@@ -2136,9 +2164,10 @@ class _MapViewScreenState extends State<MapScreen> {
                                         ),
                                       ),
                                       GestureDetector(
-                                        onTap: () {
+                                        onTap: () async {
                                           cardTapped = true;
-                                          Get.dialog(FiltersScreen());
+                                          await Get.dialog(FiltersScreen());
+                                          await _applyFilterZoneIfChanged();
                                         },
                                         child: Container(
                                           padding: const EdgeInsets.all(7),

@@ -132,11 +132,11 @@ class RouteHelper {
   static String getSignUpRoute() => signUp;
 
   static String getVerificationRoute(
-    String number,
-    String token,
-    String page,
-    String pass,
-  ) {
+      String number,
+      String token,
+      String page,
+      String pass,
+      ) {
     return '$verification?page=$page&number=$number&token=$token&pass=$pass';
   }
 
@@ -144,14 +144,14 @@ class RouteHelper {
   static String getWebViewRoute(String page) => '$webview?url=$page';
 
   static String getFeatureRoute(
-    int id,
-    String featureId,
-    String path,
-    String videoPath,
-    String latitude,
-    String longitude,
-    String skyView,
-  ) =>
+      int id,
+      String featureId,
+      String path,
+      String videoPath,
+      String latitude,
+      String longitude,
+      String skyView,
+      ) =>
       '$feature?id=$id&feature_id=$featureId&path=$path&path_video=$videoPath&latitude=$latitude&longitude=$longitude&sky_view=$skyView';
 
   static String getAccessLocationRoute(String page) =>
@@ -283,7 +283,7 @@ class RouteHelper {
       name: signIn,
       page: () => SignInScreen(
         exitFromApp:
-            Get.parameters['page'] == signUp ||
+        Get.parameters['page'] == signUp ||
             Get.parameters['page'] == splash ||
             Get.parameters['page'] == onBoarding,
       ),
@@ -332,24 +332,24 @@ class RouteHelper {
         return (fromAddress && pickMapScreen == null)
             ? NotFound()
             : pickMapScreen ??
-                  MapScreen(
-                    mainCategory: ZoneModel(
-                      id: int.parse(Get.parameters['id']!),
-                      latitude: Get.parameters['latitude']!,
-                      longitude: Get.parameters['longitude']!,
-                      name: '',
-                      nameAr: '',
-                      coordinates: null,
-                      status: '',
-                      createdAt: '',
-                      updatedAt: '',
-                      image: '',
-                    ),
-                    fromSignUp: Get.parameters['page'] == signUp,
-                    fromAddAddress: fromAddress,
-                    route: Get.parameters['page'] ?? estate,
-                    canRoute: Get.parameters['route'] == 'true',
-                  );
+            MapScreen(
+              mainCategory: ZoneModel(
+                id: int.parse(Get.parameters['id']!),
+                latitude: Get.parameters['latitude']!,
+                longitude: Get.parameters['longitude']!,
+                name: '',
+                nameAr: '',
+                coordinates: null,
+                status: '',
+                createdAt: '',
+                updatedAt: '',
+                image: '',
+              ),
+              fromSignUp: Get.parameters['page'] == signUp,
+              fromAddAddress: fromAddress,
+              route: Get.parameters['page'] ?? estate,
+              canRoute: Get.parameters['route'] == 'true',
+            );
       },
     ),
     GetPage(
@@ -380,12 +380,12 @@ class RouteHelper {
         return (fromAddress && pickMapScreen == null)
             ? NotFound()
             : pickMapScreen ??
-                  PickMapScreen(
-                    fromSignUp: Get.parameters['page'] == signUp,
-                    fromAddAddress: fromAddress,
-                    route: Get.parameters['page']!,
-                    canRoute: Get.parameters['route'] == 'true',
-                  );
+            PickMapScreen(
+              fromSignUp: Get.parameters['page'] == signUp,
+              fromAddAddress: fromAddress,
+              route: Get.parameters['page']!,
+              canRoute: Get.parameters['route'] == 'true',
+            );
       },
     ),
     GetPage(
@@ -447,8 +447,8 @@ class RouteHelper {
               ? int.parse(Get.parameters['index']!)
               : 0,
           conversationID:
-              (Get.parameters['conversation_id'] != null &&
-                  Get.parameters['conversation_id'] != 'null')
+          (Get.parameters['conversation_id'] != null &&
+              Get.parameters['conversation_id'] != 'null')
               ? int.parse(Get.parameters['conversation_id']!)
               : 0,
           estate_id: Get.parameters['estate_id'] != null
@@ -531,22 +531,23 @@ class RouteHelper {
   static String getMyServicesRoute() => myServices;
 
   static getRoute(Widget? navigateTo, {bool byPuss = false}) {
-    final configModel = Get.find<SplashController>().configModel;
-    if (configModel == null) return navigateTo;
-
-    int minimumVersion = 0;
-    if (GetPlatform.isAndroid) {
-      minimumVersion = configModel.appMinimumVersionAndroid ?? 0;
-    } else if (GetPlatform.isIOS) {
-      minimumVersion = configModel.appMinimumVersionIos ?? 0;
-    }
-
-    if (AppConstants.APP_VERSION < minimumVersion) {
-      return UpdateScreen(isUpdate: true);
-    }
-    if (configModel.maintenanceMode == true) {
-      return UpdateScreen(isUpdate: false);
-    }
+    // Forced update / maintenance check temporarily disabled.
+    // final configModel = Get.find<SplashController>().configModel;
+    // if (configModel == null) return navigateTo;
+    //
+    // int minimumVersion = 0;
+    // if (GetPlatform.isAndroid) {
+    //   minimumVersion = configModel.appMinimumVersionAndroid ?? 0;
+    // } else if (GetPlatform.isIOS) {
+    //   minimumVersion = configModel.appMinimumVersionIos ?? 0;
+    // }
+    //
+    // if (AppConstants.APP_VERSION < minimumVersion) {
+    //   return UpdateScreen(isUpdate: true);
+    // }
+    // if (configModel.maintenanceMode == true) {
+    //   return UpdateScreen(isUpdate: false);
+    // }
     return navigateTo;
   }
 }

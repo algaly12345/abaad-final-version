@@ -42,6 +42,7 @@ class ReferralSummaryModel {
 class ReferralItemModel {
   String? referredName;
   String? referredPhone;
+  String? referredImage;
   String? packageName;
   double? transactionAmount;
   double? commissionAmount;
@@ -53,6 +54,7 @@ class ReferralItemModel {
   ReferralItemModel({
     this.referredName,
     this.referredPhone,
+    this.referredImage,
     this.packageName,
     this.transactionAmount,
     this.commissionAmount,
@@ -65,6 +67,7 @@ class ReferralItemModel {
   ReferralItemModel.fromJson(Map<String, dynamic> json) {
     referredName = json['referred_name'];
     referredPhone = json['referred_phone'];
+    referredImage = json['referred_image'];
     packageName = json['package_name'];
     transactionAmount = json['transaction_amount'] != null
         ? double.tryParse(json['transaction_amount'].toString())

@@ -1,5 +1,7 @@
 ﻿import 'dart:convert';
 
+import 'package:abaad_flutter/features/estate/controller/estate_controller.dart';
+import 'package:abaad_flutter/shared/widgets/details_dilog.dart';
 import 'package:abaad_flutter/shared/controllers/splash_controller.dart';
 import 'package:abaad_flutter/features/notification/data/models/notification_body.dart';
 import 'package:abaad_flutter/shared/data/models/estate_model.dart';
@@ -72,6 +74,7 @@ class RouteHelper {
   static const String categories = '/categories';
   static const String notification = '/notification';
   static const String estate = '/estate';
+  static const String detailsDeepLink = '/details/:id';
   static const String addEstate = '/add-estate';
   static const String addEstateTow = '/add-estate-tow';
   static const String agent = '/agent';
@@ -466,6 +469,17 @@ class RouteHelper {
             EstateDetails(estate: Estate(id: int.parse(Get.parameters['id']!)));
       },
     ),
+    // رابط تفاصيل عقار من App Links/Universal Links: /details/{id}
+    // يفتح شاشة شفافة تعرض DettailsDilog فوراً عند البناء، لأن GetPage
+    // تتطلب Widget كصفحة، بينما DettailsDilog مصمَّم كـ Dialog.
+    GetPage(
+      name: detailsDeepLink,
+      opaque: false,
+      page: () {
+        final int estateId = int.parse(Get.parameters['id']!);
+        return _DetailsDeepLinkOpener(estateId: estateId);
+      },
+    ),
     GetPage(
       name: editEstate,
       page: () => EditDialog(
@@ -549,5 +563,55 @@ class RouteHelper {
     //   return UpdateScreen(isUpdate: false);
     // }
     return navigateTo;
+  }
+}
+
+
+/// شاشة شفافة مؤقتة تفتح [DettailsDilog] فور بنائها، لأن رابط Deep Link
+/// يحتاج GetPage (Widget)، بينما التصميم الأصلي لعرض التفاصيل هو Dialog.
+class _DetailsDeepLinkOpener extends StatefulWidget {
+  final int estateId;
+  const _DetailsDeepLinkOpener({required this.estateId});
+
+  @override
+  State<_DetailsDeepLinkOpener> createState() =>
+      _DetailsDeepLinkOpenerState();
+}
+
+class _DetailsDeepLinkOpenerState extends State<_DetailsDeepLinkOpener> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final estateController = Get.find<EstateController>();
+      Estate? estate;
+      try {
+        estate = await estateController.getEstateDetails(
+          Estate(id: widget.estateId),
+        );
+      } catch (_) {
+        // فشل جلب العقار (مثلاً 404 من السيرفر) — ApiChecker يعرض رسالة
+        // الخطأ تلقائياً بالفعل داخل getEstateDetails، فقط لا نتابع فتح الحوار.
+        estate = null;
+      }
+
+      if (Get.isDialogOpen == true) {
+        Get.back();
+      }
+      if (Get.previousRoute.isNotEmpty) {
+        Get.back();
+      }
+
+      if (estate == null) {
+        return;
+      }
+
+      Get.dialog(DettailsDilog(estate: estate), barrierDismissible: true);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return const SizedBox.shrink();
   }
 }

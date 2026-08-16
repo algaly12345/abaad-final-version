@@ -22,22 +22,29 @@ class NotificationModel {
     required this.userId,
     required this.createdAt,
     required this.updatedAt,
-    required this.zoneId
+    required this.zoneId,
   });
 
+  /// ملاحظة: تم إصلاح fromJson فقط — الكلاس واسم الكونستركتور وكل الحقول
+  /// كما هي بالضبط. المشكلة كانت أن السيرفر أحيانًا يرجع بعض الحقول
+  /// (type, user_id, zone_id) بقيمة null، وحقل read_at أحيانًا لا يكون
+  /// موجودًا في الاستجابة إطلاقًا — وإسنادها مباشرة لحقول غير قابلة للـ
+  /// null (String/int) كان يسبب الكراش. الآن كل حقل له قيمة افتراضية
+  /// آمنة (""  أو 0) إذا جاء null أو كان القيمة مفقودة.
   NotificationModel.fromJson(Map<String, dynamic> json) {
-    id = json['id'];
-    title = json['title'];
-    description = json['description'];
-    tergat = json['tergat'];
-    type = json['type'];
-    readAt = json['read_at'];
-    status = json['status'];
-    userId = json['user_id'];
-    createdAt = json['created_at'];
-    updatedAt = json['updated_at'];
-    zoneId = json['zone_id'];
+    id = json['id'] ?? 0;
+    title = json['title']?.toString() ?? "";
+    description = json['description']?.toString() ?? "";
+    tergat = json['tergat']?.toString() ?? "";
+    type = json['type']?.toString() ?? "";
+    readAt = json['read_at']?.toString() ?? "";
+    status = json['status'] ?? 0;
+    userId = json['user_id'] ?? 0;
+    createdAt = json['created_at']?.toString() ?? "";
+    updatedAt = json['updated_at']?.toString() ?? "";
+    zoneId = json['zone_id'] ?? 0;
   }
+
   Map<String, dynamic> toJson() {
     final Map<String, dynamic> data = <String, dynamic>{};
     data['id'] = id;

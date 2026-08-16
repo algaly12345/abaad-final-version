@@ -1,3 +1,4 @@
+import 'package:abaad_flutter/core/routes/route_helper.dart';
 import 'package:abaad_flutter/features/provider/controller/service_offer_controller.dart';
 import 'package:abaad_flutter/shared/theme/design_system.dart';
 import 'package:flutter/material.dart';
@@ -135,6 +136,22 @@ class _ServiceOfferPaymentScreenState extends State<ServiceOfferPaymentScreen> {
     );
   }
 
+  // زر الرجوع من صفحة الدفع (وزر رجوع الجهاز) يعيد المستخدم لشاشة "خدماتي"
+  // (بتبويباتها: نشط/قيد المراجعة/غير مدفوعة/مرفوض/منتهية). يُستخدم Get.until
+  // بدل Get.offAllNamed عمداً: Get.offAllNamed كان يمسح المكدّس بالكامل
+  // ويجعل "خدماتي" جذراً جديداً بلا أي صفحة قبله، فيتعطّل زرّ رجوعها هي
+  // نفسها لاحقاً (لا شيء تحته لتـPop إليه) — نفس الخطأ المُوثَّق ومُصلَح
+  // سابقاً في agent_profile_screen.dart. Get.until بدلاً من ذلك يُفرغ فقط
+  // الصفحات فوق "خدماتي" (تفاصيل الخدمة وصفحة الدفع) ويُبقي كل ما تحتها
+  // (لوحة التحكم) سليماً، فيعمل زر رجوع "خدماتي" طبيعياً بعدها. إن لم تكن
+  // "خدماتي" ضمن المكدّس أصلاً (الدخول من معالج إضافة خدمة جديدة بدل زر
+  // "ادفع الآن" لعرض قائم) يتوقف عند أول صفحة (route.isFirst) بدل حلقة بلا
+  // نهاية، فلا يعلق المستخدم داخل خطوات المعالج.
+  void _goToMyServices() {
+    Get.until((route) =>
+    route.settings.name == RouteHelper.myServices || route.isFirst);
+  }
+
   Widget _buildTopBar(BuildContext context) {
     return Container(
       width: double.infinity,
@@ -150,7 +167,7 @@ class _ServiceOfferPaymentScreenState extends State<ServiceOfferPaymentScreen> {
         child: Row(
           children: [
             InkWell(
-              onTap: () => Get.back(),
+              onTap: _goToMyServices,
               borderRadius: BorderRadius.circular(14),
               child: Container(
                 width: 48,
@@ -181,35 +198,41 @@ class _ServiceOfferPaymentScreenState extends State<ServiceOfferPaymentScreen> {
   @override
   Widget build(BuildContext context) {
     final primary = Theme.of(context).primaryColor;
-    return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      body: Column(
-        children: [
-          _buildTopBar(context),
-          Expanded(
-            child: Stack(
-              children: [
-                WebViewWidget(controller: _controller),
-                if (_isLoading)
-                  Container(
-                    color: AppColors.background(context),
-                    child: Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          CircularProgressIndicator(color: primary),
-                          const SizedBox(height: Spacing.lg),
-                          Text('جاري تحميل صفحة الدفع...',
-                              style: AppTypography.small.copyWith(
-                                  color: AppColors.textSecondary(context))),
-                        ],
+    return WillPopScope(
+      onWillPop: () async {
+        _goToMyServices();
+        return false;
+      },
+      child: Scaffold(
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        body: Column(
+          children: [
+            _buildTopBar(context),
+            Expanded(
+              child: Stack(
+                children: [
+                  WebViewWidget(controller: _controller),
+                  if (_isLoading)
+                    Container(
+                      color: AppColors.background(context),
+                      child: Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            CircularProgressIndicator(color: primary),
+                            const SizedBox(height: Spacing.lg),
+                            Text('جاري تحميل صفحة الدفع...',
+                                style: AppTypography.small.copyWith(
+                                    color: AppColors.textSecondary(context))),
+                          ],
+                        ),
                       ),
                     ),
-                  ),
-              ],
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

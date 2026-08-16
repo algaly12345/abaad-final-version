@@ -52,28 +52,52 @@ class WishListController extends GetxController implements GetxService {
   Future<void> getWishList() async {
     _wishRestList = [];
     _wishRestIdList = [];
-    Response? response = await wishListRepo?.getWishList();
-    if (response?.statusCode == 200 && response?.body is List) {
-      update();
 
-      response?.body.forEach((restaurant) async {
-        //Estate restaurant = Estate();
-        try{
-          restaurant = Estate.fromJson(restaurant);
-        }catch(e){
-          showCustomSnackBar("$e");
+    Response? response = await wishListRepo.getWishList();
 
+    if (response?.statusCode == 200) {
+      try {
+        final body = response?.body;
+
+        List estates = [];
+
+        // API يرجع:
+        // {
+        //   "estate": [...]
+        // }
+        if (body is Map && body['estate'] is List) {
+          estates = body['estate'];
         }
-        _wishRestList?.add(restaurant);
-        if (restaurant.estate_id != null) {
-          _wishRestIdList.add(restaurant.estate_id!);
+
+        for (final item in estates) {
+          try {
+            final estate = Estate.fromJson(item);
+
+            _wishRestList!.add(estate);
+
+            if (estate.estate_id != null) {
+              _wishRestIdList.add(estate.estate_id!);
+            }
+          } catch (e) {
+            print('Error parsing estate: $e');
+          }
         }
 
-      });
+        print('Wishlist count: ${_wishRestList?.length}');
+        print('Wishlist IDs: $_wishRestIdList');
+
+        update();
+      } catch (e) {
+        print('Wishlist error: $e');
+        showCustomSnackBar('$e');
+        update();
+      }
     } else {
-      ApiChecker.checkApi(response! , showToaster: true);
+      ApiChecker.checkApi(
+        response!,
+        showToaster: true,
+      );
     }
-    update();
   }
 
   void removeWishes() {

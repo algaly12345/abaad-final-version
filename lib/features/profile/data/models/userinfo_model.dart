@@ -141,6 +141,19 @@ class UserInfoModel {
     data['agent'] = agent?.toJson();
     return data;
   }
+
+  // اكتمال ملف "عمل" مزوّد الخدمة الكامل — يجمع حقول service_providers
+  // (ProviderIdentity.missingBusinessFields: الشعار/العنوان) مع رقم الجوال
+  // الموجود على users نفسه (قد يكون فارغًا لمن سجّل عبر جوجل/فيسبوك؛ راجع
+  // SocialAuthController). تُستخدَم في نقطة تفعيل CompleteProviderProfileScreen.
+  bool get hasPhone => phone?.trim().isNotEmpty ?? false;
+
+  List<String> get missingProviderProfileFields => [
+    ...?provider?.missingBusinessFields,
+    if (!hasPhone) 'phone',
+  ];
+
+  bool get isProviderProfileComplete => missingProviderProfileFields.isEmpty;
 }
 
 class Userinfo {
@@ -218,12 +231,25 @@ class ProviderIdentity {
   String? identityNumber;
   String? freelanceMembershipNumber;
   String? commercialRegistrationNo;
+  // بيانات عمل مزوّد الخدمة (service_providers.image/address/zone_id/lat/lng)
+  // — لا تُجمَع إلا عبر لوحة تحكم الأدمن أو CompleteProviderProfileScreen
+  // بالتطبيق، فتبقى فارغة لمزوّد سجّل نفسه ذاتيًا عبر ProviderUpgradeScreen.
+  String? image;
+  String? address;
+  int? zoneId;
+  double? latitude;
+  double? longitude;
 
   ProviderIdentity({
     this.identityType,
     this.identityNumber,
     this.freelanceMembershipNumber,
     this.commercialRegistrationNo,
+    this.image,
+    this.address,
+    this.zoneId,
+    this.latitude,
+    this.longitude,
   });
 
   ProviderIdentity.fromJson(Map<String, dynamic> json) {
@@ -231,6 +257,15 @@ class ProviderIdentity {
     identityNumber = json['identity_number'];
     freelanceMembershipNumber = json['freelance_membership_number'];
     commercialRegistrationNo = json['commercial_registration_no'];
+    image = json['image'];
+    address = json['address'];
+    // decimal/bigint بالباكند قد تصل كنص (Laravel لا يحوّلها افتراضيًا) —
+    // tryParse يتعامل مع الحالتين (رقم أو نص) بأمان.
+    zoneId = json['zone_id'] is int
+        ? json['zone_id'] as int
+        : int.tryParse(json['zone_id']?.toString() ?? '');
+    latitude = double.tryParse(json['latitude']?.toString() ?? '');
+    longitude = double.tryParse(json['longitude']?.toString() ?? '');
   }
 
   // القيم الوهمية ('pending') تُخلَّف من مسارات تسجيل قديمة (AgentController/
@@ -243,4 +278,18 @@ class ProviderIdentity {
           (identityType == 'company' &&
               (commercialRegistrationNo?.isNotEmpty ?? false) &&
               commercialRegistrationNo != 'pending');
+
+  // اكتمال بيانات "العمل" (منفصل عن اكتمال الهوية أعلاه) — تُستخدَم لتحديد
+  // متى تظهر CompleteProviderProfileScreen قبل معالج إنشاء العرض. المنطقة
+  // والموقع الجغرافي (zoneId/latitude/longitude) استُبعدا من هذا الشرط بناءً
+  // على طلب صريح — تبقى الحقول نفسها مقروءة أعلاه لو احتيج إليها لاحقًا.
+  bool get hasLogo => image?.isNotEmpty ?? false;
+  bool get hasAddress => address?.isNotEmpty ?? false;
+
+  List<String> get missingBusinessFields => [
+    if (!hasLogo) 'logo',
+    if (!hasAddress) 'address',
+  ];
+
+  bool get isBusinessProfileComplete => missingBusinessFields.isEmpty;
 }

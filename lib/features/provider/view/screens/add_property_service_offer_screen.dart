@@ -5,6 +5,7 @@ import 'package:abaad_flutter/features/provider/controller/service_offer_control
 import 'package:abaad_flutter/features/provider/data/models/service_offer_setup_model.dart';
 import 'package:abaad_flutter/core/routes/route_helper.dart';
 import 'package:abaad_flutter/features/provider/view/screens/provider_upgrade_screen.dart';
+import 'package:abaad_flutter/features/provider/view/screens/complete_provider_profile_screen.dart';
 import 'package:abaad_flutter/features/services/controller/nearby_location_helper.dart';
 import 'package:abaad_flutter/features/services/view/screens/services_catalog_screen.dart'
     show serviceCategoryIcon;
@@ -63,11 +64,16 @@ class _AddPropertyServiceOfferScreenState
       // ProviderUpgradeScreen (مسار المستخدم الجديد) — الفحص هنا فقط لمزوّد
       // معتمد دخل مباشرة (زر "خدماتي") بلا بيانات هوية محلية بعد.
       if (offerController.entityType == null) {
-        final provider = Get.find<UserController>().userInfoModel?.provider;
-        if (provider != null && provider.isComplete) {
-          offerController.hydrateEntityFromProvider(provider);
-        } else {
+        final userInfo = Get.find<UserController>().userInfoModel;
+        final provider = userInfo?.provider;
+        if (userInfo == null || provider == null || !provider.isComplete) {
           Get.off(() => const ProviderUpgradeScreen());
+        } else if (!userInfo.isProviderProfileComplete) {
+          // بيانات الهوية مكتملة لكن بيانات العمل (شعار/عنوان/جوال) ناقصة —
+          // استكمالها أولاً بدل الدخول مباشرة لمعالج إنشاء العرض.
+          Get.off(() => const CompleteProviderProfileScreen());
+        } else {
+          offerController.hydrateEntityFromProvider(provider);
         }
       }
     });
@@ -458,6 +464,8 @@ class _WizardScreenState extends State<_WizardScreen> {
   final TextEditingController _titleCtrl = TextEditingController();
   final TextEditingController _valueCtrl = TextEditingController();
   final TextEditingController _descCtrl = TextEditingController();
+  // عنوان تفصيلي إلزامي (مثل "خميس مشيط - حي المروج").
+  final TextEditingController _addressCtrl = TextEditingController();
 
   List<String> get _stepLabels => [
     'service'.tr,
@@ -485,6 +493,17 @@ class _WizardScreenState extends State<_WizardScreen> {
     _titleCtrl.addListener(_onFieldChanged);
     _valueCtrl.addListener(_onFieldChanged);
     _descCtrl.addListener(_onFieldChanged);
+    _addressCtrl.addListener(_onFieldChanged);
+
+    // يعبّئ العنوان التفصيلي مسبقًا من عنوان "النشاط" المحفوظ سلفًا
+    // (service_providers.address، أُدخل في CompleteProviderProfileScreen)
+    // بدل تركه فارغًا فيُطالَب المستخدم بكتابته من جديد — يبقى قابلًا للتعديل
+    // إن اختلف موقع هذا العرض تحديدًا عن عنوان نشاطه العام.
+    final businessAddress =
+        Get.find<UserController>().userInfoModel?.provider?.address;
+    if ((businessAddress ?? '').trim().isNotEmpty) {
+      _addressCtrl.text = businessAddress!.trim();
+    }
   }
 
   void _onFieldChanged() => setState(() {});
@@ -494,10 +513,12 @@ class _WizardScreenState extends State<_WizardScreen> {
     _titleCtrl.removeListener(_onFieldChanged);
     _valueCtrl.removeListener(_onFieldChanged);
     _descCtrl.removeListener(_onFieldChanged);
+    _addressCtrl.removeListener(_onFieldChanged);
     _pageController.dispose();
     _titleCtrl.dispose();
     _valueCtrl.dispose();
     _descCtrl.dispose();
+    _addressCtrl.dispose();
     super.dispose();
   }
 
@@ -534,7 +555,8 @@ class _WizardScreenState extends State<_WizardScreen> {
         return c.selectedServiceTypeIndex >= 0 &&
             _titleCtrl.text.trim().isNotEmpty &&
             _valueCtrl.text.trim().isNotEmpty &&
-            _descCtrl.text.trim().isNotEmpty;
+            _descCtrl.text.trim().isNotEmpty &&
+            _addressCtrl.text.trim().isNotEmpty;
       case 1:
       // مدة الاشتراك دائماً محددة بقيمة افتراضية (شهر واحد)، فيكفي التحقق
       // من اختيار الباقة نفسها.
@@ -554,6 +576,7 @@ class _WizardScreenState extends State<_WizardScreen> {
       title: _titleCtrl.text,
       description: _descCtrl.text,
       priceOrDiscountValue: _valueCtrl.text,
+      address: _addressCtrl.text,
     );
     if (result != null && result.paymentUrl != null) {
       // يعيد جلب الملف الشخصي كي تصل بيانات الهوية المحفوظة للتوّ بالباكند
@@ -609,16 +632,22 @@ class _WizardScreenState extends State<_WizardScreen> {
                       titleCtrl: _titleCtrl,
                       valueCtrl: _valueCtrl,
                       descCtrl: _descCtrl,
+                      addressCtrl: _addressCtrl,
                       controller: c,
                       primary: primary,
                     ),
                     _Step2Plan(controller: c, primary: primary),
                     _Step3ZoneCategory(controller: c, primary: primary),
-                    _StepLocation(controller: c, primary: primary),
+                    _StepLocation(
+                      controller: c,
+                      primary: primary,
+                      addressCtrl: _addressCtrl,
+                    ),
                     _Step4Review(
                       titleCtrl: _titleCtrl,
                       valueCtrl: _valueCtrl,
                       descCtrl: _descCtrl,
+                      addressCtrl: _addressCtrl,
                       controller: c,
                       primary: primary,
                     ),
@@ -869,6 +898,7 @@ class _Step1ServiceInfo extends StatelessWidget {
   final TextEditingController titleCtrl;
   final TextEditingController valueCtrl;
   final TextEditingController descCtrl;
+  final TextEditingController addressCtrl;
   final ServiceOfferController controller;
   final Color primary;
 
@@ -876,6 +906,7 @@ class _Step1ServiceInfo extends StatelessWidget {
     required this.titleCtrl,
     required this.valueCtrl,
     required this.descCtrl,
+    required this.addressCtrl,
     required this.controller,
     required this.primary,
   });
@@ -1088,6 +1119,27 @@ class _Step1ServiceInfo extends StatelessWidget {
                   controller: descCtrl,
                   maxLines: 4,
                 ),
+              ],
+            ),
+          ),
+          const SizedBox(height: Spacing.md),
+
+          // العنوان التفصيلي — إلزامي، أدق من اختيار المناطق (خطوة لاحقة)
+          // اللي مستواها إداري عام (مثل "عسير") لا ينزل لمستوى المدينة/الحي.
+          _Card(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _FieldLabel('العنوان التفصيلي',
+                    icon: Icons.location_on_outlined),
+                const SizedBox(height: Spacing.sm),
+                _dsTextField(
+                  context,
+                  hintText: 'مثال: خميس مشيط - حي المروج',
+                  controller: addressCtrl,
+                ),
+                if (addressCtrl.text.trim().isEmpty)
+                  const _RequiredHint('يرجى إدخال العنوان التفصيلي'),
               ],
             ),
           ),
@@ -1630,7 +1682,12 @@ class _SelectTextCard extends StatelessWidget {
 class _StepLocation extends StatefulWidget {
   final ServiceOfferController controller;
   final Color primary;
-  const _StepLocation({required this.controller, required this.primary});
+  final TextEditingController addressCtrl;
+  const _StepLocation({
+    required this.controller,
+    required this.primary,
+    required this.addressCtrl,
+  });
 
   @override
   State<_StepLocation> createState() => _StepLocationState();
@@ -1673,6 +1730,12 @@ class _StepLocationState extends State<_StepLocation> {
     setState(() => _resolvingAddress = false);
     widget.controller
         .setSelectedLocation(position.latitude, position.longitude, address: address);
+    // يعبّئ حقل "العنوان التفصيلي" تلقائيًا من الترميز العكسي فقط إن تركه
+    // مزوّد الخدمة فارغًا بالخطوة السابقة — لا يستبدل نصًا كتبه يدويًا.
+    if ((address ?? '').trim().isNotEmpty &&
+        widget.addressCtrl.text.trim().isEmpty) {
+      widget.addressCtrl.text = address!.trim();
+    }
   }
 
   Future<void> _onMapCreated(GoogleMapController mapController) async {
@@ -1857,6 +1920,7 @@ class _Step4Review extends StatelessWidget {
   final TextEditingController titleCtrl;
   final TextEditingController valueCtrl;
   final TextEditingController descCtrl;
+  final TextEditingController addressCtrl;
   final ServiceOfferController controller;
   final Color primary;
 
@@ -1864,6 +1928,7 @@ class _Step4Review extends StatelessWidget {
     required this.titleCtrl,
     required this.valueCtrl,
     required this.descCtrl,
+    required this.addressCtrl,
     required this.controller,
     required this.primary,
   });
@@ -1916,6 +1981,8 @@ class _Step4Review extends StatelessWidget {
                       ? 'not_selected'.tr
                       : '${controller.selectedZoneIds.length} منطقة',
                 ),
+                if (addressCtrl.text.trim().isNotEmpty)
+                  _ReviewRow('العنوان التفصيلي', addressCtrl.text.trim()),
                 _ReviewRow(
                   'أنواع العقار',
                   controller.selectedCategoryIds.isEmpty

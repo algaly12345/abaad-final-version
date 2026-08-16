@@ -1,11 +1,14 @@
 import 'package:abaad_flutter/features/services/controller/services_controller.dart';
+import 'package:abaad_flutter/features/provider/controller/service_offer_controller.dart';
 import 'package:abaad_flutter/features/provider/data/models/service_offer_model.dart';
+import 'package:abaad_flutter/core/routes/route_helper.dart';
 import 'package:abaad_flutter/shared/helpers/date_converter.dart';
 import 'package:abaad_flutter/shared/theme/design_system.dart';
 import 'package:abaad_flutter/shared/utils/styles.dart';
 import 'package:abaad_flutter/shared/widgets/custom_image.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
@@ -55,6 +58,19 @@ String? _zonesSummary(List<ZoneData>? zones) {
   return '${zones.length} مناطق';
 }
 
+// إحداثيات العرض نفسها (تُحدَّد على الخارطة عند إنشائه) أدق من إحداثيات
+// منطقة التغطية، فتُستخدم أولاً — وتبقى منطقة التغطية احتياطًا للعروض
+// الأقدم التي أُنشئت قبل إضافة هذا الحقل.
+LatLng? _effectiveLatLng(ServiceOffer service, ZoneData? mappableZone) {
+  if (service.latitude != null && service.longitude != null) {
+    return LatLng(service.latitude!, service.longitude!);
+  }
+  if (mappableZone != null) {
+    return LatLng(mappableZone.latitude!, mappableZone.longitude!);
+  }
+  return null;
+}
+
 /// شاشة تفاصيل الخدمة — إعادة تصميم مسطّحة (Uber/Airbnb): SliverAppBar بصورة
 /// الخدمة بدل صفحة قابلة للسحب فوق صورة ملء الشاشة، وجسم أبيض متصل تفصل بين
 /// أقسامه مسافات + خطوط فاصلة رفيعة بدل تغليف كل قسم ببطاقة محدودة الحواف.
@@ -89,7 +105,19 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
             ? service.providers!.first
             : null;
         final mappableZone = _mappableZone(service);
+        final mapLatLng = _effectiveLatLng(service, mappableZone);
         final hasPhone = provider?.phone != null && provider!.phone!.isNotEmpty;
+        // عرض هذا المزوّد نفسه لم يُدفع بعد (unpaid) أو فشل دفعه (failed) —
+        // payment_status/subscription_number لا يصلان إلا لمالك العرض
+        // (ServiceOfferResource::isOwnedBy)، فهذا الشرط لا يتحقق أبداً لعرض
+        // يشاهده مستخدم آخر غير مالكه. مقيّد أيضاً بـ status=='pending' مطابقةً
+        // لتبويب "غير مدفوعة" في my_services_screen.dart: عروض اعتمدتها
+        // الإدارة يدوياً رغم بقاء اشتراكها unpaid تبقى تعرض شريط CTA العادي
+        // لا "ادفع الآن" — هي بالفعل نشطة ومرئية للعملاء.
+        final needsPayment = service.status == 'pending' &&
+            (service.paymentStatus == 'unpaid' ||
+                service.paymentStatus == 'failed') &&
+            (service.subscriptionNumber?.isNotEmpty ?? false);
         final includesLabels = <String>[
           if (service.serviceType?.name != null) service.serviceType!.name!,
           ...?service.categories?.map((c) => c.nameAr ?? c.name ?? ''),
@@ -114,6 +142,8 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
                         mappableZone: mappableZone,
                         showInlinePrice: !hasPhone,
                       ),
+                      const _SectionDivider(),
+                      _LocationMapSection(position: mapLatLng),
                       if (includesLabels.isNotEmpty) ...[
                         const _SectionDivider(),
                         _ChipsSection(title: 'يشمل الخدمة', labels: includesLabels),
@@ -139,9 +169,11 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
               ),
             ],
           ),
-          bottomNavigationBar: hasPhone
+          bottomNavigationBar: needsPayment
+              ? _PayNowBottomBar(service: service)
+              : (hasPhone
               ? _StickyBottomBar(service: service, provider: provider)
-              : null,
+              : null),
         );
       },
     );
@@ -304,7 +336,7 @@ class _TitleAndLocation extends StatelessWidget {
           GestureDetector(
             onTap: mappableZone != null
                 ? () => _launch(
-                    'https://www.google.com/maps/search/?api=1&query=${mappableZone!.latitude},${mappableZone!.longitude}')
+                'https://www.google.com/maps/search/?api=1&query=${mappableZone!.latitude},${mappableZone!.longitude}')
                 : null,
             child: Row(
               mainAxisSize: MainAxisSize.min,
@@ -312,7 +344,7 @@ class _TitleAndLocation extends StatelessWidget {
                 Icon(Icons.location_on_rounded,
                     size: 16,
                     color:
-                        mappableZone != null ? primary : Colors.grey.shade500),
+                    mappableZone != null ? primary : Colors.grey.shade500),
                 const SizedBox(width: 4),
                 Text(zonesLabel,
                     style: robotoMedium.copyWith(
@@ -330,6 +362,175 @@ class _TitleAndLocation extends StatelessWidget {
           _PriceRow(service: service, large: true),
         ],
       ],
+    );
+  }
+}
+
+// ─── الموقع على الخريطة: خارطة تفاعلية مضمّنة (قابلة للتحريك/التكبير) داخل
+// بطاقة مدوّرة الحواف بظلّ ناعم، بدل الرابط الخارجي وحده — يبقى رابط "فتح في
+// الخرائط" متاحًا فوقها لمن يفضّل تطبيق الخرائط الكامل ──────────────────────
+
+class _LocationMapSection extends StatelessWidget {
+  final LatLng? position;
+
+  const _LocationMapSection({required this.position});
+
+  @override
+  Widget build(BuildContext context) {
+    final primary = Theme.of(context).primaryColor;
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    final pos = position;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text('الموقع على الخريطة',
+                style: robotoBold.copyWith(
+                    fontSize: 16, color: AppColors.textPrimary(context))),
+            if (pos != null)
+              InkWell(
+                borderRadius: BorderRadius.circular(20),
+                onTap: () => _launch(
+                    'https://www.google.com/maps/search/?api=1&query=${pos.latitude},${pos.longitude}'),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text('فتح في الخرائط',
+                          style: robotoMedium.copyWith(
+                              fontSize: 12.5, color: primary)),
+                      const SizedBox(width: 3),
+                      Icon(Icons.open_in_new_rounded, size: 14, color: primary),
+                    ],
+                  ),
+                ),
+              ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        if (pos == null)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(vertical: 28),
+            decoration: BoxDecoration(
+              color: dark ? Colors.white.withValues(alpha: 0.05) : const Color(0xFFF7F8FA),
+              borderRadius: BorderRadius.circular(AppRadius.extraLarge),
+            ),
+            child: Column(
+              children: [
+                Icon(Icons.location_off_outlined, size: 26, color: Colors.grey.shade500),
+                const SizedBox(height: 8),
+                Text('لم يحدّد مزود الخدمة موقعًا لهذا العرض',
+                    style: robotoMedium.copyWith(
+                        fontSize: 12.5, color: Colors.grey.shade500)),
+              ],
+            ),
+          )
+        else
+          Container(
+            height: 190,
+            clipBehavior: Clip.antiAlias,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(AppRadius.extraLarge),
+              boxShadow: AppShadows.soft(blur: 16, opacity: dark ? 0.28 : 0.08),
+            ),
+            child: Stack(
+              children: [
+                GoogleMap(
+                  initialCameraPosition: CameraPosition(target: pos, zoom: 15),
+                  markers: {
+                    Marker(markerId: const MarkerId('provider_location'), position: pos),
+                  },
+                  myLocationButtonEnabled: false,
+                  mapToolbarEnabled: false,
+                  zoomControlsEnabled: false,
+                  compassEnabled: false,
+                  rotateGesturesEnabled: false,
+                  tiltGesturesEnabled: false,
+                ),
+                Positioned(
+                  left: 10,
+                  bottom: 10,
+                  child: _CircleIconButton(
+                    icon: Icons.fullscreen_rounded,
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => _FullScreenLocationMap(position: pos),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+/// عرض الخريطة بملء الشاشة عند الضغط على زرّ التكبير — نفس العلامة بلا أي
+/// إجراء إضافي، للتصفّح المريح فقط قبل العودة أو فتح تطبيق الخرائط الخارجي.
+class _FullScreenLocationMap extends StatelessWidget {
+  final LatLng position;
+
+  const _FullScreenLocationMap({required this.position});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Stack(
+        children: [
+          GoogleMap(
+            initialCameraPosition: CameraPosition(target: position, zoom: 16),
+            markers: {
+              Marker(markerId: const MarkerId('provider_location'), position: position),
+            },
+            myLocationButtonEnabled: false,
+            zoomControlsEnabled: false,
+          ),
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.all(14),
+              child: Align(
+                alignment: Alignment.topLeft,
+                child: _CircleIconButton(
+                  icon: Icons.arrow_back_ios_new_rounded,
+                  onTap: () => Navigator.of(context).pop(),
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            left: 14,
+            right: 14,
+            bottom: 24,
+            child: SafeArea(
+              top: false,
+              child: SizedBox(
+                height: 52,
+                child: ElevatedButton.icon(
+                  onPressed: () => _launch(
+                      'https://www.google.com/maps/search/?api=1&query=${position.latitude},${position.longitude}'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Theme.of(context).primaryColor,
+                    foregroundColor: Colors.white,
+                    elevation: 2,
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14)),
+                  ),
+                  icon: const Icon(Icons.map_rounded, size: 18),
+                  label: Text('فتح في تطبيق الخرائط',
+                      style: robotoBold.copyWith(fontSize: 14.5, color: Colors.white)),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -372,12 +573,12 @@ class _PriceRow extends StatelessWidget {
             '${service.servicePrice} ${'currency_sar'.tr}',
             style: isDiscount
                 ? robotoMedium.copyWith(
-                    fontSize: large ? 14 : 12.5,
-                    color: Colors.grey.shade500,
-                    decoration: TextDecoration.lineThrough,
-                  )
+              fontSize: large ? 14 : 12.5,
+              color: Colors.grey.shade500,
+              decoration: TextDecoration.lineThrough,
+            )
                 : robotoBold.copyWith(
-                    fontSize: large ? 18 : 16, color: AppColors.textPrimary(context)),
+                fontSize: large ? 18 : 16, color: AppColors.textPrimary(context)),
           ),
       ],
     );
@@ -416,7 +617,7 @@ class _ChipsSection extends StatelessWidget {
       children: [
         Text(title,
             style:
-                robotoBold.copyWith(fontSize: 16, color: AppColors.textPrimary(context))),
+            robotoBold.copyWith(fontSize: 16, color: AppColors.textPrimary(context))),
         const SizedBox(height: 12),
         Wrap(
           spacing: 8,
@@ -468,7 +669,7 @@ class _AboutSection extends StatelessWidget {
       children: [
         Text('service_details'.tr,
             style:
-                robotoBold.copyWith(fontSize: 16, color: AppColors.textPrimary(context))),
+            robotoBold.copyWith(fontSize: 16, color: AppColors.textPrimary(context))),
         const SizedBox(height: 10),
         Text(
           text,
@@ -500,7 +701,7 @@ class _AdditionalInfoSection extends StatelessWidget {
       children: [
         Text('additional_info'.tr,
             style:
-                robotoBold.copyWith(fontSize: 16, color: AppColors.textPrimary(context))),
+            robotoBold.copyWith(fontSize: 16, color: AppColors.textPrimary(context))),
         const SizedBox(height: 12),
         Row(
           children: [
@@ -617,7 +818,7 @@ class _ProviderSection extends StatelessWidget {
       children: [
         Text('service_provider'.tr,
             style:
-                robotoBold.copyWith(fontSize: 16, color: AppColors.textPrimary(context))),
+            robotoBold.copyWith(fontSize: 16, color: AppColors.textPrimary(context))),
         ListTile(
           contentPadding: EdgeInsets.zero,
           leading: Container(
@@ -630,11 +831,11 @@ class _ProviderSection extends StatelessWidget {
             child: ClipOval(
               child: (provider.image?.isNotEmpty ?? false)
                   ? CustomImage(
-                      image: provider.image!,
-                      fit: BoxFit.cover,
-                      width: 52,
-                      height: 52,
-                    )
+                image: provider.image!,
+                fit: BoxFit.cover,
+                width: 52,
+                height: 52,
+              )
                   : Icon(Icons.storefront_rounded, size: 26, color: primary),
             ),
           ),
@@ -644,22 +845,22 @@ class _ProviderSection extends StatelessWidget {
           ),
           subtitle: hasPhone
               ? Text(provider.phone!,
-                  style: robotoRegular.copyWith(
-                      fontSize: 13, color: Colors.grey.shade500))
+              style: robotoRegular.copyWith(
+                  fontSize: 13, color: Colors.grey.shade500))
               : null,
           trailing: hasPhone
               ? Material(
-                  color: primary.withValues(alpha: dark ? 0.2 : 0.1),
-                  shape: const CircleBorder(),
-                  child: InkWell(
-                    customBorder: const CircleBorder(),
-                    onTap: () => _launch('tel:${provider.phone}'),
-                    child: Padding(
-                      padding: const EdgeInsets.all(11),
-                      child: Icon(Icons.call_rounded, size: 20, color: primary),
-                    ),
-                  ),
-                )
+            color: primary.withValues(alpha: dark ? 0.2 : 0.1),
+            shape: const CircleBorder(),
+            child: InkWell(
+              customBorder: const CircleBorder(),
+              onTap: () => _launch('tel:${provider.phone}'),
+              child: Padding(
+                padding: const EdgeInsets.all(11),
+                child: Icon(Icons.call_rounded, size: 20, color: primary),
+              ),
+            ),
+          )
               : null,
         ),
         if (hasSecondaryChannels) ...[
@@ -804,6 +1005,100 @@ class _StickyBottomBar extends StatelessWidget {
   }
 }
 
+// ─── شريط "ادفع الآن": يحلّ محل شريط الـCTA العادي عندما يكون العرض المعروض
+// عرض المستخدم نفسه ولم يُدفع اشتراكه بعد (unpaid) أو فشل دفعه (failed) —
+// يولّد رابط دفع جديد عبر resumePayment() (الرابط الأصلي المُرجَع عند إنشاء
+// العرض صالح لساعتين فقط) ثم يفتح ServiceOfferPaymentScreen، بنفس نداء
+// التنقّل المستخدم في معالج "إضافة خدمة" (add_property_service_offer_screen)
+// عند أول دفعة ──────────────────────────────────────────────────────────────
+
+class _PayNowBottomBar extends StatefulWidget {
+  final ServiceOffer service;
+
+  const _PayNowBottomBar({required this.service});
+
+  @override
+  State<_PayNowBottomBar> createState() => _PayNowBottomBarState();
+}
+
+class _PayNowBottomBarState extends State<_PayNowBottomBar> {
+  bool _isLoading = false;
+
+  Future<void> _payNow() async {
+    if (_isLoading) return;
+    setState(() => _isLoading = true);
+
+    final controller = Get.find<ServiceOfferController>();
+    final result = await controller.resumePayment(widget.service.subscriptionNumber!);
+
+    if (!mounted) return;
+    setState(() => _isLoading = false);
+
+    if (result != null) {
+      Get.toNamed(
+        RouteHelper.getServiceOfferPaymentRoute(),
+        arguments: {'url': result['url'], 'number': result['number']},
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final dark = Theme.of(context).brightness == Brightness.dark;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardColor,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: dark ? 0.4 : 0.08),
+            blurRadius: 20,
+            offset: const Offset(0, -6),
+          ),
+        ],
+      ),
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 14, 20, 14),
+          child: Row(
+            children: [
+              _PriceRow(service: widget.service),
+              const SizedBox(width: 16),
+              Expanded(
+                child: SizedBox(
+                  height: 52,
+                  child: ElevatedButton.icon(
+                    onPressed: _isLoading ? null : _payNow,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Theme.of(context).primaryColor,
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14)),
+                    ),
+                    icon: _isLoading
+                        ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2, color: Colors.white),
+                    )
+                        : const Icon(Icons.payment_rounded, size: 18),
+                    label: Text('pay_now'.tr,
+                        style: robotoBold.copyWith(
+                            fontSize: 14.5, color: Colors.white)),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 // ─── Details loading skeleton ─────────────────────────────────────────────────
 
 class _DetailsLoading extends StatelessWidget {
@@ -838,12 +1133,12 @@ class _DetailsLoading extends StatelessWidget {
   }
 
   Widget _sh(double w, double h) => Container(
-        width: w,
-        height: h,
-        margin: const EdgeInsets.only(bottom: 4),
-        decoration: BoxDecoration(
-          color: const Color(0xFFE8ECF0),
-          borderRadius: BorderRadius.circular(8),
-        ),
-      );
+    width: w,
+    height: h,
+    margin: const EdgeInsets.only(bottom: 4),
+    decoration: BoxDecoration(
+      color: const Color(0xFFE8ECF0),
+      borderRadius: BorderRadius.circular(8),
+    ),
+  );
 }

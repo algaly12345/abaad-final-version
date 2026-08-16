@@ -51,6 +51,7 @@ class ServiceOfferRepo {
     String? servicePrice,
     String? discount,
     required String description,
+    String? address,
     required int servicePlanId,
     required int subscriptionDuration,
     required List<int> categories,
@@ -80,6 +81,9 @@ class ServiceOfferRepo {
       'longitude': longitude.toString(),
     };
 
+    if (address != null && address.trim().isNotEmpty) {
+      fields['address'] = address.trim();
+    }
     if (servicePrice != null) fields['service_price'] = servicePrice;
     if (discount != null) fields['discount'] = discount;
     if (identityNumber != null) fields['identity_number'] = identityNumber;
@@ -118,9 +122,42 @@ class ServiceOfferRepo {
     );
   }
 
+  /// حفظ عنوان عمل مزوّد الخدمة — تُستدعى من CompleteProviderProfileScreen
+  /// عند إضافة مزوّد الخدمة أول عرض له وبياناته ناقصة.
+  Future<Response> updateBusinessInfo({required String address}) async {
+    return await apiClient.postData(AppConstants.PROVIDER_UPDATE_BUSINESS_INFO_URI, {
+      'address': address,
+    });
+  }
+
+  /// يرسل رمز تحقق لرقم جوال جديد يريد المستخدم المصادَق ربطه بحسابه —
+  /// تُستدعى من قسم "الجوال" بشاشة CompleteProviderProfileScreen.
+  Future<Response> sendPhoneOtp({required String phone}) async {
+    return await apiClient.postData(AppConstants.CUSTOMER_SEND_PHONE_OTP_URI, {
+      'phone': phone,
+    });
+  }
+
+  /// يتحقق من الرمز ويحفظ الرقم مباشرة على حساب المستخدم عند النجاح.
+  Future<Response> verifyPhoneOtp({required String phone, required String otp}) async {
+    return await apiClient.postData(AppConstants.CUSTOMER_VERIFY_PHONE_OTP_URI, {
+      'phone': phone,
+      'otp': otp,
+    });
+  }
+
   Future<Response> getSubscriptionStatus(String subscriptionNumber) async {
     return await apiClient.getData(
       '${AppConstants.PROVIDER_SUBSCRIPTION_STATUS_PREFIX}$subscriptionNumber/status',
+    );
+  }
+
+  /// يولّد رابط دفع موقّع جديد لاشتراك غير مدفوع (unpaid/failed) — يُستخدم
+  /// من زر "ادفع الآن" في شاشة تفاصيل الخدمة بعد انتهاء صلاحية رابط الدفع
+  /// الأصلي (ساعتان من إنشاء العرض).
+  Future<Response> resumePayment(String subscriptionNumber) async {
+    return await apiClient.getData(
+      '${AppConstants.PROVIDER_RESUME_PAYMENT_PREFIX}$subscriptionNumber/resume-payment',
     );
   }
 }

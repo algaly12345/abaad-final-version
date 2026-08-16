@@ -1639,47 +1639,119 @@ class _DettailsDilogState extends State<DettailsDilog> {
 
   Widget ConctactWidget(
       String title, String image, String disc, String phone) {
+    Widget buildContactOption({
+      required IconData icon,
+      required Color iconColor,
+      required Color iconBg,
+      required String label,
+      required VoidCallback onTap,
+    }) {
+      return Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          splashColor: iconColor.withValues(alpha: 0.12),
+          highlightColor: iconColor.withValues(alpha: 0.06),
+          onTap: () {
+            HapticFeedback.lightImpact();
+            onTap();
+          },
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              color: const Color(0xFFF7F9FC),
+              border: Border.all(color: iconColor.withValues(alpha: 0.15)),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(11),
+                  decoration: BoxDecoration(
+                    color: iconBg,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(icon, size: 22, color: iconColor),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Text(
+                    label,
+                    style: robotoBlack.copyWith(
+                      fontSize: 14,
+                      color: Colors.black87,
+                    ),
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: iconColor.withValues(alpha: 0.08),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(Icons.arrow_forward_ios_rounded,
+                      size: 12, color: iconColor),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
     return AlertDialog(
-      title: Text('contact_the_advertiser'.tr),
+      contentPadding: const EdgeInsets.fromLTRB(20, 20, 20, 8),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(22),
+      ),
+      title: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(9),
+            decoration: BoxDecoration(
+              color: kSectionColor.withValues(alpha: 0.08),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(Icons.support_agent_rounded,
+                color: kSectionColor, size: 20),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              'contact_the_advertiser'.tr,
+              style: robotoBlack.copyWith(
+                fontSize: 16,
+                color: Colors.black87,
+              ),
+            ),
+          ),
+        ],
+      ),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SizedBox(height: Dimensions.PADDING_SIZE_EXTRA_SMALL),
-          GestureDetector(
+          const SizedBox(height: 4),
+          buildContactOption(
+            icon: Icons.call_rounded,
+            iconColor: const Color(0xFF2563EB),
+            iconBg: const Color(0xFFE8EFFD),
+            label: 'call_the_advertiser'.tr,
             onTap: () async {
-              final advertiserPhone = phone;
-              final Uri callUri = Uri(scheme: 'tel', path: advertiserPhone);
-
+              final Uri callUri = Uri(scheme: 'tel', path: phone);
               if (await canLaunchUrl(callUri)) {
                 await launchUrl(callUri);
               } else {
                 showCustomSnackBar("لا يمكن إجراء المكالمة");
               }
             },
-            child: Container(
-              padding: const EdgeInsets.all(10.0),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(10),
-                color: const Color(0xFFF7F9FC),
-                border: Border.all(color: kSectionColor.withOpacity(0.1)),
-              ),
-              child: Row(
-                children: [
-                  const ClipOval(
-                    child: Icon(Icons.phone, size: 34, color: Colors.green),
-                  ),
-                  const SizedBox(width: 8.0),
-                  Text(
-                    'call_the_advertiser'.tr,
-                    style: robotoBlack.copyWith(fontSize: 12),
-                  ),
-                ],
-              ),
-            ),
           ),
-          const SizedBox(height: 10),
-          GestureDetector(
+          const SizedBox(height: 12),
+          buildContactOption(
+            icon: Icons.chat_rounded,
+            iconColor: const Color(0xFF25D366),
+            iconBg: const Color(0xFFE3FBEC),
+            label: 'contact_whatsApp'.tr,
             onTap: () {
               final estateId = widget.estate?.id;
               final advertiserPhone = widget.estate?.users?.phone;
@@ -1688,37 +1760,24 @@ class _DettailsDilogState extends State<DettailsDilog> {
                   "السلام عليكم، أرغب في الاستفسار عن هذا العقار:\n$estateUrl";
               final whatsappUrl =
                   "https://wa.me/$advertiserPhone?text=${Uri.encodeComponent(message)}";
-
               launchUrl(Uri.parse(whatsappUrl),
                   mode: LaunchMode.externalApplication);
             },
-            child: Container(
-              padding: const EdgeInsets.all(10.0),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(10),
-                color: const Color(0xFFF7F9FC),
-                border: Border.all(color: kSectionColor.withOpacity(0.1)),
-              ),
-              child: Row(
-                children: [
-                  const ClipOval(
-                    child: Icon(Icons.whatshot_rounded,
-                        size: 34, color: Colors.green),
-                  ),
-                  const SizedBox(width: 8.0),
-                  Text(
-                    'contact_whatsApp'.tr,
-                    style: robotoBlack.copyWith(fontSize: 12),
-                  ),
-                ],
-              ),
-            ),
           ),
         ],
       ),
+      actionsPadding: const EdgeInsets.only(bottom: 10, left: 16, right: 16),
+      actions: [
+        TextButton(
+          onPressed: () => Get.back(),
+          child: Text(
+            'close'.tr,
+            style: robotoMedium.copyWith(color: Colors.black45, fontSize: 13),
+          ),
+        ),
+      ],
     );
   }
-
   Widget buildEndDateWithStatusBadge(
       BuildContext context, {
         String? label,

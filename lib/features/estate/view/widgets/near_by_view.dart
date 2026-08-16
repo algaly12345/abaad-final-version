@@ -1,8 +1,11 @@
-﻿import 'dart:async';
+import 'package:abaad_flutter/shared/widgets/custom_snackbar.dart';
+import 'package:abaad_flutter/shared/widgets/custom_snackbar.dart';
+import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data' show ByteData;
 import 'dart:ui' as ui;
-
+import 'package:get/get.dart';
+import 'package:abaad_flutter/shared/controllers/splash_controller.dart';
 import 'package:abaad_flutter/shared/data/models/estate_model.dart';
 import 'package:abaad_flutter/shared/data/models/nearby_places_model.dart';
 import 'package:abaad_flutter/shared/utils/app_constants.dart';
@@ -109,10 +112,17 @@ class _NearByViewState extends State<NearByView> {
       ),
     );
 
+    // تحقق مؤقت من قيمة المفتاح — احذفه بعد التأكد
+    final String apiKey = Get.find<SplashController>().configModel?.googleMapKey ?? "";
+    debugPrint('GOOGLE_MAPS_KEY_DEBUG: key = "$apiKey" | isEmpty = ${apiKey.isEmpty}');
+
     final url = Uri.parse(
-        'https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=$currentLat,$currentLng&radius=1500&type=$type&key=${Get.find<SplashController>().configModel?.googleMapKey ?? ""}');
+        'https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=$currentLat,$currentLng&radius=1500&type=$type&key=$apiKey');
 
     final response = await http.post(url);
+
+    debugPrint('GOOGLE_MAPS_KEY_DEBUG: response status = ${response.statusCode}');
+    debugPrint('GOOGLE_MAPS_KEY_DEBUG: response body = ${response.body}');
 
     nearbyPlacesResponse =
         NearbyPlacesResponse.fromJson(jsonDecode(response.body));
@@ -136,6 +146,40 @@ class _NearByViewState extends State<NearByView> {
     }
 
     setState(() => isLoading = false);
+  }
+
+  Future<bool> isStreetViewAvailable(double latitude, double longitude) async {
+    final String apiKey = Get.find<SplashController>().configModel?.googleMapKey ?? "";
+    debugPrint('STREETVIEW_KEY_DEBUG: key = "$apiKey" | isEmpty = ${apiKey.isEmpty}');
+
+    final url = 'https://maps.googleapis.com/maps/api/streetview/metadata?location=$latitude,$longitude&key=$apiKey';
+    debugPrint('STREETVIEW_KEY_DEBUG: full url = $url');
+
+    try {
+      final response = await http.get(Uri.parse(url));
+
+      debugPrint('STREETVIEW_KEY_DEBUG: response status = ${response.statusCode}');
+      debugPrint('STREETVIEW_KEY_DEBUG: response body = ${response.body}');
+
+      if (response.statusCode == 200) {
+        // If Street View metadata is available, Street View is likely available
+        return true;
+      } else if (response.statusCode == 404) {
+        setState(() {
+
+        });
+        showCustomSnackBar("message");
+        // Handle case where Street View metadata is not found
+        return false;
+      } else {
+        // Handle other status codes
+        return false;
+      }
+    } catch (error) {
+      debugPrint('STREETVIEW_KEY_DEBUG: exception = $error');
+      // Handle other errors, e.g., network issues
+      return false;
+    }
   }
 
   BitmapDescriptor getMarkerIcon() {

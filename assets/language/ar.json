@@ -305,6 +305,7 @@
   "commercial_registration_error": "رقم السجل التجاري يجب أن يتكون من 10 أرقام",
 
   "service_provider": "مزود الخدمة",
+
   "request": "طلب",
   
   "my_services": "لوحة خدماتي",
@@ -415,7 +416,7 @@
   "active_filters_count": "الفلاتر النشطة",
   "clear_all": "مسح الكل",
   "apply_filters": "تطبيق",
-  "service_providers": "مزودو الخدمة",
+  "service_providers": "مزودي الخدمات",
 
   "active_status": "نشط",
   "under_review": "قيد المراجعة",

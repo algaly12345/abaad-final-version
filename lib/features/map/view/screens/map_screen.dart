@@ -1915,7 +1915,6 @@ class _MapViewScreenState extends State<MapScreen> {
         await Future.delayed(const Duration(milliseconds: 600));
       }
     }
-
     await _loadMapEstatesByBounds(reload: true);
   }
 

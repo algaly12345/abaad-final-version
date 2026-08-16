@@ -1,6 +1,8 @@
 ﻿import 'dart:async';
+import 'package:abaad_flutter/main.dart' as app_main;
+import 'package:abaad_flutter/shared/widgets/details_dilog.dart';
+import 'package:abaad_flutter/main.dart' as app_main;
 import 'dart:ui';
-
 import 'package:abaad_flutter/features/auth/controller/auth_controller.dart';
 import 'package:abaad_flutter/features/estate/controller/estate_controller.dart';
 import 'package:abaad_flutter/features/map/controller/location_controller.dart';
@@ -119,6 +121,15 @@ class _SplashScreenState extends State<SplashScreen>
   }
 
   void _navigateToApp() async {
+    // رابط تفاصيل عقار معلَّق: نتخطى فتح الرئيسية/تسجيل الدخول بالكامل هنا،
+    // ونترك GetX ينتقل مباشرة لصفحة /details عبر GetPage المسجَّلة، لتفادي
+    // ظهور الرئيسية للحظة قبل شاشة التفاصيل (الرمشة).
+    // نُصفّر القيمة فور قراءتها حتى لا تُستهلَك خطأً في أي فتح تالٍ للتطبيق.
+    if (app_main.MyApp.pendingDetailsEstateId != null) {
+      app_main.MyApp.pendingDetailsEstateId = null;
+      return;
+    }
+
     if (Get.find<AuthController>().isLoggedIn()) {
       await Get.find<WishListController>().getWishList();
 
@@ -138,6 +149,7 @@ class _SplashScreenState extends State<SplashScreen>
         Get.offNamed(RouteHelper.getInitialRoute());
       }
     }
+
   }
 
   @override

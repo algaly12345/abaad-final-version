@@ -267,7 +267,7 @@ class _DrawerMenuState extends State<DrawerMenu> {
                       _drawerTile(
                         context: context,
                         icon: Icons.storefront_outlined,
-                        title: 'service'.tr,
+                        title: 'service_providers'.tr,
                         color: Colors.indigo,
                         onTap: () {
                           Get.to(() => const ServicesHubScreen());
@@ -620,13 +620,13 @@ class _DrawerMenuState extends State<DrawerMenu> {
                 icon: Icons.phone_outlined,
                 label: 'Call',
                 color: Colors.green,
-                onTap: () => _launchUrl('tel:+966503731637'),
+                onTap: () => _launchUrl('tel:+966555273639'),
               ),
               _socialButton(
                 icon: Icons.chat_outlined,
                 label: 'WhatsApp',
                 color: Colors.teal,
-                onTap: () => _launchUrl('https://wa.me/966503731637'),
+                onTap: () => _launchUrl('https://wa.me/966555273639'),
               ),
             ],
           ),

@@ -1,70 +1,91 @@
 ﻿import 'package:abaad_flutter/features/auth/controller/auth_controller.dart';
 import 'package:abaad_flutter/features/favourite/controller/wishlist_controller.dart';
-import 'package:abaad_flutter/core/routes/route_helper.dart';
 import 'package:abaad_flutter/shared/widgets/estate_item.dart';
 import 'package:abaad_flutter/shared/widgets/not_logged_in_screen.dart';
+import 'package:abaad_flutter/shared/widgets/details_dilog.dart';
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-
-import 'package:abaad_flutter/shared/widgets/details_dilog.dart';
-
 
 class FavouriteScreen extends StatefulWidget {
   const FavouriteScreen({super.key});
 
   @override
-  _FavouriteScreenState createState() => _FavouriteScreenState();
+  State<FavouriteScreen> createState() => _FavouriteScreenState();
 }
 
-class _FavouriteScreenState extends State<FavouriteScreen> with SingleTickerProviderStateMixin {
-
+class _FavouriteScreenState extends State<FavouriteScreen> {
   @override
   void initState() {
     super.initState();
-    Get.find<WishListController>().getWishList();
 
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Get.find<WishListController>().getWishList();
+    });
   }
 
   @override
   Widget build(BuildContext context) {
+    final authController = Get.find<AuthController>();
+
+    if (!authController.isLoggedIn()) {
+      return const NotLoggedInScreen();
+    }
+
     return Scaffold(
-      body: Get.find<AuthController>().isLoggedIn() ? Container(child:      GetBuilder<WishListController>(builder: (wishController) {
-        return RefreshIndicator(
-          onRefresh: () async {
-            await wishController.getWishList();
-          },
-          child:ListView.builder(
-            physics: BouncingScrollPhysics(),
-            itemCount:  wishController.wishRestList?.length,
-            scrollDirection: Axis.vertical,
-            itemBuilder: (context, index) {
-              return  GetBuilder<WishListController>(builder: (wishController) {
-                return  EstateItem(estate: wishController.wishRestList?[index],onPressed: (){
-                  // Get.find<UserController>().getUserInfoByID(wishController.wishRestList[index].userId);
-                Get.dialog(DettailsDilog(estate:wishController.wishRestList![index]));
-               //   showCustomSnackBar("${wishController.wishRestList[index].estate_id}");
-            //
-                  //  Get.toNamed(RouteHelper.getDetailsRoute( (wishController.wishRestList![index].estate_id ?? 0) ));
-                },fav: true,isMyProfile: 0);
-              });
+      body: GetBuilder<WishListController>(
+        builder: (wishController) {
+          final estates = wishController.wishRestList ?? [];
+
+          if (estates.isEmpty) {
+            return RefreshIndicator(
+              onRefresh: () async {
+                await wishController.getWishList();
+              },
+              child: ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                children: const [
+                  SizedBox(height: 300),
+                  Center(
+                    child: Text(
+                      'لا توجد عقارات في المفضلة',
+                      style: TextStyle(fontSize: 16),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }
+
+          return RefreshIndicator(
+            onRefresh: () async {
+              await wishController.getWishList();
             },
-          ),
-        );
-      })) : NotLoggedInScreen(),
+            child: ListView.builder(
+              physics: const AlwaysScrollableScrollPhysics(
+                parent: BouncingScrollPhysics(),
+              ),
+              itemCount: estates.length,
+              itemBuilder: (context, index) {
+                final estate = estates[index];
+
+                return EstateItem(
+                  estate: estate,
+                  fav: true,
+                  isMyProfile: 0,
+                  onPressed: () {
+                    Get.dialog(
+                      DettailsDilog(
+                        estate: estate,
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
+          );
+        },
+      ),
     );
   }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-

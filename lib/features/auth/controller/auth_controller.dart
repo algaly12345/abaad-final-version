@@ -192,22 +192,17 @@ class AuthController extends GetxController implements GetxService {
     if (response.statusCode == 200) {
       final String token = (response.body['token'] ?? '').toString();
       final bool isPhoneVerified = _asBool(response.body['is_phone_verified']);
-      final bool verificationRequired =
-          (Get.find<SplashController>().configModel?.customerVerification ??
-              false) &&
-          !isPhoneVerified;
+       final bool verificationRequired = (Get.find<SplashController>().configModel?.customerVerification ?? false) && !isPhoneVerified;
+      //
+      // // Only persist the token (i.e. actually log the user in) when no
+      // // further OTP step is required. If verification is still required,
+      // // verifyPhone() will persist the token once the code is confirmed.
 
-      // Only persist the token (i.e. actually log the user in) when no
-      // further OTP step is required. If verification is still required,
-      // verifyPhone() will persist the token once the code is confirmed.
-      if (!verificationRequired && token.isNotEmpty) {
-        await authRepo.saveUserToken(token, alreadyInApp: alreadyInApp);
-      }
 
       responseModel = ResponseModel(
         true,
         token,
-        isPhoneVerified: !verificationRequired,
+        isPhoneVerified: false,
         token: token,
       );
     } else {
@@ -454,6 +449,10 @@ class AuthController extends GetxController implements GetxService {
     Response response = await authRepo.verifyPhone(phone, _verificationCode);
     ResponseModel responseModel;
     if (response.statusCode == 200) {
+
+
+         await authRepo.saveUserToken(token);
+
       if (token.isNotEmpty) {
         await authRepo.saveUserToken(token);
       }

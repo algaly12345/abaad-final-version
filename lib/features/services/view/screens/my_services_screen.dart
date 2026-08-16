@@ -25,7 +25,7 @@ class _MyServicesScreenState extends State<MyServicesScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 4, vsync: this);
+    _tabController = TabController(length: 5, vsync: this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (Get.find<AuthController>().isLoggedIn()) {
         Get.find<ServicesController>().getServicesList(
@@ -127,6 +127,7 @@ class _MyServicesScreenState extends State<MyServicesScreen>
         tabs: [
           Tab(text: 'active_status'.tr),
           Tab(text: 'under_review'.tr),
+          Tab(text: 'unpaid_status'.tr),
           Tab(text: 'rejected_status'.tr),
           Tab(text: 'expired_status'.tr),
         ],
@@ -149,7 +150,24 @@ class _MyServicesScreenState extends State<MyServicesScreen>
         final active = all
             .where((e) => e.status == 'accept' && !(e.isExpired ?? false))
             .toList();
-        final pending = all.where((e) => e.status == 'pending').toList();
+        // "غير مدفوعة": اشتراك لم يُدفع بعد أو فشل دفعه — تبقى بحالة offer.status
+        // = 'pending' إلى الأبد بدون هذا الفصل (راجع MoyasarPaymentController
+        // بالباكند)، فتُستثنى من "قيد المراجعة" كي لا تختلط بعروض دُفعت فعلاً
+        // وتنتظر مراجعة الإدارة فقط. مقيّدة أيضاً بـ status=='pending': بعض
+        // العروض القديمة اعتمدتها الإدارة يدوياً رغم بقاء اشتراكها unpaid
+        // (موافقة يدوية سابقة على نظام الدفع) — تبقى في "نشط" فقط ولا تُكرَّر
+        // هنا بلا داعٍ.
+        final unpaid = all
+            .where((e) =>
+        e.status == 'pending' &&
+            (e.paymentStatus == 'unpaid' || e.paymentStatus == 'failed'))
+            .toList();
+        final pending = all
+            .where((e) =>
+        e.status == 'pending' &&
+            e.paymentStatus != 'unpaid' &&
+            e.paymentStatus != 'failed')
+            .toList();
         final rejected = all.where((e) => e.status == 'rejected').toList();
         final expired = all
             .where(
@@ -174,6 +192,14 @@ class _MyServicesScreenState extends State<MyServicesScreen>
               statusLabel: 'under_review'.tr,
               emptyMessage: 'no_pending_offers'.tr,
               emptyIcon: Icons.hourglass_empty_rounded,
+            ),
+            _ServicesList(
+              services: unpaid,
+              primary: primary,
+              statusColor: Colors.deepOrange.shade600,
+              statusLabel: 'unpaid_status'.tr,
+              emptyMessage: 'no_unpaid_offers'.tr,
+              emptyIcon: Icons.payment_outlined,
             ),
             _ServicesList(
               services: rejected,
@@ -201,15 +227,15 @@ class _MyServicesScreenState extends State<MyServicesScreen>
     // في أسفل يمين الشاشة (الموضع الافتراضي لـ FloatingActionButton.extended).
     final fab = canCreate
         ? FloatingActionButton.extended(
-            backgroundColor: primary,
-            foregroundColor: Colors.white,
-            elevation: 4,
-            onPressed: () =>
-                Get.toNamed(RouteHelper.getAddServiceOfferRoute()),
-            icon: const Icon(Icons.add_business),
-            label: Text('add_service'.tr,
-                style: robotoBold.copyWith(color: Colors.white, fontSize: 13)),
-          )
+      backgroundColor: primary,
+      foregroundColor: Colors.white,
+      elevation: 4,
+      onPressed: () =>
+          Get.toNamed(RouteHelper.getAddServiceOfferRoute()),
+      icon: const Icon(Icons.add_business),
+      label: Text('add_service'.tr,
+          style: robotoBold.copyWith(color: Colors.white, fontSize: 13)),
+    )
         : null;
 
     return Scaffold(
@@ -292,7 +318,7 @@ class _ServiceCard extends StatelessWidget {
 
     return GestureDetector(
       onTap: () => Get.to(
-        () => ServiceDetailsScreen(serviceId: service.id!),
+            () => ServiceDetailsScreen(serviceId: service.id!),
         transition: Transition.cupertino,
       ),
       child: Container(
@@ -303,7 +329,7 @@ class _ServiceCard extends StatelessWidget {
           boxShadow: AppShadows.soft(
               blur: 16,
               opacity:
-                  Theme.of(context).brightness == Brightness.dark ? 0.28 : 0.06),
+              Theme.of(context).brightness == Brightness.dark ? 0.28 : 0.06),
         ),
         child: Row(
           children: [
@@ -322,7 +348,7 @@ class _ServiceCard extends StatelessWidget {
             Expanded(
               child: Padding(
                 padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -414,7 +440,7 @@ class _ServiceCard extends StatelessWidget {
                 materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 onChanged: canToggle
                     ? (_) => Get.find<ServicesController>()
-                        .toggleServiceStatus(service.id!)
+                    .toggleServiceStatus(service.id!)
                     : null,
               ),
             ),

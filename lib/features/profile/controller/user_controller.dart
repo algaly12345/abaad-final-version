@@ -43,7 +43,7 @@ class UserController extends GetxController implements GetxService {
     _pickedFile = null;
     ResponseModel responseModel;
     _isLoading = true;
-    update();
+    //update();
 
     try {
       Response? response = await userRepo.getUserInfo();

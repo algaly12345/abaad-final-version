@@ -14,14 +14,14 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// ملاحظة: نفس أسماء الكلاسات الأصلية بالكامل (MapViewScreen،
-/// _MapViewScreenState، ArcClipper) ونفس منطق `_setMarkersZone` بدون أي
-/// تغيير. الإصلاح الوحيد: كان الكود يبني widget مختلف تمامًا لـ GoogleMap
-/// في حالتين منفصلتين (قبل تجهيز العلامات وبعدها) — بكاميرا مختلفة الزوم
-/// (12 مقابل 5.2)، فيهدم Flutter الخريطة القديمة (native platform view)
-/// ويبني وحدة جديدة من الصفر عند وصول العلامات، وهذا بالضبط ما يسبب
-/// "الرمشة" (الفلاش/الاختفاء اللحظي) عند فتح الخريطة. الحل: خريطة واحدة
-/// ثابتة طوال الوقت، تُمرَّر لها العلامات فارغة ثم تُملأ لاحقًا بدون إعادة
-/// بناء الـ widget نفسه من جديد.
+/// _MapViewScreenState، ArcClipper). الإصلاح الوحيد هنا: إزالة `SafeArea`
+/// اللي كانت ملفوفة حول ودجت كل علامة (Marker) على الخريطة. `SafeArea`
+/// بتضيف حشوًا (padding) غير متماثل حوالين المحتوى (خصوصًا من فوق
+/// لمنطقة الـ status bar)، وبما إن مكتبة custom_map_markers بتحوّل
+/// الودجت لصورة (bitmap) وتحطها بمركزها بالظبط فوق الإحداثية، فالحشو
+/// الزائد كان بيزحزح المركز الفعلي للتسمية عن نقطة الإحداثية الحقيقية —
+/// وهذا هو سبب ظهور كل العلامات "مزحزحة" عن مواقعها الصحيحة رغم أن
+/// الإحداثيات نفسها سليمة في قاعدة البيانات.
 class MapViewScreen extends StatefulWidget {
   const MapViewScreen({Key? key}) : super(key: key);
 
@@ -40,9 +40,6 @@ class _MapViewScreenState extends State<MapViewScreen> {
   int _reload = 0;
   final Set<Polygon> _polygon = HashSet<Polygon>();
 
-  /// كاميرا بداية موحّدة تُستخدم مرة واحدة فقط (initialCameraPosition لا
-  /// تُعاد قراءتها بعد إنشاء الخريطة) — بنفس مستوى الزووم في الحالتين
-  /// السابقتين كي لا يحدث قفز مفاجئ في التكبير عند اكتمال تحميل العلامات.
   static const CameraPosition _initialCamera = CameraPosition(
     zoom: 5.2,
     target: LatLng(24.263867, 45.033284),
@@ -57,15 +54,6 @@ class _MapViewScreenState extends State<MapViewScreen> {
   get borderRadius => BorderRadius.circular(8.0);
   final GlobalKey<ScaffoldState> _key = GlobalKey();
 
-  /// نلتقط قائمة المناطق مرة واحدة فقط بمجرد توفّرها، ثم نخرج نهائيًا من
-  /// GetBuilder عند بناء الخريطة. السبب: authController قد يستدعي
-  /// update() أكثر من مرة أثناء/بعد تحميل المناطق (حالة تحميل، ثم نجاح،
-  /// ...)، وكل استدعاء كان يعيد بناء GetBuilder بالكامل، وبالتبعية يعيد
-  /// بناء CustomGoogleMapMarkerBuilder من جديد، وهو ما يجعل العلامات
-  /// المخصّصة (الصور) تُعاد "التقاطها" كـ bitmap عدة مرات فتظهر بشكلها
-  /// الافتراضي ثم تختفي وتظهر بالشكل المخصّص تكرارًا — وهذه هي الرمشة
-  /// التي وصفتها. بمجرد أن نخرج من GetBuilder، أي نداء لاحق لـ update()
-  /// لن يصل لهذا الـ widget إطلاقًا فلا يتكرر الأمر.
   List<ZoneModel>? _zoneList;
 
   @override
@@ -91,8 +79,6 @@ class _MapViewScreenState extends State<MapViewScreen> {
     );
   }
 
-  /// محتوى الخريطة الفعلي — يُبنى مرة واحدة فقط بعد التقاط قائمة المناطق
-  /// محليًا، وخارج أي إعادة بناء متكررة من GetBuilder.
   Widget _buildMap(List<ZoneModel> zoneList) {
     return CustomGoogleMapMarkerBuilder(
       customMarkers: _customMarkersZone,
@@ -159,56 +145,50 @@ class _MapViewScreenState extends State<MapViewScreen> {
                   zone[index].id, zone[index].longitude, zone[index].latitude));
             },
           ),
-          child: SafeArea(
-            child: Directionality(
-              textDirection: isArabic ? TextDirection.rtl : TextDirection.ltr,
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const SizedBox(width: 0),
-                  Container(
-                    padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [
-                          Color(0xFF2A7BF6),
-                          Color(0xFF4A9BFF),
-                        ],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                        color: Colors.white,
-                        width: 1,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.15),
-                          blurRadius: 3,
-                          offset: const Offset(1, 2),
-                        ),
-                      ],
-                    ),
-                    constraints: const BoxConstraints(
-                      minWidth: 60,
-                      maxWidth: 120,
-                    ),
-                    child: Text(
-                      isArabic ? zone[index].nameAr : zone[index].name,
-                      textAlign: TextAlign.center,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontFamily: 'IBMPlexSansArabic',
-                        fontSize: 10,
-                        fontWeight: FontWeight.w600,
-                        height: 1.2,
-                      ),
-                    ),
+          // 🔹 تم حذف SafeArea من هنا — كانت تضيف حشوًا غير متماثل حوالين
+          // التسمية فيزحزح مركز الصورة الناتجة عن نقطة الإحداثية الحقيقية.
+          child: Directionality(
+            textDirection: isArabic ? TextDirection.rtl : TextDirection.ltr,
+            child: Container(
+              padding:
+              const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [
+                    Color(0xFF2A7BF6),
+                    Color(0xFF4A9BFF),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: Colors.white,
+                  width: 1,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.15),
+                    blurRadius: 3,
+                    offset: const Offset(1, 2),
                   ),
                 ],
+              ),
+              constraints: const BoxConstraints(
+                minWidth: 60,
+                maxWidth: 120,
+              ),
+              child: Text(
+                isArabic ? zone[index].nameAr : zone[index].name,
+                textAlign: TextAlign.center,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontFamily: 'IBMPlexSansArabic',
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                  height: 1.2,
+                ),
               ),
             ),
           ),

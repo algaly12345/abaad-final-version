@@ -128,7 +128,7 @@ class SupportScreen extends StatelessWidget {
                           icon: Icons.location_on_rounded,
                           color: const Color(0xFF3B82F6),
                           title: 'address'.tr,
-                          value: config?.address ?? "الشرقية، الدمام",
+                          value: "  المملكة العربية السعودية ",
                           onTap: () {},
                         ),
                         const SizedBox(height: 12),

@@ -121,11 +121,17 @@ class _FeatureScreenState extends State<FeatureScreen> {
 
 
   Future<bool> isStreetViewAvailable(double latitude, double longitude) async {
+    final String apiKey = AppConstants.googleMapKey;
+    debugPrint('STREETVIEW_KEY_DEBUG: key = "$apiKey" | isEmpty = ${apiKey.isEmpty}');
 
-    final url = 'https://maps.googleapis.com/maps/api/streetview/metadata?location=$latitude,$longitude&key=${AppConstants.googleMapKey}';
+    final url = 'https://maps.googleapis.com/maps/api/streetview/metadata?location=$latitude,$longitude&key=$apiKey';
+    debugPrint('STREETVIEW_KEY_DEBUG: full url = $url');
 
     try {
       final response = await http.get(Uri.parse(url));
+
+      debugPrint('STREETVIEW_KEY_DEBUG: response status = ${response.statusCode}');
+      debugPrint('STREETVIEW_KEY_DEBUG: response body = ${response.body}');
 
       if (response.statusCode == 200) {
         // If Street View metadata is available, Street View is likely available
@@ -142,6 +148,7 @@ class _FeatureScreenState extends State<FeatureScreen> {
         return false;
       }
     } catch (error) {
+      debugPrint('STREETVIEW_KEY_DEBUG: exception = $error');
       // Handle other errors, e.g., network issues
       return false;
     }

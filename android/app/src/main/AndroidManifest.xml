@@ -50,6 +50,13 @@
             <category android:name="android.intent.category.BROWSABLE"/>
             <data android:scheme="https" android:host="abaadapp.sa" android:pathPrefix="/ref"/>
         </intent-filter>
+        <!-- رابط تفاصيل العقار الفعلي app.abaadapp.sa/details/{id} -->
+        <intent-filter android:autoVerify="true">
+            <action android:name="android.intent.action.VIEW"/>
+            <category android:name="android.intent.category.DEFAULT"/>
+            <category android:name="android.intent.category.BROWSABLE"/>
+            <data android:scheme="https" android:host="app.abaadapp.sa" android:pathPrefix="/details"/>
+        </intent-filter>
 
         <meta-data
             android:name="io.flutter.embedding.android.NormalTheme"

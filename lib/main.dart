@@ -94,7 +94,7 @@
 //     if (!GetPlatform.isMobile) return;
 //
 //     try {
-//       final Uri? initialUri = await _appLinks.getInitialAppLink();
+//       final Uri? initialUri = await _appLinks.getInitialLink();
 //
 //       if (initialUri != null) {
 //         Future.delayed(const Duration(seconds: 2), () {
@@ -354,6 +354,10 @@ class MyApp extends StatefulWidget {
 
   const MyApp({super.key, required this.languages, required this.body});
 
+  /// معرّف عقار من رابط تفاصيل معلَّق — يُقرأ من شاشة السبلاش بعد انتهاء
+  /// تسلسلها الطبيعي (Get.offNamed) لتفادي تعارض توقيت يمسح التنقّل المباشر.
+  static int? pendingDetailsEstateId;
+
   @override
   State<MyApp> createState() => _MyAppState();
 }
@@ -374,19 +378,24 @@ class _MyAppState extends State<MyApp> {
     super.dispose();
   }
 
-  /// يستقبل رابط الإحالة الفعلي https://abaadapp.sa/ref/CODE عند وجود
-  /// التطبيق مثبَّتًا (فتح مباشر عبر App Links). uriLinkStream في app_links
-  /// v7 يغطي حالتي الفتح البارد (Cold Start) والفتح والتطبيق شغّال أصلاً
-  /// بنفس الـ stream — لا حاجة لاستدعاء منفصل لأول رابط.
+  /// يستقبل رابط الإحالة https://abaadapp.sa/ref/CODE ورابط تفاصيل العقار
+  /// https://app.abaadapp.sa/details/{id} عند وجود التطبيق مثبَّتًا.
+  /// getInitialLink() يلتقط الفتح البارد (Cold Start) صراحة، لأن
+  /// uriLinkStream وحده قد لا يُصدر الرابط الأول قبل جهوزية GetMaterialApp.
   Future<void> _initReferralDeepLink() async {
     if (!GetPlatform.isMobile) return;
 
-    // ترحيل تلقائي بعد تثبيت جديد (أندرويد فقط) — لا يتعارض مع الاستماع
-    // للرابط المباشر أدناه، فقط يغطي حالة "لم يكن التطبيق مثبَّتًا وقت الضغط".
     unawaited(ReferralCodeStorage.captureFromPlayInstallReferrer());
 
     try {
+      final Uri? initialUri = await _appLinks.getInitialLink();
+      debugPrint('DEEPLINK_DEBUG: getInitialLink() returned: $initialUri');
+      if (initialUri != null) {
+        _handleReferralLink(initialUri);
+      }
+
       _referralLinkSubscription = _appLinks.uriLinkStream.listen((Uri uri) {
+        debugPrint('DEEPLINK_DEBUG: uriLinkStream emitted: $uri');
         _handleReferralLink(uri);
       });
     } catch (e) {
@@ -394,7 +403,28 @@ class _MyAppState extends State<MyApp> {
     }
   }
 
+  /// ينتظر جهوزية GetX Navigator (GetMaterialApp) قبل أي تنقّل — في الفتح
+  /// البارد، initState() يُنفَّذ قبل بناء GetMaterialApp بالكامل، فأي
+  /// Get.toNamed فوري يفشل بصمت لعدم وجود Navigator صالح بعد.
+  Future<void> _waitForNavigatorReady() async {
+    int tries = 0;
+    while (Get.context == null && tries < 30) {
+      await Future.delayed(const Duration(milliseconds: 200));
+      tries++;
+    }
+  }
+
   void _handleReferralLink(Uri uri) async {
+
+    // رابط تفاصيل عقار https://app.abaadapp.sa/details/{id}: نخزّن العلم
+    // فقط ليقرأه السبلاش ويتخطى فتح الرئيسية (بدون فتح أي حوار هنا، لتفادي
+    // الازدواجية — الحوار الفعلي تفتحه آلية GetX التلقائية وحدها).
+    if (uri.host == 'app.abaadapp.sa' &&
+        uri.pathSegments.length >= 2 &&
+        uri.pathSegments.first == 'details') {
+      MyApp.pendingDetailsEstateId = int.tryParse(uri.pathSegments[1]);
+      return;
+    }
     if (uri.host != 'abaadapp.sa') return;
     if (uri.pathSegments.length < 2 || uri.pathSegments.first != 'ref') return;
 

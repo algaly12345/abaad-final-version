@@ -115,109 +115,109 @@ class _ServicesCatalogScreenState extends State<ServicesCatalogScreen> {
                 color: primary,
                 onRefresh: () => controller.getServicesList(1, reload: true),
                 child: CustomScrollView(
-          controller: _scrollController,
-          slivers: [
-            if (!controller.nearMeActive &&
-                !controller.isResolvingLocation &&
-                controller.nearMeAutoDenied)
-              const SliverToBoxAdapter(child: _NearMeHint()),
-            // يظهر في حالتين متتاليتين بدل ترك المستخدم بلا أي مؤشر بينهما:
-            // (1) أثناء تحديد الموقع نفسه (isResolvingLocation — قبل معرفة
-            // الإحداثيات، سواء عند المحاولة التلقائية الصامتة عند فتح الشاشة
-            // أو عند الضغط اليدوي)، ثم (2) أثناء تحميل قائمة أقرب مزودي
-            // الخدمة بعد نجاح تحديد الموقع (nearMeActive && isLoading) —
-            // سواء كانت القائمة لا تزال فارغة (أول تحميل) أو معروضة بالفعل
-            // من نتيجة افتراضية سابقة (silentReload لا يمسحها).
-            if (controller.isResolvingLocation ||
-                (controller.nearMeActive && controller.isLoading))
-              SliverToBoxAdapter(
-                child: _NearbySearchingBanner(
-                    resolving: controller.isResolvingLocation),
-              ),
-            if (controller.servicesList == null) ...[
-              SliverPadding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                sliver: SliverList(
-                  delegate: SliverChildBuilderDelegate(
-                    (_, __) => const _SkeletonCard(),
-                    childCount: 5,
-                  ),
-                ),
-              ),
-            ] else if (controller.servicesList!.isEmpty) ...[
-              SliverFillRemaining(
-                hasScrollBody: false,
-                child: _EmptyServices(
-                  primary: primary,
-                  hasActiveFilters: controller.searchText.isNotEmpty ||
-                      controller.selectedCategories.isNotEmpty ||
-                      controller.selectedZones.isNotEmpty ||
-                      controller.selectedServiceTypes.isNotEmpty ||
-                      controller.selectedProviders.isNotEmpty ||
-                      controller.selectedOfferType != 'الكل',
-                  onReset: controller.clearFilters,
-                ),
-              ),
-            ] else ...[
-              SliverPadding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                sliver: SliverList(
-                  delegate: SliverChildBuilderDelegate(
-                    (ctx, index) {
-                      if (index < controller.servicesList!.length) {
-                        return ScrollRevealItem(
-                          scrollController: _scrollController,
-                          child: _ServiceCard(
-                            service: controller.servicesList![index],
-                            primary: primary,
+                  controller: _scrollController,
+                  slivers: [
+                    if (!controller.nearMeActive &&
+                        !controller.isResolvingLocation &&
+                        controller.nearMeAutoDenied)
+                      const SliverToBoxAdapter(child: _NearMeHint()),
+                    // يظهر في حالتين متتاليتين بدل ترك المستخدم بلا أي مؤشر بينهما:
+                    // (1) أثناء تحديد الموقع نفسه (isResolvingLocation — قبل معرفة
+                    // الإحداثيات، سواء عند المحاولة التلقائية الصامتة عند فتح الشاشة
+                    // أو عند الضغط اليدوي)، ثم (2) أثناء تحميل قائمة أقرب مزودي
+                    // الخدمة بعد نجاح تحديد الموقع (nearMeActive && isLoading) —
+                    // سواء كانت القائمة لا تزال فارغة (أول تحميل) أو معروضة بالفعل
+                    // من نتيجة افتراضية سابقة (silentReload لا يمسحها).
+                    if (controller.isResolvingLocation ||
+                        (controller.nearMeActive && controller.isLoading))
+                      SliverToBoxAdapter(
+                        child: _NearbySearchingBanner(
+                            resolving: controller.isResolvingLocation),
+                      ),
+                    if (controller.servicesList == null) ...[
+                      SliverPadding(
+                        padding:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        sliver: SliverList(
+                          delegate: SliverChildBuilderDelegate(
+                                (_, __) => const _SkeletonCard(),
+                            childCount: 5,
                           ),
-                        );
-                      }
-                      return controller.hasMore
-                          ? Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 24),
-                              child: Center(
-                                child: SizedBox(
-                                  width: 22,
-                                  height: 22,
-                                  child: CircularProgressIndicator(
-                                      strokeWidth: 2.4, color: primary),
+                        ),
+                      ),
+                    ] else if (controller.servicesList!.isEmpty) ...[
+                      SliverFillRemaining(
+                        hasScrollBody: false,
+                        child: _EmptyServices(
+                          primary: primary,
+                          hasActiveFilters: controller.searchText.isNotEmpty ||
+                              controller.selectedCategories.isNotEmpty ||
+                              controller.selectedZones.isNotEmpty ||
+                              controller.selectedServiceTypes.isNotEmpty ||
+                              controller.selectedProviders.isNotEmpty ||
+                              controller.selectedOfferType != 'الكل',
+                          onReset: controller.clearFilters,
+                        ),
+                      ),
+                    ] else ...[
+                      SliverPadding(
+                        padding:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        sliver: SliverList(
+                          delegate: SliverChildBuilderDelegate(
+                                (ctx, index) {
+                              if (index < controller.servicesList!.length) {
+                                return ScrollRevealItem(
+                                  scrollController: _scrollController,
+                                  child: _ServiceCard(
+                                    service: controller.servicesList![index],
+                                    primary: primary,
+                                  ),
+                                );
+                              }
+                              return controller.hasMore
+                                  ? Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 24),
+                                child: Center(
+                                  child: SizedBox(
+                                    width: 22,
+                                    height: 22,
+                                    child: CircularProgressIndicator(
+                                        strokeWidth: 2.4, color: primary),
+                                  ),
                                 ),
-                              ),
-                            )
-                          : Padding(
-                              // bottom: 100 (بدل 24) — يفسح مساحة كافية أسفل
-                              // آخر عنصر بالقائمة كي لا يحجبه زرّ "إضافة خدمة"
-                              // العائم (FloatingActionButton) الذي يطفو فوق
-                              // الجسم بلا حجز مساحة تلقائي منه.
-                              padding:
-                                  const EdgeInsets.only(bottom: 100, top: 10),
-                              child: Center(
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(Icons.check_circle_rounded,
-                                        size: 15, color: Colors.grey.shade400),
-                                    const SizedBox(width: 6),
-                                    Text(
-                                      'تم عرض جميع الخدمات',
-                                      style: robotoMedium.copyWith(
-                                          color: _secondaryText(context),
-                                          fontSize: 12.5),
-                                    ),
-                                  ],
+                              )
+                                  : Padding(
+                                // bottom: 100 (بدل 24) — يفسح مساحة كافية أسفل
+                                // آخر عنصر بالقائمة كي لا يحجبه زرّ "إضافة خدمة"
+                                // العائم (FloatingActionButton) الذي يطفو فوق
+                                // الجسم بلا حجز مساحة تلقائي منه.
+                                padding:
+                                const EdgeInsets.only(bottom: 100, top: 10),
+                                child: Center(
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(Icons.check_circle_rounded,
+                                          size: 15, color: Colors.grey.shade400),
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        'تم عرض جميع الخدمات',
+                                        style: robotoMedium.copyWith(
+                                            color: _secondaryText(context),
+                                            fontSize: 12.5),
+                                      ),
+                                    ],
+                                  ),
                                 ),
-                              ),
-                            );
-                    },
-                    childCount: controller.servicesList!.length + 1,
-                  ),
-                ),
-              ),
-            ],
-          ],
+                              );
+                            },
+                            childCount: controller.servicesList!.length + 1,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
               ),
             ),
@@ -301,7 +301,7 @@ class _ServiceSearchField extends StatelessWidget {
       child: InkWell(
         borderRadius: BorderRadius.circular(_topBarRadius),
         onTap: () => Get.to(
-          () => const ServicesSearchScreen(),
+              () => const ServicesSearchScreen(),
           transition: Transition.fadeIn,
           duration: const Duration(milliseconds: 200),
         ),
@@ -465,7 +465,7 @@ class _ServicesSearchScreenState extends State<ServicesSearchScreen> {
                       if (c.isSearching) {
                         return ListView.builder(
                           padding:
-                              const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                           itemCount: 4,
                           itemBuilder: (_, __) => const _SkeletonCard(),
                         );
@@ -476,7 +476,7 @@ class _ServicesSearchScreenState extends State<ServicesSearchScreen> {
                       }
                       return ListView.builder(
                         padding:
-                            const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                         itemCount: results.length,
                         itemBuilder: (ctx, i) =>
                             _ServiceCard(service: results[i], primary: primary),
@@ -730,10 +730,10 @@ class _LocationChip extends StatelessWidget {
   const _LocationChip();
 
   void _open() => Get.bottomSheet(
-        const ZoneFilterSheet(),
-        isScrollControlled: true,
-        backgroundColor: Colors.transparent,
-      );
+    const ZoneFilterSheet(),
+    isScrollControlled: true,
+    backgroundColor: Colors.transparent,
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -994,7 +994,7 @@ class _ServiceTypesBarSkeleton extends StatelessWidget {
   Widget build(BuildContext context) {
     final dark = _isDark(context);
     final baseColor =
-        dark ? Colors.white.withValues(alpha: 0.08) : const Color(0xFFEEF0F5);
+    dark ? Colors.white.withValues(alpha: 0.08) : const Color(0xFFEEF0F5);
 
     return SizedBox(
       height: 42,
@@ -1039,12 +1039,12 @@ class _ServiceCard extends StatelessWidget {
     final isDiscount = service.offerType == 'discount';
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
+      margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(AppRadius.extraLarge),
         boxShadow:
-            AppShadows.soft(blur: 16, opacity: _isDark(context) ? 0.28 : 0.06),
+        AppShadows.soft(blur: 16, opacity: _isDark(context) ? 0.28 : 0.06),
       ),
       child: Material(
         color: Colors.transparent,
@@ -1052,7 +1052,7 @@ class _ServiceCard extends StatelessWidget {
         clipBehavior: Clip.antiAlias,
         child: InkWell(
           onTap: () => Get.to(
-            () => ServiceDetailsScreen(serviceId: service.id!),
+                () => ServiceDetailsScreen(serviceId: service.id!),
             transition: Transition.cupertino,
           ),
           child: Column(
@@ -1064,7 +1064,7 @@ class _ServiceCard extends StatelessWidget {
                     : const [],
                 topLeftBadge: Container(
                   padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       colors: isDiscount
@@ -1096,7 +1096,7 @@ class _ServiceCard extends StatelessWidget {
                             ? '${service.formattedDiscount ?? '${service.discount}%'}  خصم'
                             : '${service.servicePrice} ر.س',
                         style:
-                            robotoBold.copyWith(color: Colors.white, fontSize: 11),
+                        robotoBold.copyWith(color: Colors.white, fontSize: 11),
                       ),
                     ],
                   ),
@@ -1106,7 +1106,7 @@ class _ServiceCard extends StatelessWidget {
                 // البطاقة (نفس البيانات، موضع أوضح وأقرب لتطبيقات المرجع).
                 topRightBadge: Container(
                   padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                   decoration: BoxDecoration(
                     color: Colors.white.withValues(alpha: 0.95),
                     borderRadius: BorderRadius.circular(22),
@@ -1146,9 +1146,10 @@ class _ServiceCard extends StatelessWidget {
                 ),
               ),
               Padding(
-                // حواف 16 موحّدة على كامل الجسم (شبكة 8pt: 16 = 2×8) بدل
-                // الخليط السابق (16/12/16/16) غير المنضبط على الشبكة.
-                padding: const EdgeInsets.all(16),
+                // حواف 14 (بدل 16 سابقاً) + مسافات رأسية 12 (بدل 16) بين
+                // الأقسام — تقليص إجمالي لارتفاع البطاقة والفراغات بينها
+                // مع الحفاظ على وضوح الفصل بين العنوان/المزوّد/الوسوم.
+                padding: const EdgeInsets.all(14),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -1160,35 +1161,54 @@ class _ServiceCard extends StatelessWidget {
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 12),
                     Divider(
                       height: 1,
                       thickness: 1,
                       color: Theme.of(context).dividerColor.withValues(alpha: 0.5),
                     ),
-                    const SizedBox(height: 16),
-                    // مزوّد الخدمة (صورة + اسم) ورقاقة المسافة معًا في نفس الصف
-                    // — بدل رقاقة معزولة أسفل العنوان مباشرة، فتُقرأ المسافة
-                    // كبيانات ملحقة بمزوّد الخدمة لا كعنصر منفصل عنه بصريًا.
+                    const SizedBox(height: 12),
+                    // مزوّد الخدمة (صورة + اسم) وأزرار التواصل (اتصال/واتساب/
+                    // خريطة) بنفس الصف — أيقونات صغيرة بحجم الصورة الرمزية
+                    // بدل صفّ منفصل أسفل البطاقة.
                     Row(
                       children: [
                         _ProviderAvatar(provider: provider, primary: primary),
-                        const SizedBox(width: 8),
+                        const SizedBox(width: 10),
                         Expanded(
                           child: Text(
                             provider?.name ?? 'مزود خدمة',
-                            style: robotoMedium.copyWith(
-                                fontSize: 13, color: primary),
+                            style: robotoBold.copyWith(
+                                fontSize: 13.5, color: primary),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        if (service.distanceKm != null) ...[
+                        if (provider?.phone?.isNotEmpty ?? false) ...[
                           const SizedBox(width: 8),
-                          _DistanceChip(distanceKm: service.distanceKm!),
+                          _ServiceActionButtons(provider: provider!, service: service),
                         ],
                       ],
                     ),
+                    // رقاقتا العنوان والمسافة أسفل صفّ مزوّد الخدمة مباشرة —
+                    // العنوان التفصيلي (مثل "خميس مشيط - حي المروج") فقط، بلا
+                    // رجوع للمناطق (zones) عند غيابه، فلا تظهر رقاقة منطقة
+                    // عامة قد تُضلّل عن موقع العرض الفعلي.
+                    if ((service.address ?? '').trim().isNotEmpty ||
+                        service.distanceKm != null) ...[
+                      const SizedBox(height: 8),
+                      Wrap(
+                        alignment: WrapAlignment.start,
+                        spacing: 6,
+                        runSpacing: 6,
+                        children: [
+                          if ((service.address ?? '').trim().isNotEmpty)
+                            _ZoneChip(labels: [service.address!.trim()]),
+                          if (service.distanceKm != null)
+                            _DistanceChip(distanceKm: service.distanceKm!),
+                        ],
+                      ),
+                    ],
                     // وسوم نوع الخدمة/الفئات: Wrap بدل Row لمنع تجاوز عرض
                     // البطاقة على الشاشات الصغيرة عند تعدّد الوسوم أو طولها.
                     if (_tagLabels(service).isNotEmpty) ...[
@@ -1201,10 +1221,6 @@ class _ServiceCard extends StatelessWidget {
                             .map((l) => _TagChip(label: l))
                             .toList(),
                       ),
-                    ],
-                    if (provider?.phone?.isNotEmpty ?? false) ...[
-                      const SizedBox(height: 16),
-                      _ServiceActionButtons(provider: provider!, service: service),
                     ],
                   ],
                 ),
@@ -1259,6 +1275,45 @@ class _DistanceChip extends StatelessWidget {
   }
 }
 
+/// رقاقة المنطقة المخدومة — بنفس هيكل [_DistanceChip] (أيقونة + نص مضغوط)
+/// لتقع بجانبها بصريًا بشكل متّسق، بلون محايد يميّزها عن رقاقة المسافة
+/// الملوّنة بلون التطبيق.
+class _ZoneChip extends StatelessWidget {
+  final List<String> labels;
+
+  const _ZoneChip({required this.labels});
+
+  @override
+  Widget build(BuildContext context) {
+    // أول منطقة + "+N" لو فيه مناطق إضافية — بدل إخفائها صامتاً خلف الأولى
+    // (كانت الرياض تظهر دومًا لأنها غالبًا أول منطقة بترتيب أغلب العروض).
+    final label = labels.length > 1 ? '${labels.first} +${labels.length - 1}' : labels.first;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: _secondaryText(context).withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.location_on_outlined, size: 11, color: _secondaryText(context)),
+          const SizedBox(width: 4),
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 90),
+            child: Text(
+              label,
+              style: robotoBold.copyWith(fontSize: 11, color: _secondaryText(context)),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 // ─── وسم فئة صغير (Wrap أسفل اسم مزوّد الخدمة): نص فقط بلا أيقونة، حدّ رفيع
 // محايد — يعرض بيانات service.categories الموجودة أصلاً بالباكند ولم تكن
 // تظهر على بطاقة القائمة سابقًا (كانت متاحة فقط بشاشة التفاصيل).
@@ -1297,38 +1352,49 @@ class _ProviderAvatar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final hasImage = (provider?.image ?? '').trim().isNotEmpty;
-    return ClipOval(
-      child: Container(
-        width: 32,
-        height: 32,
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              primary.withValues(alpha: 0.14),
-              primary.withValues(alpha: 0.06),
-            ],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
+    return Container(
+      width: 40,
+      height: 40,
+      padding: const EdgeInsets.all(2),
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: Theme.of(context).cardColor,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.08),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
           ),
+        ],
+      ),
+      child: ClipOval(
+        child: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                primary.withValues(alpha: 0.14),
+                primary.withValues(alpha: 0.06),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+          child: hasImage
+              ? CustomImage(
+            image: provider!.image,
+            width: 36,
+            height: 36,
+            fit: BoxFit.cover,
+          )
+              : Icon(Icons.storefront_outlined, size: 18, color: primary),
         ),
-        child: hasImage
-            ? CustomImage(
-                image: provider!.image,
-                width: 32,
-                height: 32,
-                fit: BoxFit.cover,
-              )
-            : Icon(Icons.storefront_outlined, size: 16, color: primary),
       ),
     );
   }
 }
 
-// ─── أزرار الإجراءات: زر رئيسي عريض "تواصل واتساب" (يفتح واتساب مباشرة — بدون
-// شاشة تفاصيل ولا نظام طلبات خلفي، بحسب الاتفاق) إلى جانب زرَّي أيقونة مربّعين
-// صغيرين للاتصال/الخريطة، كلّها في صفّ واحد — الزرّ الرئيسي أوّل عنصر في
-// أبناء Row فيقع أقصى اليمين بصريًا (اتجاه RTL) آخذًا معظم العرض، والزرّان
-// الثانويّان يليانه يسارًا، مطابقةً لتخطيط بطاقة الخدمة في التصميم المرجعي.
+// ─── أزرار الإجراءات (اتصال/واتساب/خريطة): أيقونات صغيرة بحجم الصورة الرمزية
+// لمزوّد الخدمة — تقع بنفس صفّها بجانب الاسم بدل صفّ منفصل أسفل البطاقة.
 // الخريطة تفتح موقع أول منطقة تغطية تملك إحداثيات (تقريب معقول لعدم وجود
 // إحداثي مقر مستقل لمزود الخدمة).
 
@@ -1352,36 +1418,24 @@ class _ServiceActionButtons extends StatelessWidget {
     final zone = _mappableZone;
     final primary = Theme.of(context).primaryColor;
     return Row(
+      mainAxisSize: MainAxisSize.min,
       children: [
-        Expanded(
-          child: SizedBox(
-            height: 48,
-            child: ElevatedButton.icon(
-              onPressed: () => _launchUrl(
-                'https://wa.me/${_cleanPhoneForWhatsapp(provider.phone!)}',
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: primary,
-                foregroundColor: Colors.white,
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(AppRadius.medium),
-                ),
-              ),
-              icon: const Icon(Icons.chat_rounded, size: 18),
-              label:
-                  Text('تواصل واتساب', style: robotoBold.copyWith(fontSize: 13.5)),
-            ),
-          ),
-        ),
-        const SizedBox(width: 8),
         _SquareIconButton(
           icon: Icons.call_rounded,
           color: primary,
           onTap: () => _launchUrl('tel:${provider.phone}'),
         ),
+        const SizedBox(width: 6),
+        _SquareIconButton(
+          icon: Icons.chat_rounded,
+          color: Colors.white,
+          fillColor: primary,
+          onTap: () => _launchUrl(
+            'https://wa.me/${_cleanPhoneForWhatsapp(provider.phone!)}',
+          ),
+        ),
         if (zone != null) ...[
-          const SizedBox(width: 8),
+          const SizedBox(width: 6),
           _SquareIconButton(
             icon: Icons.map_outlined,
             color: primary,
@@ -1395,17 +1449,22 @@ class _ServiceActionButtons extends StatelessWidget {
   }
 }
 
-// ─── زرّ أيقونة مربّع صغير (اتصال/خريطة): حدّ رفيع محايد بلا خلفية ملوّنة —
-// إجراء ثانوي بوزن بصري أخفّ من الزرّ الرئيسي المُعبَّأ بجانبه.
+// ─── زرّ أيقونة مربّع صغير (اتصال/خريطة): بحجم مقارب للصورة الرمزية (36×36)
+// ليتّسق بصريًا معها بنفس الصفّ. حدّ رفيع محايد بلا خلفية ملوّنة — إجراء
+// ثانوي بوزن بصري أخفّ من زرّ واتساب المُعبَّأ بجانبه.
 class _SquareIconButton extends StatelessWidget {
   final IconData icon;
   final Color color;
   final VoidCallback onTap;
+  // لون تعبئة اختياري (مثل واتساب) — بدون حدّ رفيع محايد عندها، بخلفية
+  // ملوّنة كاملة تُبرزها كإجراء أساسي بدل ثانوي.
+  final Color? fillColor;
 
   const _SquareIconButton({
     required this.icon,
     required this.color,
     required this.onTap,
+    this.fillColor,
   });
 
   @override
@@ -1414,14 +1473,17 @@ class _SquareIconButton extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(AppRadius.medium),
       child: Container(
-        width: 48,
-        height: 48,
+        width: 36,
+        height: 36,
         alignment: Alignment.center,
         decoration: BoxDecoration(
+          color: fillColor,
           borderRadius: BorderRadius.circular(AppRadius.medium),
-          border: Border.all(color: Theme.of(context).dividerColor),
+          border: fillColor == null
+              ? Border.all(color: Theme.of(context).dividerColor)
+              : null,
         ),
-        child: Icon(icon, size: 19, color: color),
+        child: Icon(icon, size: 16, color: color),
       ),
     );
   }
@@ -1471,11 +1533,11 @@ class _ServiceImageCarouselState extends State<_ServiceImageCarousel> {
     final images = widget.images.isEmpty ? const [''] : widget.images;
     final hasMultiple = images.length > 1;
 
-    // نسبة بانورامية (2.5:1) ثابتة لصورة البطاقة — أقصر وأعرض من 16:9 الحرفية
-    // التي بدت طويلة جدًا خصوصًا مع placeholder بلا صورة حقيقية، وأقرب لنسبة
-    // صورة البطاقة في التصميم المرجعي (Uber/Careem).
+    // نسبة بانورامية (3.2:1) ثابتة لصورة البطاقة — أقصر من 2.5:1 السابقة
+    // لتقليل الفراغ الرمادي الكبير حول أيقونة placeholder عند غياب صورة
+    // حقيقية، فتصبح البطاقة إجمالاً أكثر تقلّصاً وأقرب لتطبيقات المرجع.
     return AspectRatio(
-      aspectRatio: 2.5,
+      aspectRatio: 3.2,
       child: ClipRRect(
         borderRadius: const BorderRadius.vertical(top: Radius.circular(19)),
         child: Stack(
@@ -1491,65 +1553,65 @@ class _ServiceImageCarouselState extends State<_ServiceImageCarousel> {
               ),
             ),
             Positioned.fill(
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Colors.transparent,
-                    Colors.black.withValues(alpha: 0.45),
-                  ],
-                  stops: const [0.5, 1.0],
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.transparent,
+                      Colors.black.withValues(alpha: 0.45),
+                    ],
+                    stops: const [0.5, 1.0],
+                  ),
                 ),
               ),
             ),
-          ),
-          if (hasMultiple) ...[
-            Positioned(
-              left: 6,
-              top: 0,
-              bottom: 0,
-              child: Center(
-                child: _CarouselArrowButton(
-                  icon: Icons.chevron_left_rounded,
-                  onTap: () => _goTo(-1, images.length),
+            if (hasMultiple) ...[
+              Positioned(
+                left: 6,
+                top: 0,
+                bottom: 0,
+                child: Center(
+                  child: _CarouselArrowButton(
+                    icon: Icons.chevron_left_rounded,
+                    onTap: () => _goTo(-1, images.length),
+                  ),
                 ),
               ),
-            ),
-            Positioned(
-              right: 6,
-              top: 0,
-              bottom: 0,
-              child: Center(
-                child: _CarouselArrowButton(
-                  icon: Icons.chevron_right_rounded,
-                  onTap: () => _goTo(1, images.length),
+              Positioned(
+                right: 6,
+                top: 0,
+                bottom: 0,
+                child: Center(
+                  child: _CarouselArrowButton(
+                    icon: Icons.chevron_right_rounded,
+                    onTap: () => _goTo(1, images.length),
+                  ),
                 ),
               ),
-            ),
-            Positioned(
-              bottom: 10,
-              left: 0,
-              right: 0,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: List.generate(images.length, (i) {
-                  final active = i == _index;
-                  return AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
-                    margin: const EdgeInsets.symmetric(horizontal: 2.5),
-                    width: active ? 16 : 6,
-                    height: 6,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: active ? 0.95 : 0.5),
-                      borderRadius: BorderRadius.circular(3),
-                    ),
-                  );
-                }),
+              Positioned(
+                bottom: 10,
+                left: 0,
+                right: 0,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: List.generate(images.length, (i) {
+                    final active = i == _index;
+                    return AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      margin: const EdgeInsets.symmetric(horizontal: 2.5),
+                      width: active ? 16 : 6,
+                      height: 6,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: active ? 0.95 : 0.5),
+                        borderRadius: BorderRadius.circular(3),
+                      ),
+                    );
+                  }),
+                ),
               ),
-            ),
-          ],
+            ],
             if (widget.topLeftBadge != null)
               Positioned(top: 12, left: 12, child: widget.topLeftBadge!),
             if (widget.topRightBadge != null)

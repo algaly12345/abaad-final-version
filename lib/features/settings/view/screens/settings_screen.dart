@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:abaad_flutter/shared/widgets/custom_app_bar.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -16,16 +17,10 @@ class SettingsScreen extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: const Color(0xFFF4F6F9),
-      appBar: AppBar(
-        backgroundColor: primary,
-        foregroundColor: Colors.white,
-        elevation: 0,
-        centerTitle: true,
-        title: Text(
-          'app_settings'.tr,
-          style: robotoBold.copyWith(fontSize: 17, color: Colors.white),
-        ),
-      ),
+      appBar:    CustomAppBar(title: 'app_settings'.tr),
+
+
+
       body: SingleChildScrollView(
         physics: const BouncingScrollPhysics(),
         padding: const EdgeInsets.fromLTRB(16, 20, 16, 40),
@@ -44,7 +39,7 @@ class SettingsScreen extends StatelessWidget {
                   onTap: () =>
                       Get.toNamed(RouteHelper.getLanguageRoute('menu')),
                 ),
-                _DarkModeTile(primary: primary),
+                // _DarkModeTile(primary: primary),
               ],
             ),
 
@@ -61,7 +56,7 @@ class SettingsScreen extends StatelessWidget {
                   color: const Color(0xFF607D8B),
                   title: 'terms_conditions'.tr,
                   onTap: () => Get.toNamed(
-                      RouteHelper.getHtmlRoute('terms_conditions')),
+                      RouteHelper.getHtmlRoute('terms-and-condition')),
                 ),
                 _TileItem(
                   icon: Icons.star_outline_rounded,
@@ -69,12 +64,12 @@ class SettingsScreen extends StatelessWidget {
                   title: 'your_rating'.tr,
                   onTap: _openPlayStore,
                 ),
-                _TileItem(
-                  icon: Icons.share_outlined,
-                  color: const Color(0xFF00BCD4),
-                  title: 'share_app'.tr,
-                  onTap: _shareApp,
-                ),
+        _TileItem(
+          icon: Icons.share_outlined,
+          color: const Color(0xFF00BCD4),
+          title: 'share_app'.tr,
+          onTap: () => _shareApp(context),   // ← بدل onTap: _shareApp
+        ),
               ],
             ),
 
@@ -92,25 +87,61 @@ class SettingsScreen extends StatelessWidget {
         ),
       ),
     );
+
+
+
+
   }
 
+  void _shareApp(BuildContext context) {
+    const String androidUrl =
+        'https://play.google.com/store/apps/details?id=sa.pdm.abaad.abaad';
+    const String iosUrl =
+        'https://apps.apple.com/app/id6470352371';
+
+    final String storeUrl = GetPlatform.isIOS ? iosUrl : androidUrl;
+
+    final RenderBox? box = context.findRenderObject() as RenderBox?;
+
+    Share.share(
+      'حمّل تطبيق أبعاد العقارية الآن:\n$storeUrl',
+      subject: 'تطبيق أبعاد العقارية',
+      sharePositionOrigin: box != null
+          ? box.localToGlobal(Offset.zero) & box.size
+          : null,
+    );
+  }
   void _openPlayStore() async {
+    if (GetPlatform.isIOS) {
+      // معرف التطبيق على App Store، مستخرج من الرابط:
+      // https://apps.apple.com/fi/app/ابعاد-العقارية/id6470352371
+      const String appStoreId = '6470352371';
+
+      // رابط عميق يفتح صفحة التقييم مباشرة داخل تطبيق App Store نفسه
+      final Uri iosReviewUri = Uri.parse(
+        'itms-apps://itunes.apple.com/app/id$appStoreId?action=write-review',
+      );
+      // رابط احتياطي (متصفح) لو تعذّر فتح الرابط العميق لأي سبب
+      final Uri iosFallback = Uri.parse(
+        'https://apps.apple.com/app/id$appStoreId?action=write-review',
+      );
+
+      if (!await launchUrl(iosReviewUri,
+          mode: LaunchMode.externalApplication)) {
+        await launchUrl(iosFallback, mode: LaunchMode.externalApplication);
+      }
+      return;
+    }
+
+    // أندرويد (السلوك الأصلي بدون أي تغيير)
     const appId = 'sa.pdm.abaad.abaad';
     final market = Uri.parse('market://details?id=$appId');
     final fallback =
-        Uri.parse('https://play.google.com/store/apps/details?id=$appId');
+    Uri.parse('https://play.google.com/store/apps/details?id=$appId');
     if (!await launchUrl(market, mode: LaunchMode.externalApplication)) {
       await launchUrl(fallback, mode: LaunchMode.externalApplication);
     }
-  }
-
-  void _shareApp() {
-    Share.share(
-      'https://play.google.com/store/apps/details?id=sa.pdm.abaad.abaad',
-      subject: 'Abaad App',
-    );
-  }
-}
+  }}
 
 // ─── Section card ─────────────────────────────────────────────────────────────
 

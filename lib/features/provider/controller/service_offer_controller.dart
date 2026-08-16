@@ -406,6 +406,115 @@ class ServiceOfferController extends GetxController implements GetxService {
     return false;
   }
 
+  // ─── عنوان "عمل" مزوّد الخدمة (service_providers.address) — يُجمَع في
+  // CompleteProviderProfileScreen قبل أول عرض، ومنفصل تمامًا عن
+  // _selectedAddress أدناه الخاص بموقع العرض نفسه لا عنوان مزوّد الخدمة العام
+  // (راجع تعليق setSelectedLocation). المنطقة والموقع الجغرافي استُبعدا من
+  // هذه الشاشة بناءً على طلب صريح.
+  final TextEditingController businessAddressController = TextEditingController();
+  bool _isSavingBusinessInfo = false;
+
+  bool get isSavingBusinessInfo => _isSavingBusinessInfo;
+
+  /// حفظ عنوان العمل — الحقل الوحيد الذي تجمعه CompleteProviderProfileScreen
+  /// حاليًا من قسم "بيانات العمل" (إلى جانب الشعار المُرفَع بشكل منفصل).
+  Future<bool> saveBusinessInfoNow() async {
+    final address = businessAddressController.text.trim();
+    if (address.isEmpty) {
+      showCustomSnackBar('العنوان مطلوب');
+      return false;
+    }
+
+    _isSavingBusinessInfo = true;
+    update();
+
+    final response = await serviceOfferRepo.updateBusinessInfo(address: address);
+
+    _isSavingBusinessInfo = false;
+    update();
+
+    if (response.statusCode == 200 && response.body['status'] == 'success') {
+      return true;
+    }
+
+    final message = (response.body is Map)
+        ? (response.body['message'] ?? 'فشل حفظ بيانات النشاط')
+        : 'فشل حفظ بيانات النشاط';
+    showCustomSnackBar(message);
+    return false;
+  }
+
+  // ─── ربط رقم جوال جديد بحساب مصادَق عبر OTP (لمن سجّل عبر جوجل/فيسبوك
+  // وبقي users.phone فارغًا — راجع SocialAuthController بالباكند) — يظهر
+  // فقط في CompleteProviderProfileScreen عند نقص الرقم. التحقق الناجح هو
+  // الحفظ نفسه بالباكند (auth()->user()->phone)، فلا حاجة لاستدعاء إضافي.
+  final TextEditingController businessPhoneController = TextEditingController();
+  bool _isSendingPhoneOtp = false;
+  bool _isPhoneOtpSent = false;
+  bool _isVerifyingPhoneOtp = false;
+  bool _isPhoneVerified = false;
+
+  bool get isSendingPhoneOtp => _isSendingPhoneOtp;
+  bool get isPhoneOtpSent => _isPhoneOtpSent;
+  bool get isVerifyingPhoneOtp => _isVerifyingPhoneOtp;
+  bool get isPhoneVerified => _isPhoneVerified;
+
+  Future<bool> sendBusinessPhoneOtp() async {
+    final phone = businessPhoneController.text.trim();
+    if (!RegExp(r'^0?5\d{8}$').hasMatch(phone)) {
+      showCustomSnackBar('أدخل رقم جوال سعودي صحيح (يبدأ بـ 05)');
+      return false;
+    }
+
+    _isSendingPhoneOtp = true;
+    update();
+
+    final response = await serviceOfferRepo.sendPhoneOtp(phone: phone);
+
+    _isSendingPhoneOtp = false;
+
+    if (response.statusCode == 200 && response.body['status'] == 'success') {
+      _isPhoneOtpSent = true;
+      update();
+      return true;
+    }
+
+    update();
+    // ردود الخطأ هنا بصيغة {errors: [{code, message}]} — ApiClient.handleResponse
+    // ينقل الرسالة تلقائياً إلى statusText (راجع lib/core/api/api_client.dart).
+    showCustomSnackBar(response.statusText ?? 'فشل إرسال رمز التحقق');
+    return false;
+  }
+
+  /// تُستخدَم من صفّ "إعادة الإرسال" — نفس sendBusinessPhoneOtp() فعليًا،
+  /// موجودة باسم منفصل ليكون القصد واضحًا من واجهة الشاشة.
+  Future<bool> resendBusinessPhoneOtp() => sendBusinessPhoneOtp();
+
+  Future<bool> verifyBusinessPhoneOtp(String otp) async {
+    if (otp.trim().length != 4) return false;
+
+    _isVerifyingPhoneOtp = true;
+    update();
+
+    final response = await serviceOfferRepo.verifyPhoneOtp(
+      phone: businessPhoneController.text.trim(),
+      otp: otp.trim(),
+    );
+
+    _isVerifyingPhoneOtp = false;
+
+    if (response.statusCode == 200 && response.body['status'] == 'success') {
+      _isPhoneVerified = true;
+      update();
+      return true;
+    }
+
+    update();
+    showCustomSnackBar(
+        response.statusText ?? 'رمز التحقق غير صحيح أو منتهي الصلاحية');
+    return false;
+  }
+
   /// يُستدعى من خطوة "الموقع" بالمعالج عند تحريك الخارطة أو التقاط الموقع
   /// الحالي — [address] اختياري (نتيجة عكس ترميز جغرافي) ويُعرض فقط، لا يؤثر
   /// على ما يُرسَل للباكند (latitude/longitude هما مصدر الحقيقة الوحيد).
@@ -441,6 +550,7 @@ class ServiceOfferController extends GetxController implements GetxService {
     required String title,
     required String description,
     required String priceOrDiscountValue,
+    String? address,
   }) async {
     if (title.trim().isEmpty) {
       showCustomSnackBar('عنوان العرض مطلوب');
@@ -494,6 +604,7 @@ class ServiceOfferController extends GetxController implements GetxService {
       servicePrice: _offerType == 'price' ? priceOrDiscountValue.trim() : null,
       discount: _offerType == 'discount' ? priceOrDiscountValue.trim() : null,
       description: description.trim(),
+      address: address?.trim(),
       servicePlanId: selectedPlan!.id!,
       subscriptionDuration: _selectedDuration,
       categories: _selectedCategoryIds.toList(),
@@ -538,6 +649,27 @@ class ServiceOfferController extends GetxController implements GetxService {
       return response.body['data']['is_paid'] == true;
     }
     return false;
+  }
+
+  /// يولّد رابط دفع جديد لاشتراك غير مدفوع (unpaid/failed) — يُستدعى من زر
+  /// "ادفع الآن" في شاشة تفاصيل الخدمة بديلاً عن رابط الدفع الأصلي المنتهي
+  /// الصلاحية (ساعتان من إنشاء العرض).
+  Future<Map<String, String>?> resumePayment(String subscriptionNumber) async {
+    final response = await serviceOfferRepo.resumePayment(subscriptionNumber);
+
+    if (response.statusCode == 200 && response.body['status'] == 'success') {
+      final data = response.body['data'];
+      return {
+        'url': data['payment_url'] as String,
+        'number': data['subscription_number'] as String,
+      };
+    }
+
+    final message = (response.body is Map)
+        ? (response.body['message'] ?? 'تعذر بدء عملية الدفع')
+        : 'تعذر بدء عملية الدفع';
+    showCustomSnackBar(message);
+    return null;
   }
 
   // لا تُصفَّر بيانات فرد/منشأة (entityType وما يتبعها) هنا: تُجمَع في

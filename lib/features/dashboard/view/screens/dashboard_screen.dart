@@ -22,7 +22,6 @@ import 'package:abaad_flutter/shared/widgets/not_logged_in_screen.dart';
 import 'package:abaad_flutter/shared/widgets/view_image_dilog.dart';
 import 'package:abaad_flutter/shared/widgets/web_menu_bar.dart';
 
-import 'package:abaad_flutter/features/dashboard/view/widgets/bottom_nav_item.dart';
 import 'package:abaad_flutter/shared/widgets/draw.dart';
 import 'package:abaad_flutter/features/favourite/view/screens/favourite_screen.dart';
 import 'package:abaad_flutter/features/home/view/screens/home_screen.dart'
@@ -40,6 +39,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 //import 'package:firebase_dynamic_links/firebase_dynamic_links.dart';
 
 import '../../../services/view/screens/services_hub_screen.dart';
+import '../widgets/bottom_nav_item_tow.dart';
 import '../widgets/bottom_sheet_guide.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -61,7 +61,7 @@ class DashboardScreen extends StatefulWidget {
     Get.find<AuthController>().getZoneList();
     Get.find<CategoryController>().getSubCategoryList("0");
     // Get.find<ZoneController>().getCategoryList();
-
+    Get.find<UserController>().getUserInfo();
     // Get.find<AuthController>().getZoneList();
     Get.find<BannerController>().getBannerList(true, 1);
 
@@ -202,6 +202,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
             children: [
               Scaffold(
                 key: _key,
+                extendBody: true,
+                backgroundColor: Colors.white,
+
                 appBar: WebMenuBar(
                   ontop: () => _key.currentState?.openDrawer(),
                   fromPage: '',
@@ -278,37 +281,48 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         child: BottomAppBar(
                           elevation: 0,
                           notchMargin: 8,
-                          clipBehavior: Clip.antiAlias,
                           color: Colors.transparent,
                           shape: const CircularNotchedRectangle(),
                           child: Padding(
+                            // زيادة المسافة العلوية عمدًا — عشان تدّي مساحة
+                            // كافية جوّه حدود BottomAppBar نفسها لفقاعة
+                            // العنصر المختار البارزة (بدل ما تحاول تخرج
+                            // فوق حدود الشريط فتتقص بسبب clipBehavior).
                             padding: const EdgeInsets.symmetric(
                               horizontal: 8,
                               vertical: 4,
                             ),
                             child: Row(
                               children: [
+                                // الترتيب البصري (يمين→شمال) ثابت زي
+                                // الصورة المرجعية، لكن كل زر مربوط بنفس
+                                // رقم الصفحة الحقيقي بتاعته في _screens
+                                // (الرئيسية=0، القائمة=1، خدمات=2،
+                                // المفضلة=3) — بدل ما كان الترتيب مقلوب.
                                 BottomNavItem(
-                                  iconData: Images.home,
+                                  iconData: Icons.home_rounded,
                                   name: "home".tr,
                                   isSelected: _pageIndex == 0,
                                   onTap: () => _setPage(0),
                                 ),
                                 BottomNavItem(
-                                  iconData: Images.menu,
+                                  iconData: Icons.menu_rounded,
                                   name: "menu".tr,
                                   isSelected: _pageIndex == 1,
                                   onTap: () => _setPage(1),
                                 ),
+
+                                // مساحة فاضية في النص عشان زر "+" العائم
                                 const Expanded(child: SizedBox()),
+
                                 BottomNavItem(
-                                  iconData: Images.request,
+                                  iconData: Icons.design_services_rounded,
                                   name: "services".tr,
                                   isSelected: _pageIndex == 2,
                                   onTap: () => _setPage(2),
                                 ),
                                 BottomNavItem(
-                                  iconData: Images.heart,
+                                  iconData: Icons.favorite_rounded,
                                   name: "favorite".tr,
                                   isSelected: _pageIndex == 3,
                                   onTap: () => _setPage(3),

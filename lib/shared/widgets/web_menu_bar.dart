@@ -8,6 +8,11 @@ import 'package:abaad_flutter/shared/utils/styles.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+/// ملاحظة: نفس اسم الكلاس وكل الخصائص (ontop, fromPage) بدون أي تغيير في
+/// المنطق أو البيانات المعروضة. التعديل الوحيد: الشريط أصبح "عايمًا"
+/// (Floating Card) بحواف دائرية ومسافة واضحة (margin) من كل الجهات —
+/// خصوصًا من أعلى الشاشة — بدل ما يكون ملتصقًا مباشرة بحافة الشاشة
+/// وبمنطقة الـ status bar.
 class WebMenuBar extends StatelessWidget implements PreferredSizeWidget {
   final Function? ontop;
   final String? fromPage;
@@ -16,21 +21,26 @@ class WebMenuBar extends StatelessWidget implements PreferredSizeWidget {
   @override
   Widget build(BuildContext context) {
     final bg = Theme.of(context).appBarTheme.backgroundColor ?? Colors.white;
-    return Container(
-      decoration: BoxDecoration(
-        color: bg,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: SafeArea(
-        bottom: false,
-        child: SizedBox(
+
+    return SafeArea(
+      bottom: false,
+      child: Padding(
+        // 🔹 المسافة الفاصلة بين الشريط وحافة الشاشة من كل الجهات —
+        // هذا بالضبط ما يعطي إحساس "الفصل عن أعلى الشاشة" المطلوب.
+        padding: const EdgeInsets.fromLTRB(12, 10, 12, 0),
+        child: Container(
           height: 60,
+          decoration: BoxDecoration(
+            color: bg,
+            borderRadius: BorderRadius.circular(18),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.06),
+                blurRadius: 10,
+                offset: const Offset(0, 3),
+              ),
+            ],
+          ),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12),
             child: GetBuilder<UserController>(builder: (estateController) {
@@ -67,7 +77,7 @@ class WebMenuBar extends StatelessWidget implements PreferredSizeWidget {
                           ),
                         ),
                         Text(
-                          estateController.userInfoModel?.name ?? 'guest'.tr, // آمن: يعرض "guest" لو المستخدم زائر أو البيانات لم تُحمَّل بعد
+                          estateController.userInfoModel?.name ?? 'guest'.tr,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: robotoMedium.copyWith(
@@ -99,8 +109,10 @@ class WebMenuBar extends StatelessWidget implements PreferredSizeWidget {
                                       ? Icons.home_outlined
                                       : Icons.notifications_active_outlined,
                                   size: 28,
-                                  color:
-                                  Theme.of(context).textTheme.bodyLarge?.color,
+                                  color: Theme.of(context)
+                                      .textTheme
+                                      .bodyLarge
+                                      ?.color,
                                 ),
                                 if (notificationController.hasNotification)
                                   Positioned(
@@ -110,7 +122,8 @@ class WebMenuBar extends StatelessWidget implements PreferredSizeWidget {
                                       height: 10,
                                       width: 10,
                                       decoration: BoxDecoration(
-                                        color: Theme.of(context).primaryColor,
+                                        color:
+                                        Theme.of(context).primaryColor,
                                         shape: BoxShape.circle,
                                         border: Border.all(
                                           width: 1.5,
@@ -139,20 +152,22 @@ class WebMenuBar extends StatelessWidget implements PreferredSizeWidget {
   String _greeting() {
     final hour = DateTime.now().hour;
     if (hour < 12) {
-      return 'good_morning'.tr; // "صباح الخير"
+      return 'good_morning'.tr;
     } else if (hour < 17) {
-      return 'good_afternoon'.tr; // "مساء الخير" أو "طاب يومك"
+      return 'good_afternoon'.tr;
     } else {
-      return 'good_evening'.tr; // "مساء الخير"
+      return 'good_evening'.tr;
     }
   }
 
-  // الارتفاع = حجم status bar + 60px للمحتوى
+  // 🔹 الارتفاع الكلي = مساحة status bar + المسافة العلوية الجديدة (10) +
+  // ارتفاع الكارت نفسه (60). بدونها كان الحساب هيفضل قديم ومش هيحسب
+  // المساحة الإضافية اللي ضفناها، فيحصل قصّ بسيط في أسفل الشريط.
   @override
   Size get preferredSize {
     final statusBarHeight = MediaQueryData.fromView(
       WidgetsBinding.instance.platformDispatcher.views.first,
     ).padding.top;
-    return Size(Dimensions.WEB_MAX_WIDTH, statusBarHeight + 60);
+    return Size(Dimensions.WEB_MAX_WIDTH, statusBarHeight + 10 + 60);
   }
 }

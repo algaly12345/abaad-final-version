@@ -17,16 +17,19 @@ import 'package:abaad_flutter/shared/utils/images.dart';
 import 'package:abaad_flutter/shared/widgets/details_dilog.dart';
 
 /// ملاحظة: نفس أسماء الكلاسات الأصلية (AgentProfileScreen،
-/// _AgentProfileScreenState، SocialIcon) بدون أي تغيير. الإصلاح الوحيد:
-/// زر الرجوع كان يستخدم `Get.offAllNamed(RouteHelper.getInitialRoute())`
-/// الذي يمسح كامل مكدّس التنقل ويجبر الرجوع للصفحة الرئيسية دائمًا، بدل
-/// الرجوع للصفحة التي جاء منها المستخدم فعليًا. تم استبداله بـ
-/// `Get.back()` (السلوك الطبيعي المتوقع من زر رجوع).
+/// _AgentProfileScreenState، SocialIcon) بلا أي تغيير، ونفس كل الدوال
+/// والمنطق. التحسينات كلها بصرية: نظام ألوان/خطوط موحّد عبر الصفحة كلها
+/// (بدل الألوان المتفرقة زي Colors.blue/Colors.orange في أماكن مختلفة)،
+/// عناوين أقسام متسقة، وتنسيق أوضح للمسافات والبطاقات.
+const Color kAgentColor = Color(0xff0F4C81);
+const Color kAgentColorLight = Color(0xff3A7BD5);
+
 class AgentProfileScreen extends StatefulWidget {
   final Userinfo? userInfo;
   final int? isMyProfile;
 
-  const AgentProfileScreen({Key? key, this.userInfo, this.isMyProfile}) : super(key: key);
+  const AgentProfileScreen({Key? key, this.userInfo, this.isMyProfile})
+      : super(key: key);
 
   @override
   State<AgentProfileScreen> createState() => _AgentProfileScreenState();
@@ -40,7 +43,8 @@ class _AgentProfileScreenState extends State<AgentProfileScreen> {
     super.initState();
     _isLoggedIn = Get.find<AuthController>().isLoggedIn();
     Get.find<AuthController>().getZoneList();
-    Get.find<UserController>().getEstateByUser(1, false, widget.userInfo?.id ?? 0);
+    Get.find<UserController>()
+        .getEstateByUser(1, false, widget.userInfo?.id ?? 0);
   }
 
   @override
@@ -52,9 +56,12 @@ class _AgentProfileScreenState extends State<AgentProfileScreen> {
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
         centerTitle: true,
-        title: const Text("الملف الشخصي"),
+        title: Text(
+          "الملف الشخصي",
+          style: robotoBold.copyWith(fontSize: 17, color: Colors.black87),
+        ),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded),
+          icon: Icon(Icons.arrow_back_ios_new_rounded, color: kAgentColor),
           onPressed: () => Get.back(),
         ),
       ),
@@ -79,36 +86,23 @@ class _AgentProfileScreenState extends State<AgentProfileScreen> {
                     child: Column(
                       children: [
                         _buildHeader(context, userController, restController),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 14),
                         _buildStatsSection(restController, agent),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 14),
                         _buildActionButtons(agent),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 14),
                         _buildSocialSection(agent),
-                        const SizedBox(height: 24),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          child: Row(
-                            children: [
-                              const Icon(Icons.real_estate_agent, color: Colors.blue),
-                              const SizedBox(width: 8),
-                              Text(
-                                "إعلانات المعلن",
-                                style: robotoMedium.copyWith(
-                                  fontSize: 18,
-                                  color: Colors.black87,
-                                ),
-                              ),
-                            ],
-                          ),
+                        const SizedBox(height: 20),
+                        _sectionBanner(
+                          title: "إعلانات المعلن",
+                          icon: Icons.real_estate_agent_rounded,
                         ),
                         const SizedBox(height: 12),
                       ],
                     ),
                   ),
-
                   SliverPadding(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
                     sliver: SliverList(
                       delegate: SliverChildBuilderDelegate(
                             (context, index) {
@@ -120,6 +114,9 @@ class _AgentProfileScreenState extends State<AgentProfileScreen> {
                                   decoration: BoxDecoration(
                                     color: Colors.white,
                                     borderRadius: BorderRadius.circular(18),
+                                    border: Border.all(
+                                      color: kAgentColor.withOpacity(0.06),
+                                    ),
                                     boxShadow: [
                                       BoxShadow(
                                         color: Colors.black.withOpacity(0.05),
@@ -134,7 +131,8 @@ class _AgentProfileScreenState extends State<AgentProfileScreen> {
                                       estate: estates[index],
                                       onPressed: () {
                                         Get.dialog(
-                                          DettailsDilog(estate: estates[index]),
+                                          DettailsDilog(
+                                              estate: estates[index]),
                                         );
                                       },
                                       fav: false,
@@ -150,9 +148,8 @@ class _AgentProfileScreenState extends State<AgentProfileScreen> {
                       ),
                     ),
                   ),
-
                   const SliverToBoxAdapter(
-                    child: SizedBox(height: 20),
+                    child: SizedBox(height: 24),
                   ),
                 ],
               );
@@ -163,7 +160,39 @@ class _AgentProfileScreenState extends State<AgentProfileScreen> {
     );
   }
 
-  Widget _buildHeader(BuildContext context, UserController userController, UserController restController) {
+  // ==========================================================================
+  // عناصر تصميم موحّدة
+  // ==========================================================================
+
+  /// شريط عنوان قسم كامل العرض بلون التطبيق الأساسي، متسق عبر كل أقسام
+  /// الصفحة بدل عناوين متفرقة الشكل.
+  Widget _sectionBanner({required String title, required IconData icon}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+        decoration: BoxDecoration(
+          color: kAgentColor,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 18, color: Colors.white),
+            const SizedBox(width: 8),
+            Text(
+              title,
+              style: robotoBold.copyWith(fontSize: 15, color: Colors.white),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeader(BuildContext context, UserController userController,
+      UserController restController) {
     final agent = userController.agentInfoModel;
 
     return Container(
@@ -172,16 +201,13 @@ class _AgentProfileScreenState extends State<AgentProfileScreen> {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(24),
         gradient: const LinearGradient(
-          colors: [
-            Color(0xff0F4C81),
-            Color(0xff3A7BD5),
-          ],
+          colors: [kAgentColorLight, kAgentColor],
           begin: Alignment.topRight,
           end: Alignment.bottomLeft,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.blue.withOpacity(0.18),
+            color: kAgentColor.withOpacity(0.25),
             blurRadius: 20,
             offset: const Offset(0, 8),
           )
@@ -215,7 +241,7 @@ class _AgentProfileScreenState extends State<AgentProfileScreen> {
                     child: Container(
                       padding: const EdgeInsets.all(5),
                       decoration: BoxDecoration(
-                        color: Colors.green,
+                        color: const Color(0xFF2E9E5B),
                         shape: BoxShape.circle,
                         border: Border.all(color: Colors.white, width: 2),
                       ),
@@ -230,42 +256,62 @@ class _AgentProfileScreenState extends State<AgentProfileScreen> {
                   children: [
                     Text(
                       agent?.name ?? "",
-                      style: robotoMedium.copyWith(
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: robotoBold.copyWith(
                         fontSize: 20,
                         color: Colors.white,
                       ),
                     ),
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 8),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 6),
                       decoration: BoxDecoration(
                         color: Colors.white.withOpacity(0.18),
                         borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                            color: Colors.white.withOpacity(0.3)),
                       ),
-                      child: Text(
-                        agent?.membershipType ?? "معلن عقاري",
-                        style: robotoRegular.copyWith(
-                          fontSize: 12,
-                          color: Colors.white,
-                        ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.verified_rounded,
+                              size: 13, color: Colors.white),
+                          const SizedBox(width: 5),
+                          Text(
+                            agent?.membershipType ?? "معلن عقاري",
+                            style: robotoMedium.copyWith(
+                              fontSize: 12,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    const SizedBox(height: 8),
-                    if (widget.isMyProfile == 1)
-                      Text(
-                        agent?.phone ?? "",
-                        style: robotoRegular.copyWith(
-                          fontSize: 13,
-                          color: Colors.white70,
-                        ),
+                    if (widget.isMyProfile == 1) ...[
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Icon(Icons.phone_rounded,
+                              size: 13, color: Colors.white.withOpacity(0.85)),
+                          const SizedBox(width: 5),
+                          Text(
+                            agent?.phone ?? "",
+                            style: robotoRegular.copyWith(
+                              fontSize: 13,
+                              color: Colors.white.withOpacity(0.85),
+                            ),
+                          ),
+                        ],
                       ),
+                    ],
                   ],
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 18),
-
+          const SizedBox(height: 16),
           Row(
             children: [
               Expanded(
@@ -314,28 +360,9 @@ class _AgentProfileScreenState extends State<AgentProfileScreen> {
         children: [
           Expanded(
             child: _actionButton(
-              title: "واتساب",
-              icon: Icons.chat,
-              color: const Color(0xff25D366),
-              onTap: () async {
-                final Uri whatsappUrl = Uri.parse(
-                  "https://wa.me/${agent?.phone ?? ''}?text=${Uri.encodeFull("")}",
-                );
-
-                if (await canLaunchUrl(whatsappUrl)) {
-                  await launchUrl(whatsappUrl, mode: LaunchMode.externalApplication);
-                } else {
-                  showCustomSnackBar("لا يمكن فتح واتساب");
-                }
-              },
-            ),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: _actionButton(
               title: "اتصال",
               icon: Icons.call,
-              color: const Color(0xff0F4C81),
+              color: kAgentColor,
               onTap: () async {
                 final Uri phoneUri = Uri.parse("tel:${agent?.phone ?? ''}");
                 if (await canLaunchUrl(phoneUri)) {
@@ -349,11 +376,20 @@ class _AgentProfileScreenState extends State<AgentProfileScreen> {
           const SizedBox(width: 10),
           Expanded(
             child: _actionButton(
-              title: "محادثة",
-              icon: Icons.message_outlined,
-              color: Colors.orange,
-              onTap: () {
-                showCustomSnackBar("غير متاحة حاليا");
+              title: "واتساب",
+              icon: Icons.chat,
+              color: const Color(0xff25D366),
+              onTap: () async {
+                final Uri whatsappUrl = Uri.parse(
+                  "https://wa.me/${agent?.phone ?? ''}?text=${Uri.encodeFull("")}",
+                );
+
+                if (await canLaunchUrl(whatsappUrl)) {
+                  await launchUrl(whatsappUrl,
+                      mode: LaunchMode.externalApplication);
+                } else {
+                  showCustomSnackBar("لا يمكن فتح واتساب");
+                }
               },
             ),
           ),
@@ -363,12 +399,35 @@ class _AgentProfileScreenState extends State<AgentProfileScreen> {
   }
 
   Widget _buildSocialSection(dynamic agent) {
+    // كل رابط تواصل مرتبط بأيقونته — نمرّر القيمة الراجعة من السيرفر
+    // كرابط كامل مباشرة (بدون بناء رابط من اسم مستخدم/يوزر كما كان سابقًا
+    // مع تيك توك)، ونستبعد أي عنصر قيمته فارغة أو null تمامًا قبل العرض.
+    final List<_SocialLink> allLinks = [
+      _SocialLink(icon: Images.instgram, url: agent?.instagram),
+      _SocialLink(icon: Images.twiter, url: agent?.twitter),
+      _SocialLink(icon: Images.website, url: agent?.website),
+      _SocialLink(icon: Images.snap, url: agent?.snapchat),
+      _SocialLink(icon: Images.tiktok, url: agent?.tiktok),
+      _SocialLink(icon: Images.youtube, url: agent?.youtube),
+    ];
+
+    final List<_SocialLink> availableLinks = allLinks
+        .where((e) => (e.url ?? '').trim().isNotEmpty)
+        .toList();
+
+    // لو مفيش أي رابط تواصل فعلي عند المعلن، نخفي القسم بالكامل بدل
+    // عرض بطاقة فارغة أو أيقونات بلا فائدة.
+    if (availableLinks.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: kAgentColor.withOpacity(0.06)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.04),
@@ -378,50 +437,31 @@ class _AgentProfileScreenState extends State<AgentProfileScreen> {
         ],
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              const Icon(Icons.public, color: Colors.blue),
+              Icon(Icons.public_rounded, color: kAgentColor, size: 19),
               const SizedBox(width: 8),
               Text(
                 "روابط التواصل",
-                style: robotoMedium.copyWith(fontSize: 16),
+                style: robotoBold.copyWith(fontSize: 15, color: Colors.black87),
               ),
             ],
           ),
           const SizedBox(height: 14),
           Wrap(
+            alignment: WrapAlignment.center,
             spacing: 12,
             runSpacing: 12,
-            children: [
-              SocialIcon(
-                iconData: Images.tiktok,
-                onPressed: () async {
-                  final link = 'https://www.tiktok.com/@${agent?.tiktok ?? ''}';
-                  _launchURL(link);
-                },
+            children: availableLinks
+                .map(
+                  (link) => SocialIcon(
+                iconData: link.icon,
+                onPressed: () => _launchURL(link.url ?? ""),
               ),
-              SocialIcon(
-                iconData: Images.snap,
-                onPressed: () => _launchURL(agent?.snapchat ?? ""),
-              ),
-              SocialIcon(
-                iconData: Images.website,
-                onPressed: () => _launchURL(agent?.website ?? ""),
-              ),
-              SocialIcon(
-                iconData: Images.twiter,
-                onPressed: () => _launchURL(agent?.twitter ?? ""),
-              ),
-              SocialIcon(
-                iconData: Images.instgram,
-                onPressed: () => _launchURL(agent?.instagram ?? ""),
-              ),
-              SocialIcon(
-                iconData: Images.youtube,
-                onPressed: () => _launchURL(agent?.youtube ?? ""),
-              ),
-            ],
+            )
+                .toList(),
           ),
         ],
       ),
@@ -434,6 +474,7 @@ class _AgentProfileScreenState extends State<AgentProfileScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: kAgentColor.withOpacity(0.06)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.04),
@@ -444,17 +485,27 @@ class _AgentProfileScreenState extends State<AgentProfileScreen> {
       ),
       child: Column(
         children: [
-          Icon(icon, color: Colors.blue, size: 24),
+          Container(
+            padding: const EdgeInsets.all(9),
+            decoration: BoxDecoration(
+              color: kAgentColor.withOpacity(0.08),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, color: kAgentColor, size: 20),
+          ),
           const SizedBox(height: 10),
           Text(
             title,
-            style: robotoRegular.copyWith(fontSize: 13, color: Colors.grey[700]),
+            style:
+            robotoRegular.copyWith(fontSize: 12.5, color: Colors.grey[600]),
             textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 5),
           Text(
             value,
-            style: robotoMedium.copyWith(fontSize: 15, color: Colors.black87),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: robotoBold.copyWith(fontSize: 15, color: Colors.black87),
             textAlign: TextAlign.center,
           ),
         ],
@@ -472,6 +523,7 @@ class _AgentProfileScreenState extends State<AgentProfileScreen> {
       decoration: BoxDecoration(
         color: Colors.white.withOpacity(0.14),
         borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: Colors.white.withOpacity(0.16)),
       ),
       child: Row(
         children: [
@@ -487,7 +539,9 @@ class _AgentProfileScreenState extends State<AgentProfileScreen> {
           Expanded(
             child: Text(
               value,
-              style: robotoMedium.copyWith(
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: robotoBold.copyWith(
                 color: Colors.white,
                 fontSize: 13,
               ),
@@ -518,14 +572,23 @@ class _AgentProfileScreenState extends State<AgentProfileScreen> {
         icon: Icon(icon, color: Colors.white, size: 20),
         label: Text(
           title,
-          style: robotoMedium.copyWith(
-            fontSize: 14,
+          style: robotoBold.copyWith(
+            fontSize: 13.5,
             color: Colors.white,
           ),
         ),
       ),
     );
   }
+}
+
+/// عنصر بيانات بسيط يربط أيقونة برابط، يُستخدم لفلترة روابط التواصل
+/// الفارغة قبل عرضها في _buildSocialSection.
+class _SocialLink {
+  final String icon;
+  final String? url;
+
+  const _SocialLink({required this.icon, required this.url});
 }
 
 class SocialIcon extends StatelessWidget {

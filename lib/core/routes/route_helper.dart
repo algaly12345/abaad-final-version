@@ -582,13 +582,18 @@ class _DetailsDeepLinkOpenerState extends State<_DetailsDeepLinkOpener> {
   @override
   void initState() {
     super.initState();
+    final DateTime openerStart = DateTime.now();
+    debugPrint('DEEPLINK_TIMING: _DetailsDeepLinkOpener.initState called at $openerStart');
     WidgetsBinding.instance.addPostFrameCallback((_) async {
+      debugPrint('DEEPLINK_TIMING: postFrameCallback fired after ${DateTime.now().difference(openerStart).inMilliseconds}ms');
       final estateController = Get.find<EstateController>();
       Estate? estate;
       try {
+        final DateTime apiStart = DateTime.now();
         estate = await estateController.getEstateDetails(
           Estate(id: widget.estateId),
         );
+        debugPrint('DEEPLINK_TIMING: getEstateDetails took ${DateTime.now().difference(apiStart).inMilliseconds}ms');
       } catch (_) {
         // فشل جلب العقار (مثلاً 404 من السيرفر) — ApiChecker يعرض رسالة
         // الخطأ تلقائياً بالفعل داخل getEstateDetails، فقط لا نتابع فتح الحوار.
@@ -603,6 +608,41 @@ class _DetailsDeepLinkOpenerState extends State<_DetailsDeepLinkOpener> {
       }
 
       if (estate == null) {
+        Get.snackbar(
+          'تنبيه',
+          'هذا العقار غير موجود أو تم حذفه',
+          snackPosition: SnackPosition.BOTTOM,
+          duration: const Duration(seconds: 3),
+          margin: const EdgeInsets.all(16),
+          borderRadius: 14,
+          backgroundColor: const Color(0xFFDC2626),
+          colorText: Colors.white,
+          icon: const Icon(Icons.error_outline_rounded, color: Colors.white, size: 28),
+          shouldIconPulse: false,
+          boxShadows: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.25),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
+          titleText: const Text(
+            'تنبيه',
+            style: TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+              fontSize: 16,
+            ),
+          ),
+          messageText: const Text(
+            'هذا العقار غير موجود أو تم حذفه',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 14,
+              height: 1.4,
+            ),
+          ),
+        );
         return;
       }
 

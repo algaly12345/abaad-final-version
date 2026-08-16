@@ -35,6 +35,11 @@ class ServiceOffer {
   String? rejectionReason;
   // معرّف مقدّم الخدمة الذي أنشأ العرض (owner_id من الباكند) - يُستخدم لمقارنة الملكية
   int? ownerId;
+  // حالة الدفع (unpaid/paid/failed) ورقم الاشتراك — يصلان فقط لمالك العرض
+  // (ServiceOfferResource::isOwnedBy)، null لبقية المستخدمين وللعروض القديمة
+  // بلا اشتراك مرتبط.
+  String? paymentStatus;
+  String? subscriptionNumber;
   ServiceTypeData? serviceType;
   List<CategoryData>? categories;
   List<ZoneData>? zones;
@@ -43,6 +48,13 @@ class ServiceOffer {
   // أقل مسافة (كم) بين موقع المستخدم ومناطق تغطية العرض — تصل فقط عند تفعيل
   // "الأقرب مني" (راجع services_controller.dart / GetServicesRequest بالباكند)
   double? distanceKm;
+  // موقع مزود الخدمة الفعلي الذي يحدده عند إنشاء العرض عبر الخارطة (offers.latitude/
+  // longitude بالباكند) — أدق من إحداثيات منطقة التغطية (zones)، تُستخدم أولاً.
+  double? latitude;
+  double? longitude;
+  // عنوان تفصيلي حرّ اختياري (مثل "خميس مشيط - حي المروج") — أدق من zones
+  // (13 منطقة إدارية فقط)، null على العروض القديمة قبل إضافة هذا الحقل.
+  String? address;
 
   ServiceOffer({
     this.id,
@@ -59,12 +71,17 @@ class ServiceOffer {
     this.status,
     this.rejectionReason,
     this.ownerId,
+    this.paymentStatus,
+    this.subscriptionNumber,
     this.serviceType,
     this.categories,
     this.zones,
     this.providers,
     this.createdAt,
     this.distanceKm,
+    this.latitude,
+    this.longitude,
+    this.address,
   });
 
   ServiceOffer.fromJson(Map<String, dynamic> json) {
@@ -86,6 +103,8 @@ class ServiceOffer {
     ownerId = json['owner_id'] != null
         ? int.tryParse(json['owner_id'].toString())
         : null;
+    paymentStatus = json['payment_status'];
+    subscriptionNumber = json['subscription_number'];
     serviceType = json['service_type'] != null
         ? ServiceTypeData.fromJson(json['service_type'])
         : null;
@@ -93,7 +112,7 @@ class ServiceOffer {
     if (json['categories'] != null) {
       categories = [];
       json['categories'].forEach(
-        (v) => categories!.add(CategoryData.fromJson(v)),
+            (v) => categories!.add(CategoryData.fromJson(v)),
       );
     }
     if (json['zones'] != null) {
@@ -103,13 +122,20 @@ class ServiceOffer {
     if (json['providers'] != null) {
       providers = [];
       json['providers'].forEach(
-        (v) => providers!.add(ProviderData.fromJson(v)),
+            (v) => providers!.add(ProviderData.fromJson(v)),
       );
     }
     createdAt = json['created_at'];
     distanceKm = json['distance_km'] != null
         ? double.tryParse(json['distance_km'].toString())
         : null;
+    latitude = json['latitude'] != null
+        ? double.tryParse(json['latitude'].toString())
+        : null;
+    longitude = json['longitude'] != null
+        ? double.tryParse(json['longitude'].toString())
+        : null;
+    address = json['address'];
   }
 }
 
@@ -198,7 +224,7 @@ class FiltersData {
     if (json['categories'] != null) {
       categories = [];
       json['categories'].forEach(
-        (v) => categories!.add(CategoryData.fromJson(v)),
+            (v) => categories!.add(CategoryData.fromJson(v)),
       );
     }
     if (json['zones'] != null) {
@@ -208,13 +234,13 @@ class FiltersData {
     if (json['service_types'] != null) {
       serviceTypes = [];
       json['service_types'].forEach(
-        (v) => serviceTypes!.add(ServiceTypeData.fromJson(v)),
+            (v) => serviceTypes!.add(ServiceTypeData.fromJson(v)),
       );
     }
     if (json['providers'] != null) {
       providers = [];
       json['providers'].forEach(
-        (v) => providers!.add(ProviderData.fromJson(v)),
+            (v) => providers!.add(ProviderData.fromJson(v)),
       );
     }
     minPrice = json['price_range']?['min'] != null

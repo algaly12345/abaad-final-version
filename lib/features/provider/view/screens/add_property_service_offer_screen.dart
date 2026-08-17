@@ -466,6 +466,9 @@ class _WizardScreenState extends State<_WizardScreen> {
   final TextEditingController _descCtrl = TextEditingController();
   // عنوان تفصيلي إلزامي (مثل "خميس مشيط - حي المروج").
   final TextEditingController _addressCtrl = TextEditingController();
+  // رقم التواصل الخاص بهذا العرض — يُعبَّأ افتراضياً من رقم حساب المستخدم
+  // (أدناه في initState) لكنه قابل للتعديل قبل الإرسال.
+  final TextEditingController _phoneCtrl = TextEditingController();
 
   List<String> get _stepLabels => [
     'service'.tr,
@@ -494,15 +497,25 @@ class _WizardScreenState extends State<_WizardScreen> {
     _valueCtrl.addListener(_onFieldChanged);
     _descCtrl.addListener(_onFieldChanged);
     _addressCtrl.addListener(_onFieldChanged);
+    _phoneCtrl.addListener(_onFieldChanged);
 
-    // يعبّئ العنوان التفصيلي مسبقًا من عنوان "النشاط" المحفوظ سلفًا
+    // يعبّئ العنوان التفصيلي مبدئيًا من عنوان "النشاط" المحفوظ سلفًا
     // (service_providers.address، أُدخل في CompleteProviderProfileScreen)
-    // بدل تركه فارغًا فيُطالَب المستخدم بكتابته من جديد — يبقى قابلًا للتعديل
-    // إن اختلف موقع هذا العرض تحديدًا عن عنوان نشاطه العام.
+    // كقيمة افتراضية فقط قبل وصول المستخدم لخطوة "الموقع" — الحقل للقراءة
+    // فقط ويُستبدَل تلقائيًا بترميز جوجل العكسي لموقع الدبّوس فور تحديده
+    // (_StepLocation._resolveAddress)، فلا يبقى نص هذا التعبئة المبدئية إن
+    // اختلف موقع هذا العرض تحديدًا عن عنوان النشاط العام.
     final businessAddress =
         Get.find<UserController>().userInfoModel?.provider?.address;
     if ((businessAddress ?? '').trim().isNotEmpty) {
       _addressCtrl.text = businessAddress!.trim();
+    }
+
+    // تعبئة مبدئية لرقم التواصل من رقم حساب المستخدم المسجَّل به (users.phone)
+    // — يبقى قابلاً للتعديل الكامل قبل إرسال العرض.
+    final registeredPhone = Get.find<UserController>().userInfoModel?.phone;
+    if ((registeredPhone ?? '').trim().isNotEmpty) {
+      _phoneCtrl.text = registeredPhone!.trim();
     }
   }
 
@@ -514,11 +527,13 @@ class _WizardScreenState extends State<_WizardScreen> {
     _valueCtrl.removeListener(_onFieldChanged);
     _descCtrl.removeListener(_onFieldChanged);
     _addressCtrl.removeListener(_onFieldChanged);
+    _phoneCtrl.removeListener(_onFieldChanged);
     _pageController.dispose();
     _titleCtrl.dispose();
     _valueCtrl.dispose();
     _descCtrl.dispose();
     _addressCtrl.dispose();
+    _phoneCtrl.dispose();
     super.dispose();
   }
 
@@ -556,7 +571,8 @@ class _WizardScreenState extends State<_WizardScreen> {
             _titleCtrl.text.trim().isNotEmpty &&
             _valueCtrl.text.trim().isNotEmpty &&
             _descCtrl.text.trim().isNotEmpty &&
-            _addressCtrl.text.trim().isNotEmpty;
+            _addressCtrl.text.trim().isNotEmpty &&
+            _phoneCtrl.text.trim().isNotEmpty;
       case 1:
       // مدة الاشتراك دائماً محددة بقيمة افتراضية (شهر واحد)، فيكفي التحقق
       // من اختيار الباقة نفسها.
@@ -577,6 +593,7 @@ class _WizardScreenState extends State<_WizardScreen> {
       description: _descCtrl.text,
       priceOrDiscountValue: _valueCtrl.text,
       address: _addressCtrl.text,
+      contactPhone: _phoneCtrl.text,
     );
     if (result != null && result.paymentUrl != null) {
       // يعيد جلب الملف الشخصي كي تصل بيانات الهوية المحفوظة للتوّ بالباكند
@@ -633,6 +650,7 @@ class _WizardScreenState extends State<_WizardScreen> {
                       valueCtrl: _valueCtrl,
                       descCtrl: _descCtrl,
                       addressCtrl: _addressCtrl,
+                      phoneCtrl: _phoneCtrl,
                       controller: c,
                       primary: primary,
                     ),
@@ -648,6 +666,7 @@ class _WizardScreenState extends State<_WizardScreen> {
                       valueCtrl: _valueCtrl,
                       descCtrl: _descCtrl,
                       addressCtrl: _addressCtrl,
+                      phoneCtrl: _phoneCtrl,
                       controller: c,
                       primary: primary,
                     ),
@@ -899,6 +918,7 @@ class _Step1ServiceInfo extends StatelessWidget {
   final TextEditingController valueCtrl;
   final TextEditingController descCtrl;
   final TextEditingController addressCtrl;
+  final TextEditingController phoneCtrl;
   final ServiceOfferController controller;
   final Color primary;
 
@@ -907,6 +927,7 @@ class _Step1ServiceInfo extends StatelessWidget {
     required this.valueCtrl,
     required this.descCtrl,
     required this.addressCtrl,
+    required this.phoneCtrl,
     required this.controller,
     required this.primary,
   });
@@ -1028,6 +1049,32 @@ class _Step1ServiceInfo extends StatelessWidget {
           ),
           const SizedBox(height: Spacing.md),
 
+          // Contact phone + type — رقم التواصل الخاص بهذا العرض، معبّأ
+          // افتراضياً من رقم حساب المستخدم (راجع initState في _WizardScreenState)
+          // وقابل للتعديل الكامل، مع تصنيف طريقة التواصل المفضّلة.
+          _Card(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _FieldLabel('contact_phone'.tr, icon: Icons.phone_outlined),
+                const SizedBox(height: Spacing.sm),
+                _dsTextField(
+                  context,
+                  hintText: '05XXXXXXXX',
+                  controller: phoneCtrl,
+                  keyboardType: TextInputType.phone,
+                ),
+                if (phoneCtrl.text.trim().isEmpty)
+                  const _RequiredHint('يرجى إدخال رقم التواصل'),
+                const SizedBox(height: Spacing.md),
+                _FieldLabel('contact_type_label'.tr, icon: Icons.forum_outlined),
+                const SizedBox(height: Spacing.sm),
+                _ContactTypeSelector(controller: controller, primary: primary),
+              ],
+            ),
+          ),
+          const SizedBox(height: Spacing.md),
+
           // Offer type
           _Card(
             child: Column(
@@ -1119,27 +1166,6 @@ class _Step1ServiceInfo extends StatelessWidget {
                   controller: descCtrl,
                   maxLines: 4,
                 ),
-              ],
-            ),
-          ),
-          const SizedBox(height: Spacing.md),
-
-          // العنوان التفصيلي — إلزامي، أدق من اختيار المناطق (خطوة لاحقة)
-          // اللي مستواها إداري عام (مثل "عسير") لا ينزل لمستوى المدينة/الحي.
-          _Card(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _FieldLabel('العنوان التفصيلي',
-                    icon: Icons.location_on_outlined),
-                const SizedBox(height: Spacing.sm),
-                _dsTextField(
-                  context,
-                  hintText: 'مثال: خميس مشيط - حي المروج',
-                  controller: addressCtrl,
-                ),
-                if (addressCtrl.text.trim().isEmpty)
-                  const _RequiredHint('يرجى إدخال العنوان التفصيلي'),
               ],
             ),
           ),
@@ -1730,10 +1756,11 @@ class _StepLocationState extends State<_StepLocation> {
     setState(() => _resolvingAddress = false);
     widget.controller
         .setSelectedLocation(position.latitude, position.longitude, address: address);
-    // يعبّئ حقل "العنوان التفصيلي" تلقائيًا من الترميز العكسي فقط إن تركه
-    // مزوّد الخدمة فارغًا بالخطوة السابقة — لا يستبدل نصًا كتبه يدويًا.
-    if ((address ?? '').trim().isNotEmpty &&
-        widget.addressCtrl.text.trim().isEmpty) {
+    // حقل "العنوان التفصيلي" للقراءة فقط (راجع _Step1ServiceInfo) ومصدره
+    // الوحيد ترميز جوجل العكسي هنا — يُستبدَل في كل مرة يتغيّر فيها الدبّوس
+    // كي يبقى مطابقًا دومًا لموقعه الفعلي، لا نصًا قديمًا كتبه المستخدم يدويًا
+    // (أو استُورد من عنوان النشاط العام) عن موقع مختلف.
+    if ((address ?? '').trim().isNotEmpty) {
       widget.addressCtrl.text = address!.trim();
     }
   }
@@ -1921,6 +1948,7 @@ class _Step4Review extends StatelessWidget {
   final TextEditingController valueCtrl;
   final TextEditingController descCtrl;
   final TextEditingController addressCtrl;
+  final TextEditingController phoneCtrl;
   final ServiceOfferController controller;
   final Color primary;
 
@@ -1929,6 +1957,7 @@ class _Step4Review extends StatelessWidget {
     required this.valueCtrl,
     required this.descCtrl,
     required this.addressCtrl,
+    required this.phoneCtrl,
     required this.controller,
     required this.primary,
   });
@@ -1983,6 +2012,11 @@ class _Step4Review extends StatelessWidget {
                 ),
                 if (addressCtrl.text.trim().isNotEmpty)
                   _ReviewRow('العنوان التفصيلي', addressCtrl.text.trim()),
+                _ReviewRow('contact_phone'.tr, phoneCtrl.text.trim()),
+                _ReviewRow(
+                  'contact_type_label'.tr,
+                  'contact_type_${controller.contactType}'.tr,
+                ),
                 _ReviewRow(
                   'أنواع العقار',
                   controller.selectedCategoryIds.isEmpty
@@ -2050,11 +2084,13 @@ Widget _dsTextField(
       required TextEditingController controller,
       TextInputType keyboardType = TextInputType.text,
       int maxLines = 1,
+      bool readOnly = false,
     }) {
   return TextFormField(
     controller: controller,
     keyboardType: keyboardType,
     maxLines: maxLines,
+    readOnly: readOnly,
     style: AppTypography.body.copyWith(color: AppColors.textPrimary(context)),
     decoration: dsInputDecoration(context, hint: hintText),
   );
@@ -2165,6 +2201,71 @@ class _RequiredHint extends StatelessWidget {
         ],
       ),
     );
+  }
+}
+
+/// اختيار ثلاثي مضغوط لطريقة التواصل المفضّلة (واتساب/اتصال/كلاهما) — يحدّد
+/// لاحقاً في شاشة تفاصيل الخدمة أزرار الاتصال/واتساب الظاهرة للعميل.
+class _ContactTypeSelector extends StatelessWidget {
+  final ServiceOfferController controller;
+  final Color primary;
+  const _ContactTypeSelector({required this.controller, required this.primary});
+
+  static const List<(String, String, IconData)> _options = [
+    ('whatsapp', 'contact_type_whatsapp', Icons.chat_rounded),
+    ('call', 'contact_type_call', Icons.call_rounded),
+    ('both', 'contact_type_both', Icons.contact_phone_rounded),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final children = <Widget>[];
+    for (final o in _options) {
+      final (type, labelKey, icon) = o;
+      final selected = controller.contactType == type;
+      if (children.isNotEmpty) children.add(const SizedBox(width: Spacing.sm));
+      children.add(
+        Expanded(
+          child: GestureDetector(
+            onTap: () => controller.setContactType(type),
+            child: AnimatedContainer(
+              duration: AnimSpec.button,
+              padding: const EdgeInsets.symmetric(vertical: Spacing.sm),
+              decoration: BoxDecoration(
+                color: selected
+                    ? primary.withValues(alpha: 0.08)
+                    : AppColors.background(context),
+                borderRadius: BorderRadius.circular(AppRadius.medium),
+                border: Border.all(
+                  color: selected ? primary : AppColors.border(context),
+                  width: selected ? 1.5 : 1,
+                ),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(icon,
+                      size: IconSpec.small,
+                      color: selected ? primary : AppColors.textSecondary(context)),
+                  const SizedBox(height: Spacing.xs),
+                  Text(
+                    labelKey.tr,
+                    style: (selected
+                        ? AppTypography.captionMedium
+                        : AppTypography.caption)
+                        .copyWith(
+                      color: selected ? primary : AppColors.textSecondary(context),
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+    return Row(children: children);
   }
 }
 

@@ -59,6 +59,10 @@ class AppConstants {
       '/api/v1/config/place-api-autocomplete';
   static const String PLACE_DETAILS_URI = '/api/v1/config/place-api-details';
   static const String VERIFY_PHONE_URI = '/api/v1/auth/verify-phone';
+  static const String CUSTOMER_SEND_PHONE_OTP_URI =
+      '/api/v1/customer/phone/send-otp';
+  static const String CUSTOMER_VERIFY_PHONE_OTP_URI =
+      '/api/v1/customer/phone/verify-otp';
   static const String CATEGORIES = '/api/v1/categories';
   static const String CATEGORY_ESTATEURI = '/api/v1/estate/get-estate';
   static const String MAP_ESTATE_URI = '/api/v1/estate/map-list';
@@ -87,6 +91,8 @@ class AppConstants {
       '/api/v1/provider-subscriptions/';
   static const String PROVIDER_RESUME_PAYMENT_PREFIX =
       '/api/v1/provider-subscriptions/';
+  static const String PROVIDER_UPDATE_BUSINESS_INFO_URI =
+      '/api/v1/provider-subscriptions/update-business-info';
   static const String PROVIDER_PERMISSIONS_URI = '/api/v1/provider/permissions';
 
   static const String empty_box = 'assets/image/empty_box.png';
@@ -139,12 +145,6 @@ class AppConstants {
 
   static const String PROVIDER_UPDATE_LOGO_URI =
       '/api/v1/provider-subscriptions/update-logo';
-  static const String PROVIDER_UPDATE_BUSINESS_INFO_URI =
-      '/api/v1/provider-subscriptions/update-business-info';
-  static const String CUSTOMER_SEND_PHONE_OTP_URI =
-      '/api/v1/customer/phone/send-otp';
-  static const String CUSTOMER_VERIFY_PHONE_OTP_URI =
-      '/api/v1/customer/phone/verify-otp';
 
   static List<int> tips = [0, 5, 10, 15, 20, 30, 50];
 

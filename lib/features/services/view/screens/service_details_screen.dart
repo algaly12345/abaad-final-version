@@ -106,7 +106,14 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
             : null;
         final mappableZone = _mappableZone(service);
         final mapLatLng = _effectiveLatLng(service, mappableZone);
-        final hasPhone = provider?.phone != null && provider!.phone!.isNotEmpty;
+        // رقم التواصل الخاص بهذا العرض تحديداً (contact_phone) له الأولوية —
+        // يسقط احتياطياً على رقم حساب المزوّد العام للعروض القديمة التي أُنشئت
+        // قبل إضافة هذا الحقل.
+        final effectivePhone = (service.contactPhone?.trim().isNotEmpty ?? false)
+            ? service.contactPhone!.trim()
+            : provider?.phone;
+        final contactType = service.contactType ?? 'both';
+        final hasPhone = effectivePhone != null && effectivePhone.isNotEmpty;
         // عرض هذا المزوّد نفسه لم يُدفع بعد (unpaid) أو فشل دفعه (failed) —
         // payment_status/subscription_number لا يصلان إلا لمالك العرض
         // (ServiceOfferResource::isOwnedBy)، فهذا الشرط لا يتحقق أبداً لعرض
@@ -161,7 +168,11 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
                       _AdditionalInfoSection(service: service),
                       if (provider != null) ...[
                         const _SectionDivider(),
-                        _ProviderSection(provider: provider),
+                        _ProviderSection(
+                          provider: provider,
+                          phone: effectivePhone,
+                          contactType: contactType,
+                        ),
                       ],
                     ],
                   ),
@@ -172,7 +183,11 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
           bottomNavigationBar: needsPayment
               ? _PayNowBottomBar(service: service)
               : (hasPhone
-              ? _StickyBottomBar(service: service, provider: provider)
+              ? _StickyBottomBar(
+            service: service,
+            phone: effectivePhone,
+            contactType: contactType,
+          )
               : null),
         );
       },
@@ -799,14 +814,26 @@ class _InfoTile extends StatelessWidget {
 
 class _ProviderSection extends StatelessWidget {
   final ProviderData provider;
+  // رقم التواصل الفعلي لهذا العرض (contact_phone أو رقم المزوّد العام
+  // احتياطياً) وتصنيفه — منفصلان عن provider.phone كي يعكسا اختيار المزوّد
+  // الفعلي لهذا العرض تحديداً.
+  final String? phone;
+  final String contactType;
 
-  const _ProviderSection({required this.provider});
+  const _ProviderSection({
+    required this.provider,
+    required this.phone,
+    required this.contactType,
+  });
 
   @override
   Widget build(BuildContext context) {
     final primary = Theme.of(context).primaryColor;
     final dark = Theme.of(context).brightness == Brightness.dark;
-    final hasPhone = provider.phone != null && provider.phone!.isNotEmpty;
+    // زر الاتصال هنا يظهر ما دام هناك رقم ونوع التواصل ليس "واتساب فقط" — لو
+    // كان "واتساب فقط" فالاتصال ليس وسيلة تواصل مفضّلة لهذا العرض.
+    final hasPhone =
+        phone != null && phone!.isNotEmpty && contactType != 'whatsapp';
     final hasSecondaryChannels = (provider.twitter?.isNotEmpty ?? false) ||
         (provider.instagram?.isNotEmpty ?? false) ||
         (provider.snapchat?.isNotEmpty ?? false) ||
@@ -844,7 +871,7 @@ class _ProviderSection extends StatelessWidget {
             style: robotoBold.copyWith(fontSize: 15, color: AppColors.textPrimary(context)),
           ),
           subtitle: hasPhone
-              ? Text(provider.phone!,
+              ? Text(phone!,
               style: robotoRegular.copyWith(
                   fontSize: 13, color: Colors.grey.shade500))
               : null,
@@ -854,7 +881,7 @@ class _ProviderSection extends StatelessWidget {
             shape: const CircleBorder(),
             child: InkWell(
               customBorder: const CircleBorder(),
-              onTap: () => _launch('tel:${provider.phone}'),
+              onTap: () => _launch('tel:$phone'),
               child: Padding(
                 padding: const EdgeInsets.all(11),
                 child: Icon(Icons.call_rounded, size: 20, color: primary),
@@ -950,13 +977,22 @@ class _ContactChip extends StatelessWidget {
 
 class _StickyBottomBar extends StatelessWidget {
   final ServiceOffer service;
-  final ProviderData provider;
+  final String phone;
+  final String contactType;
 
-  const _StickyBottomBar({required this.service, required this.provider});
+  const _StickyBottomBar({
+    required this.service,
+    required this.phone,
+    required this.contactType,
+  });
 
   @override
   Widget build(BuildContext context) {
     final dark = Theme.of(context).brightness == Brightness.dark;
+    // النوع "اتصال فقط" يستبدل زر واتساب بزر اتصال — بقية الأنواع (واتساب/
+    // كلاهما) تُبقي زر واتساب كما كان (زر الاتصال المستقل يظهر أصلاً بجانب
+    // اسم المزوّد في _ProviderSection).
+    final isCallOnly = contactType == 'call';
 
     return Container(
       decoration: BoxDecoration(
@@ -982,7 +1018,9 @@ class _StickyBottomBar extends StatelessWidget {
                   height: 52,
                   child: ElevatedButton.icon(
                     onPressed: () => _launch(
-                      'https://wa.me/${_cleanPhoneForWhatsapp(provider.phone!)}',
+                      isCallOnly
+                          ? 'tel:$phone'
+                          : 'https://wa.me/${_cleanPhoneForWhatsapp(phone)}',
                     ),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Theme.of(context).primaryColor,
@@ -991,8 +1029,9 @@ class _StickyBottomBar extends StatelessWidget {
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(14)),
                     ),
-                    icon: const Icon(Icons.chat_rounded, size: 18),
-                    label: Text('تواصل واتساب',
+                    icon: Icon(isCallOnly ? Icons.call_rounded : Icons.chat_rounded,
+                        size: 18),
+                    label: Text(isCallOnly ? 'اتصال' : 'تواصل واتساب',
                         style: robotoBold.copyWith(fontSize: 14.5, color: Colors.white)),
                   ),
                 ),

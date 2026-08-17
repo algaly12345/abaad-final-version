@@ -55,6 +55,10 @@ class ServiceOffer {
   // عنوان تفصيلي حرّ اختياري (مثل "خميس مشيط - حي المروج") — أدق من zones
   // (13 منطقة إدارية فقط)، null على العروض القديمة قبل إضافة هذا الحقل.
   String? address;
+  // رقم التواصل الخاص بهذا العرض تحديداً (منفصل عن رقم حساب المزوّد العام
+  // providers[].phone) وتصنيفه — 'whatsapp' أو 'call' أو 'both'.
+  String? contactPhone;
+  String? contactType;
 
   ServiceOffer({
     this.id,
@@ -82,6 +86,8 @@ class ServiceOffer {
     this.latitude,
     this.longitude,
     this.address,
+    this.contactPhone,
+    this.contactType,
   });
 
   ServiceOffer.fromJson(Map<String, dynamic> json) {
@@ -136,6 +142,8 @@ class ServiceOffer {
         ? double.tryParse(json['longitude'].toString())
         : null;
     address = json['address'];
+    contactPhone = json['contact_phone'];
+    contactType = json['contact_type'];
   }
 }
 

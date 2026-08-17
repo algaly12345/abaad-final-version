@@ -52,6 +52,8 @@ class ServiceOfferRepo {
     String? discount,
     required String description,
     String? address,
+    required String contactPhone,
+    required String contactType, // 'whatsapp' أو 'call' أو 'both'
     required int servicePlanId,
     required int subscriptionDuration,
     required List<int> categories,
@@ -72,6 +74,8 @@ class ServiceOfferRepo {
       'description': description,
       'service_plan_id': servicePlanId.toString(),
       'subscription_duration': subscriptionDuration.toString(),
+      'contact_phone': contactPhone,
+      'contact_type': contactType,
       // الباكند يخزّن 'company' لا 'organization' في service_providers.identity_type
       // — يبقى الاسم الداخلي بالفلاتر 'organization' كما هو، والترجمة هنا فقط.
       // المفتاح هنا identity_type (وليس entity_type) لأن StoreOfferRequest في الباكند

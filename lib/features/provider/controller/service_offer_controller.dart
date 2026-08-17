@@ -179,6 +179,17 @@ class ServiceOfferController extends GetxController implements GetxService {
   final Set<int> _selectedZoneIds = {};
   int _selectedDuration = 1; // أشهر
 
+  // تصنيف رقم التواصل الخاص بهذا العرض — يحدّد أزرار الاتصال/واتساب التي
+  // تظهر لاحقاً في شاشة تفاصيل الخدمة.
+  String _contactType = 'both'; // whatsapp | call | both
+
+  String get contactType => _contactType;
+
+  void setContactType(String type) {
+    _contactType = type;
+    update();
+  }
+
   String _offerType = 'discount'; // discount | price
   XFile? _pickedImage;
 
@@ -550,10 +561,15 @@ class ServiceOfferController extends GetxController implements GetxService {
     required String title,
     required String description,
     required String priceOrDiscountValue,
+    required String contactPhone,
     String? address,
   }) async {
     if (title.trim().isEmpty) {
       showCustomSnackBar('عنوان العرض مطلوب');
+      return null;
+    }
+    if (contactPhone.trim().isEmpty) {
+      showCustomSnackBar('رقم التواصل مطلوب');
       return null;
     }
     if (_selectedServiceTypeIndex < 0) {
@@ -605,6 +621,8 @@ class ServiceOfferController extends GetxController implements GetxService {
       discount: _offerType == 'discount' ? priceOrDiscountValue.trim() : null,
       description: description.trim(),
       address: address?.trim(),
+      contactPhone: contactPhone.trim(),
+      contactType: _contactType,
       servicePlanId: selectedPlan!.id!,
       subscriptionDuration: _selectedDuration,
       categories: _selectedCategoryIds.toList(),

@@ -34,6 +34,8 @@ class ProviderPermissionController extends GetxController
     }
   }
 
+
+
   bool _check(String permission) {
     if (_hasExplicitPermissions) {
       return _permissions.contains(permission);
@@ -58,7 +60,9 @@ class ProviderPermissionController extends GetxController
 
     try {
       final response = await repo.getPermissions();
-
+      print('STATUS: ${response.statusCode}');
+      print('BODY: ${response.body}');
+      print('hasExplicit: $_hasExplicitPermissions, perms: $_permissions');
       if (response.statusCode == 200 &&
           response.body is Map &&
           response.body['data'] != null) {

@@ -74,16 +74,20 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
                       // services_catalog_screen.dart) يفتح ZoneFilterSheet
                       // مباشرة. أما "نوع الخدمة" فأصبح شريطًا أفقيًا دائم
                       // الظهور أسفل ذلك الزر (_ServiceTypesBar)، لكن "نوع
-                      // العقار" بقي هنا في الفلاتر المتقدمة — مطابقةً لموضعه
-                      // في التطبيق المرجعي.
+                      // مزود الخدمة" بقي هنا في الفلاتر المتقدمة — مطابقةً
+                      // لموضعه في التطبيق المرجعي.
 
-                      // نوع العقار — بانتظار وصول filtersData يُعرض هيكل تحميل
-                      // بنفس أبعاد الشبكة الفعلية بدل اختفاء القسم بالكامل، كي
-                      // لا تقفز الأبعاد ولا يبدو القسم كأنه غير موجود أصلًا.
+                      // نوع مزود الخدمة — هذه الفئات مأخوذة من جدول الفئات
+                      // العام للتطبيق (وليس فئات العقار فقط)، لذا قد تضم أنواعًا
+                      // غير عقارية كليًا (مثل "صراف")؛ العنوان يعكس ذلك بدل
+                      // الإيحاء بأنه يقتصر على نوع المنتج العقاري. بانتظار وصول
+                      // filtersData يُعرض هيكل تحميل بنفس أبعاد الشبكة الفعلية
+                      // بدل اختفاء القسم بالكامل، كي لا تقفز الأبعاد ولا يبدو
+                      // القسم كأنه غير موجود أصلًا.
                       if (controller.filtersData == null) ...[
                         _Section(
-                          title: 'property_type'.tr,
-                          icon: Icons.home_work_rounded,
+                          title: 'provider_type'.tr,
+                          icon: Icons.storefront_rounded,
                           bleedChild: true,
                           child: const _HorizontalCardSkeleton(count: 5),
                         ),
@@ -91,8 +95,8 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
                       ] else if ((controller.filtersData?.categories ?? [])
                           .isNotEmpty) ...[
                         _Section(
-                          title: 'property_type'.tr,
-                          icon: Icons.home_work_rounded,
+                          title: 'provider_type'.tr,
+                          icon: Icons.storefront_rounded,
                           bleedChild: true,
                           child: _CategoryList(
                             controller: controller,
@@ -109,9 +113,9 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
                         child: controller.filtersData == null
                             ? const _PriceRangeSkeleton()
                             : _PriceRangeSection(
-                                controller: controller,
-                                primary: primary,
-                              ),
+                          controller: controller,
+                          primary: primary,
+                        ),
                       ),
                       const _Divider(),
 
@@ -166,7 +170,7 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
                                 .toList(),
                             selected: {
                               ServicesController.radiusOptions.firstWhere(
-                                (r) => r['value'] == controller.radiusOption,
+                                    (r) => r['value'] == controller.radiusOption,
                               )['label']!
                             },
                             primary: primary,
@@ -215,7 +219,7 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
           ),
           Padding(
             padding:
-                const EdgeInsets.fromLTRB(Spacing.lg, 14, Spacing.md, Spacing.md),
+            const EdgeInsets.fromLTRB(Spacing.lg, 14, Spacing.md, Spacing.md),
             child: Row(
               children: [
                 _RoundIconButton(icon: Icons.close_rounded, onTap: () => Get.back()),
@@ -285,7 +289,7 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
         top: false,
         child: Padding(
           padding:
-              const EdgeInsets.fromLTRB(Spacing.lg, Spacing.md, Spacing.lg, Spacing.md),
+          const EdgeInsets.fromLTRB(Spacing.lg, Spacing.md, Spacing.lg, Spacing.md),
           child: Row(
             children: [
               Expanded(
@@ -413,7 +417,7 @@ class _ChipRowSkeleton extends StatelessWidget {
   Widget build(BuildContext context) {
     final dark = Theme.of(context).brightness == Brightness.dark;
     final baseColor =
-        dark ? Colors.white.withValues(alpha: 0.08) : const Color(0xFFEEF0F5);
+    dark ? Colors.white.withValues(alpha: 0.08) : const Color(0xFFEEF0F5);
 
     return Shimmer(
       duration: const Duration(milliseconds: 1400),
@@ -449,7 +453,7 @@ class _PriceRangeSkeleton extends StatelessWidget {
   Widget build(BuildContext context) {
     final dark = Theme.of(context).brightness == Brightness.dark;
     final baseColor =
-        dark ? Colors.white.withValues(alpha: 0.08) : const Color(0xFFEEF0F5);
+    dark ? Colors.white.withValues(alpha: 0.08) : const Color(0xFFEEF0F5);
 
     return Shimmer(
       duration: const Duration(milliseconds: 1400),
@@ -589,9 +593,9 @@ class _Section extends StatelessWidget {
         bleedChild
             ? child
             : Padding(
-                padding: const EdgeInsets.symmetric(horizontal: Spacing.lg),
-                child: child,
-              ),
+          padding: const EdgeInsets.symmetric(horizontal: Spacing.lg),
+          child: child,
+        ),
       ],
     );
   }
@@ -801,7 +805,7 @@ class _PriceRangeSection extends StatelessWidget {
           data: SliderTheme.of(context).copyWith(
             trackHeight: 3,
             rangeThumbShape:
-                const RoundRangeSliderThumbShape(enabledThumbRadius: 9),
+            const RoundRangeSliderThumbShape(enabledThumbRadius: 9),
             overlayShape: SliderComponentShape.noOverlay,
           ),
           child: RangeSlider(
@@ -902,7 +906,7 @@ class _MiniFilterSheet extends StatefulWidget {
   // الخاص بالورقة، حتى تتحرّك عناصر القوائم/الشبكات بداخله مع التمرير
   // (ScrollRevealItem) بدل بقائها ثابتة كلاسيكيًا.
   final Widget Function(BuildContext context, ScrollController scrollController)
-      childBuilder;
+  childBuilder;
   final VoidCallback onApply;
   final String applyLabel;
   final VoidCallback? onReset;
@@ -928,7 +932,7 @@ class _MiniFilterSheetState extends State<_MiniFilterSheet>
     duration: const Duration(milliseconds: 300),
   );
   late final Animation<double> _fade =
-      CurvedAnimation(parent: _entranceController, curve: Curves.easeOutCubic);
+  CurvedAnimation(parent: _entranceController, curve: Curves.easeOutCubic);
   late final Animation<Offset> _slide = Tween<Offset>(
     begin: const Offset(0, 0.06),
     end: Offset.zero,
@@ -1115,9 +1119,9 @@ class PriceFilterSheet extends StatelessWidget {
             controller.getServicesList(1, reload: true);
           },
           childBuilder: (context, scrollController) =>
-              controller.filtersData == null
-                  ? const _PriceRangeSkeleton()
-                  : _PriceRangeSection(controller: controller, primary: primary),
+          controller.filtersData == null
+              ? const _PriceRangeSkeleton()
+              : _PriceRangeSection(controller: controller, primary: primary),
         );
       },
     );
@@ -1142,7 +1146,7 @@ class _ZoneFilterSheetState extends State<ZoneFilterSheet>
     duration: const Duration(milliseconds: 300),
   );
   late final Animation<double> _fade =
-      CurvedAnimation(parent: _entranceController, curve: Curves.easeOutCubic);
+  CurvedAnimation(parent: _entranceController, curve: Curves.easeOutCubic);
   late final Animation<Offset> _slide = Tween<Offset>(
     begin: const Offset(0, 0.06),
     end: Offset.zero,
@@ -1225,8 +1229,8 @@ class _ZoneFilterSheetState extends State<ZoneFilterSheet>
                             child: loading
                                 ? const _HorizontalCardSkeleton(count: 6)
                                 : zones.isEmpty
-                                    ? _emptyState(context)
-                                    : _list(context, controller, primary, zones),
+                                ? _emptyState(context)
+                                : _list(context, controller, primary, zones),
                           ),
                         ],
                       ),
@@ -1278,10 +1282,10 @@ class _ZoneFilterSheetState extends State<ZoneFilterSheet>
               GestureDetector(
                 onTap: hasSelection
                     ? () {
-                        controller.selectedZones.clear();
-                        if (controller.nearMeActive) controller.disableNearMe();
-                        controller.update();
-                      }
+                  controller.selectedZones.clear();
+                  if (controller.nearMeActive) controller.disableNearMe();
+                  controller.update();
+                }
                     : null,
                 child: Text(
                   'إعادة ضبط',
@@ -1353,15 +1357,15 @@ class _ZoneFilterSheetState extends State<ZoneFilterSheet>
                     opacity: anim, child: ScaleTransition(scale: anim, child: child)),
                 child: c.isResolvingLocation
                     ? SizedBox(
-                        key: const ValueKey('loading'),
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2.2, color: primary),
-                      )
+                  key: const ValueKey('loading'),
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2.2, color: primary),
+                )
                     : c.nearMeActive
-                        ? Icon(Icons.check_circle_rounded,
-                            key: const ValueKey('checked'), size: 20, color: primary)
-                        : const SizedBox(key: ValueKey('empty')),
+                    ? Icon(Icons.check_circle_rounded,
+                    key: const ValueKey('checked'), size: 20, color: primary)
+                    : const SizedBox(key: ValueKey('empty')),
               ),
             ],
           ),
@@ -1464,7 +1468,7 @@ class _HorizontalCardSkeleton extends StatelessWidget {
   Widget build(BuildContext context) {
     final dark = Theme.of(context).brightness == Brightness.dark;
     final baseColor =
-        dark ? Colors.white.withValues(alpha: 0.08) : const Color(0xFFEEF0F5);
+    dark ? Colors.white.withValues(alpha: 0.08) : const Color(0xFFEEF0F5);
     final cardWidth = MediaQuery.of(context).size.width / 3.8;
 
     return Shimmer(
@@ -1550,16 +1554,16 @@ class _ProviderChips extends StatelessWidget {
                             : null,
                         child: (p.image == null || p.image!.isEmpty)
                             ? Icon(Icons.storefront_rounded,
-                                size: 11,
-                                color: isSelected ? primary : Colors.grey.shade500)
+                            size: 11,
+                            color: isSelected ? primary : Colors.grey.shade500)
                             : null,
                       ),
                       const SizedBox(width: 5),
                       Text(
                         p.name ?? '',
                         style:
-                            (isSelected ? AppTypography.smallBold : AppTypography.smallMedium)
-                                .copyWith(
+                        (isSelected ? AppTypography.smallBold : AppTypography.smallMedium)
+                            .copyWith(
                           fontSize: 12,
                           color: isSelected ? primary : AppColors.textSecondary(context),
                         ),

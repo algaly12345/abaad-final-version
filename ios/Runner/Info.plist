@@ -64,6 +64,10 @@
 	<string>يريد تطبيق أبعاد الوصول استديو الصور الخاص بك حتى تتمكن من مشاركة صورة العقار الخاص بك</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>remote-notification</string>
+	</array>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>

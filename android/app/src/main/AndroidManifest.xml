@@ -67,6 +67,15 @@
     <meta-data
         android:name="flutterEmbedding"
         android:value="2"/>
+
+    <!-- إعدادات FCM الافتراضية للإشعارات (تُستخدَم عندما يكون التطبيق في
+         الخلفية ويعرض النظام الإشعار تلقائيًا بدون المرور بكود Dart). -->
+    <meta-data
+        android:name="com.google.firebase.messaging.default_notification_channel_id"
+        android:value="abaad_notifications"/>
+    <meta-data
+        android:name="com.google.firebase.messaging.default_notification_icon"
+        android:resource="@drawable/ic_notification"/>
 </application>
 
 </manifest>

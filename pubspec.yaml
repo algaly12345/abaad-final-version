@@ -36,10 +36,13 @@ dependencies:
   flutter:
     sdk: flutter
 
-  abaad_chatbot_ui:
-    git:
-      url: https://github.com/Abaad-Org/Abaad-Chatbot-UI.git
-      ref: v0.5.3
+  # معلَّقة مؤقتًا: مستودعها الخاص أصبح غير قابل للوصول (Repository not
+  # found) ويمنع flutter pub get عن كل المشروع — أعد تفعيلها متى ما رجع
+  # الوصول للمستودع (راجع dashboard_screen.dart لموضع الاستخدام المعلَّق).
+  # abaad_chatbot_ui:
+  #   git:
+  #     url: https://github.com/Abaad-Org/Abaad-Chatbot-UI.git
+  #     ref: v0.5.3
 
 # pubspec.yaml
 
@@ -118,7 +121,9 @@ dependencies:
   pin_code_fields: any
   html: any
   collection: any
+  firebase_core: any
   firebase_messaging: any
+  flutter_local_notifications: any
   camera_web: any
   connectivity_for_web: any
   flutter_keyboard_visibility_web: any
@@ -142,12 +147,11 @@ dependency_overrides:
   file_picker: ^10.1.9
 
   connectivity_plus: ^6.0.0
-  #  firebase_core: ^3.12.0
-  #  firebase_core: ^3.15.0
-  #  firebase_messaging: ^15.1.0
-  #  firebase_analytics: ^11.7.0
-
-#  flutter_local_notifications: ^17.2.4
+  # permission_handler_android 14.0.0 لا يطبّق Kotlin Gradle plugin على نفسه
+  # (فقط com.android.library)، فتفشل كتلة `kotlin { compilerOptions {...} }`
+  # في build.gradle.kts الخاص به عند التجميع — خلل أصلي بالحزمة غير متعلق
+  # بأي كود في هذا المشروع. مثبَّتة على آخر نسخة قبل هذا الخلل.
+  permission_handler_android: 13.0.1
   url_strategy: any
   #http: ^1.0.0
   http: any
@@ -217,12 +221,9 @@ dependency_overrides:
   html: any
   collection: any
 
-#  firebase_messaging: ^15.1.5
-#  firebase_core: ^3.8.0
-
-  firebase_messaging: any # 14.7.0
-  #firebase_core: any # 2.27.0
-
+  firebase_core: any
+  firebase_messaging: any
+  flutter_local_notifications: any
 
   #efood_multivendor: any
 

@@ -2,7 +2,8 @@
 
 // import 'package:abaad_chatbot_ui/abaad_chatbot_ui.dart';
 //import 'package:abaad_chatbot_ui/abaad_chatbot_ui.dart';
-import 'package:abaad_chatbot_ui/abaad_chatbot_ui.dart' show AbaadChatbotScreen;
+// معلَّقة مؤقتًا مع الحزمة في pubspec.yaml (مستودعها الخاص غير قابل للوصول حاليًا).
+// import 'package:abaad_chatbot_ui/abaad_chatbot_ui.dart' show AbaadChatbotScreen;
 import 'package:abaad_flutter/features/auth/controller/auth_controller.dart';
 import 'package:abaad_flutter/features/provider/controller/provider_permission_controller.dart';
 import 'package:abaad_flutter/features/home/controller/banner_controller.dart';
@@ -352,7 +353,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 child: _ChatbotFab(
                   onTap: () {
                     // TODO: استبدل هذا بمسار/إجراء فتح الشات بوت الفعلي عندك
-                    Get.to(() => const AbaadChatbotScreen());
+                    // معلَّق مؤقتًا مع حزمة abaad_chatbot_ui (راجع pubspec.yaml).
+                    // Get.to(() => const AbaadChatbotScreen());
                   },
                 ),
               ),

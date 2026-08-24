@@ -852,11 +852,13 @@ class _WizardScreenState extends State<_WizardScreen> {
     final isLast = _step == _totalSteps - 1;
     final canNext = _canGoNext(c);
     final total = c.priceCalculation?.totalPrice ?? c.pricingSettings.basePrice;
-    // يظهر الشريط فقط بين خطوة المنتج وخطوة الموقع (الخطوات 2-4 من 5): يُخفى
-    // في خطوة بيانات الخدمة الأولى (السعر ليس القرار الحالي بعد)، وفي خطوة
-    // المراجعة الأخيرة لأن السعر معروض هناك أصلاً ضمن صفّ "المنتج" فلا داعي
-    // لتكراره.
-    final showTotal = total > 0 && _step > 0 && !isLast;
+    // يظهر الشريط فقط في خطوتي المناطق والموقع (لا مقابل رقم آخر معروض في
+    // نفس الصفحة هناك): يُخفى في خطوة بيانات الخدمة الأولى (السعر ليس القرار
+    // الحالي بعد)، وفي خطوة الباقة لأن _LiveTotalCard يعرض نفس الإجمالي
+    // بالفعل ضمن محتوى الصفحة (نفس الرقم كان يظهر مرتين على الشاشة معًا)،
+    // وفي خطوة المراجعة الأخيرة لأن السعر معروض هناك أصلاً ضمن صفّ "المنتج"
+    // فلا داعي لتكراره.
+    final showTotal = total > 0 && _step > 1 && !isLast;
 
     return Container(
       decoration: BoxDecoration(
@@ -1903,9 +1905,9 @@ class _TargetingSection extends StatelessWidget {
               _SelectionCountBadge(count: selectedCount, primary: primary),
             ],
           ),
+          _PricingHint(hint),
           const SizedBox(height: Spacing.lg),
           if (itemCount > 0) _buildGrid(),
-          _PricingHint(hint),
         ],
       ),
     );

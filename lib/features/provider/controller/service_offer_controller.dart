@@ -171,10 +171,11 @@ class ServiceOfferController extends GetxController implements GetxService {
   List<ServiceTypeModel> _serviceTypes = [];
   List<OfferCategoryModel> _categories = [];
   List<OfferZoneModel> _zones = [];
-  List<ServicePlanModel> _servicePlans = [];
+  SubscriptionPricingSettingsModel _pricingSettings =
+      SubscriptionPricingSettingsModel();
+  List<DurationDiscountModel> _durationDiscounts = [];
 
   int _selectedServiceTypeIndex = -1;
-  int _selectedPlanIndex = -1;
   final Set<int> _selectedCategoryIds = {};
   final Set<int> _selectedZoneIds = {};
   int _selectedDuration = 1; // أشهر
@@ -207,9 +208,9 @@ class ServiceOfferController extends GetxController implements GetxService {
   List<ServiceTypeModel> get serviceTypes => _serviceTypes;
   List<OfferCategoryModel> get categories => _categories;
   List<OfferZoneModel> get zones => _zones;
-  List<ServicePlanModel> get servicePlans => _servicePlans;
+  SubscriptionPricingSettingsModel get pricingSettings => _pricingSettings;
+  List<DurationDiscountModel> get durationDiscounts => _durationDiscounts;
   int get selectedServiceTypeIndex => _selectedServiceTypeIndex;
-  int get selectedPlanIndex => _selectedPlanIndex;
   Set<int> get selectedCategoryIds => _selectedCategoryIds;
   Set<int> get selectedZoneIds => _selectedZoneIds;
   int get selectedDuration => _selectedDuration;
@@ -219,11 +220,6 @@ class ServiceOfferController extends GetxController implements GetxService {
   double? get selectedLongitude => _selectedLongitude;
   String? get selectedAddress => _selectedAddress;
   PriceCalculationModel? get priceCalculation => _priceCalculation;
-
-  ServicePlanModel? get selectedPlan =>
-      (_selectedPlanIndex >= 0 && _selectedPlanIndex < _servicePlans.length)
-          ? _servicePlans[_selectedPlanIndex]
-          : null;
 
   String get expiryDateText {
     final date = DateTime.now().add(Duration(days: 30 * _selectedDuration));
@@ -243,18 +239,8 @@ class ServiceOfferController extends GetxController implements GetxService {
       _serviceTypes = data.serviceTypes ?? [];
       _categories = data.categories ?? [];
       _zones = data.zones ?? [];
-      _servicePlans = data.servicePlans ?? [];
-
-      if (_servicePlans.isNotEmpty) {
-        int basicIndex = 0;
-        for (int i = 0; i < _servicePlans.length; i++) {
-          if ((_servicePlans[i].price ?? 0) <
-              (_servicePlans[basicIndex].price ?? 0)) {
-            basicIndex = i;
-          }
-        }
-        _selectedPlanIndex = basicIndex;
-      }
+      _pricingSettings = data.pricingSettings ?? SubscriptionPricingSettingsModel();
+      _durationDiscounts = data.durationDiscounts ?? [];
     } else {
       showCustomSnackBar('فشل جلب بيانات الإعداد، حاول لاحقًا');
     }
@@ -274,34 +260,18 @@ class ServiceOfferController extends GetxController implements GetxService {
     update();
   }
 
-  void selectPlan(int index) {
-    _selectedPlanIndex = index;
-    final plan = selectedPlan;
-    final allowed = plan?.numberOfCategories ?? 0;
-    if (allowed > 0 && _selectedCategoryIds.length > allowed) {
-      final list = _selectedCategoryIds.toList();
-      _selectedCategoryIds.clear();
-      _selectedCategoryIds.addAll(list.take(allowed));
-      showCustomSnackBar(
-        'تم تعديل أنواع العقار المختارة حسب حدود الباقة الجديدة',
-      );
-    }
-    update();
-    recalculatePrice();
-  }
-
+  /// لا سقف على عدد الأنواع المختارة — كل نوع إضافي عن الحد المشمول (1) يرفع
+  /// السعر بـ [pricingSettings.extraCategoryPrice] بدل رفضه، فيُعاد حساب
+  /// السعر مباشرة (على خلاف toggleZone كانت toggleCategory سابقًا لا تُعيد
+  /// الحساب لأن الأنواع لم تكن تُسعَّر في نظام الباقات القديم).
   void toggleCategory(int id) {
-    final allowed = selectedPlan?.numberOfCategories ?? 0;
     if (_selectedCategoryIds.contains(id)) {
       _selectedCategoryIds.remove(id);
     } else {
-      if (allowed > 0 && _selectedCategoryIds.length >= allowed) {
-        showCustomSnackBar('باقتك تسمح باختيار $allowed نوع عقار فقط');
-        return;
-      }
       _selectedCategoryIds.add(id);
     }
     update();
+    recalculatePrice();
   }
 
   void toggleZone(int id) {
@@ -537,16 +507,13 @@ class ServiceOfferController extends GetxController implements GetxService {
   }
 
   Future<void> recalculatePrice() async {
-    final plan = selectedPlan;
-    if (plan?.id == null) return;
-
     _isPriceLoading = true;
     update();
 
     Response response = await serviceOfferRepo.calculatePrice(
-      servicePlanId: plan!.id!,
       subscriptionDuration: _selectedDuration,
       zonesCount: _selectedZoneIds.length,
+      categoriesCount: _selectedCategoryIds.length,
     );
 
     if (response.statusCode == 200 && response.body['status'] == 'success') {
@@ -590,10 +557,6 @@ class ServiceOfferController extends GetxController implements GetxService {
       showCustomSnackBar('صورة العرض مطلوبة');
       return null;
     }
-    if (selectedPlan?.id == null) {
-      showCustomSnackBar('اختر الباقة المناسبة');
-      return null;
-    }
     if (_selectedCategoryIds.isEmpty) {
       showCustomSnackBar('يجب اختيار نوع عقار واحد على الأقل');
       return null;
@@ -623,7 +586,6 @@ class ServiceOfferController extends GetxController implements GetxService {
       address: address?.trim(),
       contactPhone: contactPhone.trim(),
       contactType: _contactType,
-      servicePlanId: selectedPlan!.id!,
       subscriptionDuration: _selectedDuration,
       categories: _selectedCategoryIds.toList(),
       zones: _selectedZoneIds.toList(),
@@ -697,7 +659,6 @@ class ServiceOfferController extends GetxController implements GetxService {
   // للمراجعة النهائية ويُرفض submitOffer() بصمت لأن entityType أصبح null.
   void resetAll() {
     _selectedServiceTypeIndex = -1;
-    _selectedPlanIndex = _servicePlans.isNotEmpty ? 0 : -1;
     _selectedCategoryIds.clear();
     _selectedZoneIds.clear();
     _selectedDuration = 1;

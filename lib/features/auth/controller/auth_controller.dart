@@ -155,6 +155,9 @@ class AuthController extends GetxController implements GetxService {
 
       if (!verificationRequired && token.isNotEmpty) {
         await authRepo.saveUserToken(token);
+        try {
+          await authRepo.updateToken();
+        } catch (_) {}
       }
 
       responseModel = ResponseModel(
@@ -456,6 +459,9 @@ class AuthController extends GetxController implements GetxService {
       if (token.isNotEmpty) {
         await authRepo.saveUserToken(token);
       }
+      try {
+        await authRepo.updateToken();
+      } catch (_) {}
       responseModel = ResponseModel(
         true,
         (response.body['message'] ?? '').toString(),

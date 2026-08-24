@@ -12,14 +12,14 @@ class ServiceOfferRepo {
   }
 
   Future<Response> calculatePrice({
-    required int servicePlanId,
     required int subscriptionDuration,
     required int zonesCount,
+    required int categoriesCount,
   }) async {
     return await apiClient.postData(AppConstants.PROVIDER_CALCULATE_PRICE_URI, {
-      'service_plan_id': servicePlanId,
       'subscription_duration': subscriptionDuration,
       'zones_count': zonesCount,
+      'categories_count': categoriesCount,
     });
   }
 
@@ -54,7 +54,6 @@ class ServiceOfferRepo {
     String? address,
     required String contactPhone,
     required String contactType, // 'whatsapp' أو 'call' أو 'both'
-    required int servicePlanId,
     required int subscriptionDuration,
     required List<int> categories,
     required List<int> zones,
@@ -72,7 +71,6 @@ class ServiceOfferRepo {
       'service_type': serviceType,
       'offer_type': offerType,
       'description': description,
-      'service_plan_id': servicePlanId.toString(),
       'subscription_duration': subscriptionDuration.toString(),
       'contact_phone': contactPhone,
       'contact_type': contactType,

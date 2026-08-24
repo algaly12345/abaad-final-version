@@ -8,9 +8,8 @@ import 'package:abaad_flutter/features/auth/data/models/signup_body.dart';
 import 'package:abaad_flutter/shared/data/models/address_model.dart';
 import 'package:abaad_flutter/features/profile/data/models/userinfo_model.dart';
 import 'package:abaad_flutter/shared/utils/app_constants.dart';
-//import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/cupertino.dart';
-///import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -46,61 +45,66 @@ class AuthRepo {
 
 
 
-  // Future<Response> updateToken({String notificationDeviceToken = ''}) async {
-  //   String? deviceToken;
-  //   if(notificationDeviceToken.isEmpty){
-  //     if (GetPlatform.isIOS && !GetPlatform.isWeb) {
-  //       FirebaseMessaging.instance.setForegroundNotificationPresentationOptions(alert: true, badge: true, sound: true);
-  //       NotificationSettings settings = await FirebaseMessaging.instance.requestPermission(
-  //         alert: true, announcement: false, badge: true, carPlay: false,
-  //         criticalAlert: false, provisional: false, sound: true,
-  //       );
-  //       if(settings.authorizationStatus == AuthorizationStatus.authorized) {
-  //         deviceToken = await _saveDeviceToken();
-  //       }
-  //     }else {
-  //       deviceToken = await _saveDeviceToken();
-  //     }
-  //     if(!GetPlatform.isWeb) {
-  //       FirebaseMessaging.instance.subscribeToTopic(AppConstants.TOPIC);
-  //     }
-  //   }
-  //   return await apiClient.postData(AppConstants.TOKEN_URI, {"_method": "post", "cm_firebase_token": notificationDeviceToken.isNotEmpty ? notificationDeviceToken : deviceToken});
-  // }
+  StreamSubscription<String>? _tokenRefreshSubscription;
 
-  // Future<Response> updateToken() async {
-  //   String? deviceToken = "";
-  //   if (GetPlatform.isIOS && !GetPlatform.isWeb) {
-  //     FirebaseMessaging.instance.setForegroundNotificationPresentationOptions(alert: true, badge: true, sound: true);
-  //     NotificationSettings settings = await FirebaseMessaging.instance.requestPermission(
-  //       alert: true, announcement: false, badge: true, carPlay: false,
-  //       criticalAlert: false, provisional: false, sound: true,
-  //     );
-  //     if(settings.authorizationStatus == AuthorizationStatus.authorized) {
-  //       deviceToken = await _saveDeviceToken();
-  //     }
-  //   }else {
-  //     deviceToken = await _saveDeviceToken();
-  //   }
-  //   if(!GetPlatform.isWeb) {
-  //    FirebaseMessaging.instance.subscribeToTopic(AppConstants.TOPIC);
-  //   }
-  //   return await apiClient.postData(AppConstants.TOKEN_URI, {"_method": "put", "cm_firebase_token": deviceToken});
-  // }
+  /// يطلب صلاحية الإشعارات (iOS)، يحصل على FCM token، يشترك في القناة العامة
+  /// ويرسل التوكن للباك اند. يُستدعى بعد تسجيل الدخول وعند إقلاع التطبيق
+  /// لمستخدم مسجّل دخوله بالفعل.
+  Future<Response?> updateToken() async {
+    if (GetPlatform.isWeb) return null;
 
-  //
-  // Future<String?> _saveDeviceToken() async {
-  //   String? deviceToken = '@';
-  //   if(!GetPlatform.isWeb) {
-  //     try {
-  //       deviceToken = (await FirebaseMessaging.instance.getToken())!;
-  //     }catch(_) {}
-  //   }
-  //   if (deviceToken != null) {
-  //     debugPrint('--------Device Token---------- $deviceToken');
-  //   }
-  //   return deviceToken;
-  // }
+    if (GetPlatform.isIOS) {
+      await FirebaseMessaging.instance
+          .setForegroundNotificationPresentationOptions(
+        alert: true,
+        badge: true,
+        sound: true,
+      );
+      final NotificationSettings settings =
+          await FirebaseMessaging.instance.requestPermission(
+        alert: true,
+        badge: true,
+        sound: true,
+      );
+      if (settings.authorizationStatus != AuthorizationStatus.authorized &&
+          settings.authorizationStatus !=
+              AuthorizationStatus.provisional) {
+        return null;
+      }
+    }
+
+    final String? deviceToken = await _saveDeviceToken();
+    if (deviceToken == null || deviceToken.isEmpty) return null;
+
+    await FirebaseMessaging.instance.subscribeToTopic(AppConstants.TOPIC);
+
+    _tokenRefreshSubscription ??=
+        FirebaseMessaging.instance.onTokenRefresh.listen((String newToken) {
+      if (isLoggedIn()) {
+        apiClient.postData(
+          AppConstants.TOKEN_URI,
+          {"cm_firebase_token": newToken},
+        );
+      }
+    });
+
+    return await apiClient.postData(
+      AppConstants.TOKEN_URI,
+      {"cm_firebase_token": deviceToken},
+    );
+  }
+
+  Future<String?> _saveDeviceToken() async {
+    try {
+      final String? deviceToken = await FirebaseMessaging.instance.getToken();
+      if (deviceToken != null) {
+        debugPrint('--------Device Token---------- $deviceToken');
+      }
+      return deviceToken;
+    } catch (_) {
+      return null;
+    }
+  }
 
 
   Future<Response> verifyToken(String phone, String token) async {
@@ -174,8 +178,8 @@ class AuthRepo {
 
   bool clearSharedData() {
     if(!GetPlatform.isWeb) {
-      // FirebaseMessaging.instance.unsubscribeFromTopic(AppConstants.TOPIC);
-      // apiClient.postData(AppConstants.TOKEN_URI, {"_method": "post", "cm_firebase_token": '@'});
+      FirebaseMessaging.instance.unsubscribeFromTopic(AppConstants.TOPIC);
+      apiClient.postData(AppConstants.TOKEN_URI, {"cm_firebase_token": '@'});
     }
     sharedPreferences.remove(AppConstants.TOKEN);
     sharedPreferences.remove(AppConstants.userAddress);
@@ -213,13 +217,10 @@ class AuthRepo {
 
   void setNotificationActive(bool isActive) {
     if(isActive) {
-      //updateToken();
+      updateToken();
     }else {
       if(!GetPlatform.isWeb) {
-        //FirebaseMessaging.instance.unsubscribeFromTopic(AppConstants.TOPIC);
-        if(isLoggedIn()) {
-        //  FirebaseMessaging.instance.unsubscribeFromTopic('zone_${Get.find<LocationController>().getUserAddress()?.zoneId}_customer');
-        }
+        FirebaseMessaging.instance.unsubscribeFromTopic(AppConstants.TOPIC);
       }
     }
     sharedPreferences.setBool(AppConstants.NOTIFICATION, isActive);

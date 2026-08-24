@@ -277,6 +277,7 @@ import 'package:flutter/material.dart';
 import 'dart:io';
 
 import 'package:abaad_flutter/features/auth/controller/auth_controller.dart';
+import 'package:abaad_flutter/features/auth/data/repositories/auth_repo.dart';
 import 'package:abaad_flutter/shared/controllers/localization_controller.dart';
 import 'package:abaad_flutter/features/map/controller/location_controller.dart';
 import 'package:abaad_flutter/shared/controllers/splash_controller.dart';
@@ -302,6 +303,8 @@ import 'package:abaad_flutter/core/di/get_di.dart' as di;
 import 'dart:async';
 import 'package:app_links/app_links.dart';
 import 'package:abaad_flutter/shared/utils/referral_code_storage.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -333,7 +336,16 @@ Future<void> main() async {
 
   try {
     if (GetPlatform.isMobile) {
-      // await NotificationHelper.initialize(...)
+      await Firebase.initializeApp();
+      FirebaseMessaging.onBackgroundMessage(
+        firebaseMessagingBackgroundHandler,
+      );
+      await NotificationHelper.initialize();
+
+      final AuthRepo authRepo = Get.find<AuthRepo>();
+      if (authRepo.isLoggedIn()) {
+        unawaited(authRepo.updateToken());
+      }
     }
 
     runApp(

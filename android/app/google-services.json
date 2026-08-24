@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "354189832096",
+    "project_id": "abaad-8b6a0",
+    "storage_bucket": "abaad-8b6a0.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:354189832096:android:a6a1179db45aa65d26fec5",
+        "android_client_info": {
+          "package_name": "sa.pdm.abaad.abaad"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAIZgSH6hVQzl6DL7txe9-6MrK-Ad1FtZs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

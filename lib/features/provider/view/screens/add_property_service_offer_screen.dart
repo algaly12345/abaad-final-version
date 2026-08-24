@@ -2,7 +2,6 @@ import 'dart:io';
 
 import 'package:abaad_flutter/features/profile/controller/user_controller.dart';
 import 'package:abaad_flutter/features/provider/controller/service_offer_controller.dart';
-import 'package:abaad_flutter/features/provider/data/models/service_offer_setup_model.dart';
 import 'package:abaad_flutter/core/routes/route_helper.dart';
 import 'package:abaad_flutter/features/provider/view/screens/provider_upgrade_screen.dart';
 import 'package:abaad_flutter/features/provider/view/screens/complete_provider_profile_screen.dart';
@@ -12,7 +11,6 @@ import 'package:abaad_flutter/features/services/view/screens/services_catalog_sc
 import 'package:abaad_flutter/shared/theme/design_system.dart';
 import 'package:abaad_flutter/shared/utils/app_constants.dart';
 import 'package:abaad_flutter/shared/widgets/app_dropdown.dart';
-import 'package:abaad_flutter/shared/widgets/package_option_card.dart';
 import 'package:flutter/material.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:get/get.dart';
@@ -40,7 +38,7 @@ class _AddPropertyServiceOfferScreenState
       Get.find<SharedPreferences>().getBool(
         AppConstants.SERVICE_OFFER_TERMS_AGREED,
       ) ??
-          false;
+      false;
 
   void _acceptTerms() {
     Get.find<SharedPreferences>().setBool(
@@ -118,20 +116,20 @@ class _TermsScreenState extends State<_TermsScreen> {
 
   List<(IconData, String, String)> get _terms => [
     (
-    Icons.fact_check_rounded,
-    'term_accuracy_title'.tr,
-    'term_accuracy_body'.tr,
+      Icons.fact_check_rounded,
+      'term_accuracy_title'.tr,
+      'term_accuracy_body'.tr,
     ),
     (
-    Icons.gavel_rounded,
-    'term_compliance_title'.tr,
-    'term_compliance_body'.tr,
+      Icons.gavel_rounded,
+      'term_compliance_title'.tr,
+      'term_compliance_body'.tr,
     ),
     (Icons.search_rounded, 'term_review_title'.tr, 'term_review_body'.tr),
     (
-    Icons.credit_card_rounded,
-    'term_payment_title'.tr,
-    'term_payment_body'.tr,
+      Icons.credit_card_rounded,
+      'term_payment_title'.tr,
+      'term_payment_body'.tr,
     ),
     (Icons.lock_rounded, 'term_privacy_title'.tr, 'term_privacy_body'.tr),
   ];
@@ -146,7 +144,7 @@ class _TermsScreenState extends State<_TermsScreen> {
     if (!_scrollController.hasClients) return;
     final atEnd =
         _scrollController.position.pixels >=
-            _scrollController.position.maxScrollExtent - 24;
+        _scrollController.position.maxScrollExtent - 24;
     if (atEnd == _showScrollCue) {
       setState(() => _showScrollCue = !atEnd);
     }
@@ -262,7 +260,7 @@ class _TermsScreenState extends State<_TermsScreen> {
                 ),
                 sliver: SliverList(
                   delegate: SliverChildBuilderDelegate(
-                        (context, i) => _TermItem(
+                    (context, i) => _TermItem(
                       icon: _terms[i].$1,
                       title: _terms[i].$2,
                       body: _terms[i].$3,
@@ -391,10 +389,10 @@ class _TermsScreenState extends State<_TermsScreen> {
                             ),
                             child: _isAgreed
                                 ? const Icon(
-                              Icons.check_rounded,
-                              color: Colors.white,
-                              size: 14,
-                            )
+                                    Icons.check_rounded,
+                                    color: Colors.white,
+                                    size: 14,
+                                  )
                                 : null,
                           ),
                           const SizedBox(width: Spacing.md),
@@ -636,9 +634,9 @@ class _WizardScreenState extends State<_WizardScreen> {
             _addressCtrl.text.trim().isNotEmpty &&
             _phoneCtrl.text.trim().isNotEmpty;
       case 1:
-      // مدة الاشتراك دائماً محددة بقيمة افتراضية (شهر واحد)، فيكفي التحقق
-      // من اختيار الباقة نفسها.
-        return c.selectedPlanIndex >= 0;
+        // خطوة صيغة التسعير/المدة — مدة الاشتراك دائماً محددة بقيمة افتراضية
+        // (شهر واحد) ولا يوجد اختيار باقة بعد الآن، فلا شرط لإتاحة "التالي".
+        return true;
       case 2:
         return c.selectedZoneIds.isNotEmpty && c.selectedCategoryIds.isNotEmpty;
       case 3:
@@ -839,13 +837,13 @@ class _WizardScreenState extends State<_WizardScreen> {
   }
 
   Widget _buildBottomBar(
-      BuildContext context,
-      ServiceOfferController c,
-      Color primary,
-      ) {
+    BuildContext context,
+    ServiceOfferController c,
+    Color primary,
+  ) {
     final isLast = _step == _totalSteps - 1;
     final canNext = _canGoNext(c);
-    final total = c.priceCalculation?.totalPrice ?? c.selectedPlan?.price ?? 0;
+    final total = c.priceCalculation?.totalPrice ?? c.pricingSettings.basePrice;
     // يظهر الشريط فقط بين خطوة المنتج وخطوة الموقع (الخطوات 2-4 من 5): يُخفى
     // في خطوة بيانات الخدمة الأولى (السعر ليس القرار الحالي بعد)، وفي خطوة
     // المراجعة الأخيرة لأن السعر معروض هناك أصلاً ضمن صفّ "المنتج" فلا داعي
@@ -953,8 +951,8 @@ class _StickyTotalBar extends StatelessWidget {
     final durationLabel = _DurationSelector._options
         .firstWhere(
           (o) => o.$1 == controller.selectedDuration,
-      orElse: () => _DurationSelector._options.first,
-    )
+          orElse: () => _DurationSelector._options.first,
+        )
         .$2
         .tr;
 
@@ -1004,17 +1002,17 @@ class _StickyTotalBar extends StatelessWidget {
           ),
           controller.isPriceLoading
               ? const SizedBox(
-            height: 18,
-            width: 18,
-            child: CircularProgressIndicator(strokeWidth: 2),
-          )
+                  height: 18,
+                  width: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
               : Text(
-            '${total.toStringAsFixed(0)} ريال',
-            style: AppTypography.subtitle.copyWith(
-              color: primary,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
+                  '${total.toStringAsFixed(0)} ريال',
+                  style: AppTypography.subtitle.copyWith(
+                    color: primary,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
         ],
       ),
     );
@@ -1078,31 +1076,31 @@ class _Step1ServiceInfo extends StatelessWidget {
                     ),
                     child: controller.pickedImage != null
                         ? ClipRRect(
-                      borderRadius: BorderRadius.circular(
-                        AppRadius.medium,
-                      ),
-                      child: Image.file(
-                        File(controller.pickedImage!.path),
-                        fit: BoxFit.cover,
-                      ),
-                    )
+                            borderRadius: BorderRadius.circular(
+                              AppRadius.medium,
+                            ),
+                            child: Image.file(
+                              File(controller.pickedImage!.path),
+                              fit: BoxFit.cover,
+                            ),
+                          )
                         : Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.add_photo_alternate_outlined,
-                          size: 40,
-                          color: primary.withValues(alpha: 0.5),
-                        ),
-                        const SizedBox(height: Spacing.sm),
-                        Text(
-                          'tap_to_choose_image'.tr,
-                          style: AppTypography.caption.copyWith(
-                            color: AppColors.textSecondary(context),
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.add_photo_alternate_outlined,
+                                size: 40,
+                                color: primary.withValues(alpha: 0.5),
+                              ),
+                              const SizedBox(height: Spacing.sm),
+                              Text(
+                                'tap_to_choose_image'.tr,
+                                style: AppTypography.caption.copyWith(
+                                  color: AppColors.textSecondary(context),
+                                ),
+                              ),
+                            ],
                           ),
-                        ),
-                      ],
-                    ),
                   ),
                 ),
                 if (controller.pickedImage != null) ...[
@@ -1140,7 +1138,7 @@ class _Step1ServiceInfo extends StatelessWidget {
                   leadingIcon: Icons.category_outlined,
                   items: List.generate(
                     controller.serviceTypes.length,
-                        (i) => DropdownMenuItem(
+                    (i) => DropdownMenuItem(
                       value: i,
                       child: Text(controller.serviceTypes[i].name ?? ''),
                     ),
@@ -1331,49 +1329,12 @@ class _Step2Plan extends StatelessWidget {
             primary: primary,
           ),
           const SizedBox(height: Spacing.xl),
-          ...List.generate(controller.servicePlans.length, (i) {
-            final ServicePlanModel plan = controller.servicePlans[i];
-            final selected = i == controller.selectedPlanIndex;
-            return Padding(
-              padding: const EdgeInsets.only(bottom: Spacing.md),
-              child: PackageOptionCard(
-                title: plan.name ?? '',
-                priceLabel:
-                '${plan.price?.toStringAsFixed(0)} ${'sar_per_month'.tr}',
-                selected: selected,
-                onTap: () => controller.selectPlan(i),
-                features: [
-                  PackageFeatureItem(
-                    '${plan.numberOfAds ?? 0} إعلانات',
-                    Icons.campaign_outlined,
-                  ),
-                  PackageFeatureItem(
-                    '${plan.numberOfCategories ?? 0} منتجات عقارية',
-                    Icons.category_outlined,
-                  ),
-                  PackageFeatureItem(
-                    '${plan.numberOfZone ?? 0} مناطق',
-                    Icons.map_outlined,
-                  ),
-                  if (plan.featuredDisplay ?? false)
-                    PackageFeatureItem(
-                      'featured_display'.tr,
-                      Icons.star_outline,
-                    ),
-                  if (plan.interactiveReports ?? false)
-                    PackageFeatureItem(
-                      'reports_label'.tr,
-                      Icons.bar_chart_outlined,
-                    ),
-                  if (plan.crmSystem ?? false)
-                    PackageFeatureItem('نظام CRM', Icons.people_outline),
-                ],
-              ),
-            );
-          }),
+          _PricingFormulaCard(controller: controller, primary: primary),
           const SizedBox(height: Spacing.md),
           // مدة الاشتراك انتقلت من خطوة المراجعة إلى هنا كي يرى المستخدم
-          // السعر النهائي فور اختيار الباقة، بدل اكتشافه بعد 3 خطوات إضافية.
+          // السعر النهائي فور اختيار المناطق/الأنواع، بدل اكتشافه بعد خطوات
+          // إضافية. لا يوجد اختيار "باقة" بعد الآن — كل مزوّد يبدأ بنفس
+          // الاشتراك الأساسي ويوسّعه لاحقًا حسب المناطق/الأنواع (خطوة 3).
           _DurationSelector(controller: controller, primary: primary),
           const SizedBox(height: Spacing.md),
           _LiveTotalCard(controller: controller, primary: primary),
@@ -1382,6 +1343,139 @@ class _Step2Plan extends StatelessWidget {
       ),
     );
   }
+}
+
+/// بطاقة توضيحية لصيغة التسعير الجديدة (أساسي + إضافات) — تحل محل قائمة
+/// اختيار الباقات الثلاث الثابتة القديمة. الأرقام مصدرها [controller.pricingSettings]
+/// (قابلة للتعديل من لوحة تحكم الأدمن) لا ثوابت مكتوبة بالواجهة. زر المعلومات
+/// يفتح شرحًا كاملاً بنفس نص التسويق (راجع _showPricingInfoSheet).
+class _PricingFormulaCard extends StatelessWidget {
+  final ServiceOfferController controller;
+  final Color primary;
+  const _PricingFormulaCard({required this.controller, required this.primary});
+
+  @override
+  Widget build(BuildContext context) {
+    final settings = controller.pricingSettings;
+    return _Card(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  '${settings.basePrice.toStringAsFixed(0)} ${'sar_per_month'.tr} — الاشتراك الأساسي',
+                  style: AppTypography.smallBold.copyWith(color: primary),
+                ),
+              ),
+              IconButton(
+                icon: Icon(Icons.info_outline, color: primary, size: 20),
+                tooltip: 'pricing_details'.tr,
+                onPressed: () => _showPricingInfoSheet(context, controller, primary),
+              ),
+            ],
+          ),
+          const SizedBox(height: Spacing.sm),
+          Text(
+            'يشمل منطقة إدارية واحدة ونوع منتج عقاري واحد. كل منطقة أو نوع '
+            'إضافي بـ ${settings.extraZonePrice.toStringAsFixed(0)} ${'sar_per_month'.tr} '
+            '(تُختار في الخطوة التالية).',
+            style: AppTypography.caption.copyWith(
+              color: AppColors.textSecondary(context),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// شرح كامل لآلية الاشتراك (نص تسويقي ثابت مطابق لما اعتمده فريق المنتج) —
+/// يُفتح من زر المعلومات في [_PricingFormulaCard]، ويعرض نسب الخصم الفعلية
+/// من [controller.durationDiscounts] بدل أرقام ثابتة.
+void _showPricingInfoSheet(
+  BuildContext context,
+  ServiceOfferController controller,
+  Color primary,
+) {
+  final settings = controller.pricingSettings;
+  final discounts = [...controller.durationDiscounts]
+    ..sort((a, b) => a.durationMonths.compareTo(b.durationMonths));
+
+  showModalBottomSheet(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: AppColors.surface(context),
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.large)),
+    ),
+    builder: (sheetContext) {
+      return SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(Spacing.pagePadding),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'آلية اشتراك مزود الخدمة في منصة أبعاد',
+                style: AppTypography.title.copyWith(color: primary),
+              ),
+              const SizedBox(height: Spacing.xs),
+              Text(
+                'ابدأ بـ ${settings.basePrice.toStringAsFixed(0)} ريال فقط شهريًا',
+                style: AppTypography.smallBold,
+              ),
+              const SizedBox(height: Spacing.md),
+              Text(
+                'الاشتراك الأساسي يشمل منطقة إدارية واحدة ونوع منتج عقاري واحد، '
+                'مع ظهور خدماتك في منصة وتطبيق أبعاد وصفحة خاصة بك واستقبال '
+                'العملاء والطلبات المهتمة بخدمتك.',
+                style: AppTypography.body,
+              ),
+              const SizedBox(height: Spacing.md),
+              Text(
+                'التوسع حسب احتياجك',
+                style: AppTypography.smallBold.copyWith(color: primary),
+              ),
+              const SizedBox(height: Spacing.xs),
+              Text(
+                'كل منطقة إضافية أو نوع منتج إضافي: '
+                '${settings.extraZonePrice.toStringAsFixed(0)} ريال شهريًا لكل واحد.',
+                style: AppTypography.body,
+              ),
+              const SizedBox(height: Spacing.md),
+              Text(
+                'خصم الاشتراك حسب مدة الاشتراك',
+                style: AppTypography.smallBold.copyWith(color: primary),
+              ),
+              const SizedBox(height: Spacing.xs),
+              ...discounts.map(
+                (d) => Padding(
+                  padding: const EdgeInsets.only(bottom: Spacing.xs),
+                  child: Text(
+                    '${d.durationMonths} ${d.durationMonths == 1 ? 'شهر' : 'أشهر'}: '
+                    '${d.discountPercent == 0 ? 'بدون خصم' : 'خصم ${d.discountPercent}%'}',
+                    style: AppTypography.body,
+                  ),
+                ),
+              ),
+              const SizedBox(height: Spacing.sm),
+              Text(
+                'الخصم يُطبَّق على إجمالي قيمة الاشتراك الشهري، بما في ذلك '
+                'المناطق وأنواع المنتجات الإضافية.',
+                style: AppTypography.caption.copyWith(
+                  color: AppColors.textSecondary(sheetContext),
+                ),
+              ),
+              const SizedBox(height: Spacing.lg),
+            ],
+          ),
+        ),
+      );
+    },
+  );
 }
 
 /// شبكة اختيار مدة الاشتراك — مستخرجة كي تُستخدم في خطوة الباقة (السعر
@@ -1415,10 +1509,15 @@ class _DurationSelector extends StatelessWidget {
             physics: const NeverScrollableScrollPhysics(),
             crossAxisSpacing: Spacing.sm,
             mainAxisSpacing: Spacing.sm,
-            childAspectRatio: 2.4,
+            childAspectRatio: 2.1,
             children: _options.map((o) {
               final (months, labelKey) = o;
               final selected = controller.selectedDuration == months;
+              // نسبة الخصم الفعلية لهذه المدة من الباك إند (لا رقم ثابت
+              // بالواجهة) — 0 إن لم تُشغَّل بيانات الإعداد بعد.
+              final discountPercent = controller.durationDiscounts
+                  .firstWhereOrNull((d) => d.durationMonths == months)
+                  ?.discountPercent ?? 0;
               return GestureDetector(
                 onTap: () => controller.selectDuration(months),
                 child: AnimatedContainer(
@@ -1433,19 +1532,42 @@ class _DurationSelector extends StatelessWidget {
                       width: selected ? 1.5 : 1,
                     ),
                   ),
-                  child: Center(
-                    child: Text(
-                      labelKey.tr,
-                      style:
-                      (selected
-                          ? AppTypography.smallBold
-                          : AppTypography.smallMedium)
-                          .copyWith(
-                        color: selected
-                            ? primary
-                            : AppColors.textSecondary(context),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        labelKey.tr,
+                        style:
+                            (selected
+                                    ? AppTypography.smallBold
+                                    : AppTypography.smallMedium)
+                                .copyWith(
+                                  color: selected
+                                      ? primary
+                                      : AppColors.textSecondary(context),
+                                ),
                       ),
-                    ),
+                      if (discountPercent > 0) ...[
+                        const SizedBox(height: 2),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: Spacing.xs,
+                            vertical: 1,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppColors.success.withValues(alpha: 0.14),
+                            borderRadius: BorderRadius.circular(AppRadius.small),
+                          ),
+                          child: Text(
+                            'خصم $discountPercent%',
+                            style: AppTypography.caption.copyWith(
+                              color: AppColors.success,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
                 ),
               );
@@ -1499,9 +1621,7 @@ class _LiveTotalCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final total =
-        controller.priceCalculation?.totalPrice ??
-            controller.selectedPlan?.price ??
-            0;
+        controller.priceCalculation?.totalPrice ?? controller.pricingSettings.basePrice;
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(CardSpec.padding),
@@ -1510,37 +1630,138 @@ class _LiveTotalCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(AppRadius.large),
         border: Border.all(color: primary.withValues(alpha: 0.2)),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Icon(
-            Icons.payments_outlined,
-            color: primary,
-            size: IconSpec.defaultSize,
-          ),
-          const SizedBox(width: Spacing.md),
-          Expanded(
-            child: Text(
-              'estimated_total'.tr,
-              style: AppTypography.smallMedium.copyWith(
-                color: AppColors.textSecondary(context),
+          Row(
+            children: [
+              Icon(
+                Icons.payments_outlined,
+                color: primary,
+                size: IconSpec.defaultSize,
               ),
-            ),
+              const SizedBox(width: Spacing.md),
+              Expanded(
+                child: Text(
+                  'estimated_total'.tr,
+                  style: AppTypography.smallMedium.copyWith(
+                    color: AppColors.textSecondary(context),
+                  ),
+                ),
+              ),
+              controller.isPriceLoading
+                  ? const SizedBox(
+                      height: 18,
+                      width: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : Text(
+                      '${total.toStringAsFixed(0)} ريال',
+                      style: AppTypography.title.copyWith(
+                        color: primary,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+            ],
           ),
-          controller.isPriceLoading
-              ? const SizedBox(
-            height: 18,
-            width: 18,
-            child: CircularProgressIndicator(strokeWidth: 2),
-          )
-              : Text(
-            '${total.toStringAsFixed(0)} ريال',
-            style: AppTypography.title.copyWith(
-              color: primary,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
+          if (controller.priceCalculation != null) ...[
+            const SizedBox(height: Spacing.sm),
+            Divider(height: 1, color: primary.withValues(alpha: 0.15)),
+            const SizedBox(height: Spacing.sm),
+            _PriceBreakdownCard(controller: controller, primary: primary),
+          ],
         ],
       ),
+    );
+  }
+}
+
+/// تفكيك السعر بندًا ببند (أساسي + مناطق إضافية + أنواع إضافية = إجمالي
+/// شهري × المدة − الخصم = الإجمالي النهائي) — يُستخدم داخل [_LiveTotalCard]
+/// وخطوة المراجعة [_Step4Review] لتفادي تكرار نفس منطق العرض في مكانين.
+class _PriceBreakdownCard extends StatelessWidget {
+  final ServiceOfferController controller;
+  final Color primary;
+  const _PriceBreakdownCard({required this.controller, required this.primary});
+
+  Widget _line(
+    BuildContext context,
+    String label,
+    String value, {
+    bool bold = false,
+    Color? color,
+  }) {
+    final style = (bold ? AppTypography.smallBold : AppTypography.caption)
+        .copyWith(color: color ?? AppColors.textSecondary(context));
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: style),
+          Text(value, style: style),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final calc = controller.priceCalculation;
+    if (calc == null) return const SizedBox.shrink();
+
+    final settings = controller.pricingSettings;
+    final duration = controller.selectedDuration;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _line(
+          context,
+          'الاشتراك الأساسي',
+          '${settings.basePrice.toStringAsFixed(0)} ريال',
+        ),
+        if ((calc.extraZones ?? 0) > 0)
+          _line(
+            context,
+            '${calc.extraZones} منطقة إضافية',
+            '${calc.extraZonesCost!.toStringAsFixed(0)} ريال',
+          ),
+        if ((calc.extraCategories ?? 0) > 0)
+          _line(
+            context,
+            '${calc.extraCategories} نوع منتج إضافي',
+            '${calc.extraCategoriesCost!.toStringAsFixed(0)} ريال',
+          ),
+        _line(
+          context,
+          'الإجمالي الشهري',
+          '${calc.monthlyTotal?.toStringAsFixed(0) ?? 0} ريال',
+          bold: true,
+          color: AppColors.textPrimary(context),
+        ),
+        if (duration > 1)
+          _line(
+            context,
+            'المدة ($duration أشهر)',
+            '${calc.subtotalBeforeDiscount?.toStringAsFixed(0) ?? 0} ريال',
+          ),
+        if ((calc.discountPercent ?? 0) > 0)
+          _line(
+            context,
+            'خصم ${calc.discountPercent}%',
+            '- ${calc.discountAmount?.toStringAsFixed(0) ?? 0} ريال',
+            color: AppColors.success,
+          ),
+        const SizedBox(height: Spacing.xs),
+        _line(
+          context,
+          'الإجمالي النهائي',
+          '${calc.totalPrice?.toStringAsFixed(0) ?? 0} ريال',
+          bold: true,
+          color: primary,
+        ),
+      ],
     );
   }
 }
@@ -1556,9 +1777,7 @@ class _Step3ZoneCategory extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final plan = controller.selectedPlan;
-    final allowedZones = plan?.numberOfZone ?? 0;
-    final allowedCats = plan?.numberOfCategories ?? 0;
+    final settings = controller.pricingSettings;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(Spacing.pagePadding),
@@ -1573,17 +1792,16 @@ class _Step3ZoneCategory extends StatelessWidget {
           ),
           const SizedBox(height: Spacing.xl),
 
+          // لا سقف على عدد المناطق/الأنواع بعد الآن — كل اختيار مسموح دائمًا،
+          // فقط يرفع السعر (المنطقة/النوع الأول ضمن الاشتراك الأساسي، وكل
+          // إضافي بسعر extraZonePrice/extraCategoryPrice — راجع _TargetingSection).
           _TargetingSection(
             label: 'المناطق',
             icon: Icons.location_on_outlined,
-            allowed: allowedZones,
+            included: settings.includedZones,
+            extraPrice: settings.extraZonePrice,
             selectedCount: controller.selectedZoneIds.length,
             primary: primary,
-            overLimitWarning:
-            allowedZones > 0 &&
-                controller.selectedZoneIds.length > allowedZones
-                ? 'ستُضاف 50 ريال على كل منطقة زيادة عن $allowedZones'
-                : null,
             itemCount: controller.zones.length,
             itemBuilder: (i) {
               final z = controller.zones[i];
@@ -1603,7 +1821,8 @@ class _Step3ZoneCategory extends StatelessWidget {
           _TargetingSection(
             label: 'أنواع العقار',
             icon: Icons.apartment_outlined,
-            allowed: allowedCats,
+            included: settings.includedCategories,
+            extraPrice: settings.extraCategoryPrice,
             selectedCount: controller.selectedCategoryIds.length,
             primary: primary,
             itemCount: controller.categories.length,
@@ -1629,34 +1848,42 @@ class _Step3ZoneCategory extends StatelessWidget {
   }
 }
 
-/// قسم استهداف واحد (منطقة أو نوع عقار) — يجمع العنوان وشارة الحد وشبكة
+/// قسم استهداف واحد (منطقة أو نوع عقار) — يجمع العنوان وشارة العدد وشبكة
 /// بطاقات ثلاثية الأعمدة، مستخرج لأن قسمَي المناطق وأنواع العقار كانا
-/// يكرّران نفس الهيكل حرفياً.
+/// يكرّران نفس الهيكل حرفياً. لا سقف على الاختيار بعد الآن (نظام الباقات
+/// القديم استُبدل بالكامل): [included] هو عدد العناصر المشمولة ضمن الاشتراك
+/// الأساسي (1 عادةً) و[extraPrice] سعر كل عنصر إضافي — تُستخدَمان فقط لعرض
+/// تلميح السعر، لا لمنع أي اختيار.
 class _TargetingSection extends StatelessWidget {
   static const int _columns = 3;
 
   final String label;
   final IconData icon;
-  final int allowed;
+  final int included;
+  final double extraPrice;
   final int selectedCount;
   final Color primary;
   final int itemCount;
   final Widget Function(int index) itemBuilder;
-  final String? overLimitWarning;
 
   const _TargetingSection({
     required this.label,
     required this.icon,
-    required this.allowed,
+    required this.included,
+    required this.extraPrice,
     required this.selectedCount,
     required this.primary,
     required this.itemCount,
     required this.itemBuilder,
-    this.overLimitWarning,
   });
 
   @override
   Widget build(BuildContext context) {
+    final extraCount = (selectedCount - included).clamp(0, selectedCount);
+    final hint = extraCount > 0
+        ? 'الأول ضمن الاشتراك الأساسي، و$extraCount إضافي × ${extraPrice.toStringAsFixed(0)} ريال'
+        : 'الأول ضمن الاشتراك الأساسي — كل إضافي بـ ${extraPrice.toStringAsFixed(0)} ريال';
+
     return _Card(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1665,17 +1892,12 @@ class _TargetingSection extends StatelessWidget {
             children: [
               _FieldLabel(label, icon: icon),
               const Spacer(),
-              if (allowed > 0)
-                _LimitBadge(
-                  current: selectedCount,
-                  max: allowed,
-                  primary: primary,
-                ),
+              _SelectionCountBadge(count: selectedCount, primary: primary),
             ],
           ),
           const SizedBox(height: Spacing.lg),
           if (itemCount > 0) _buildGrid(),
-          if (overLimitWarning != null) _OverLimitWarning(overLimitWarning!),
+          _PricingHint(hint),
         ],
       ),
     );
@@ -1795,18 +2017,18 @@ class _SelectCard extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       textAlign: TextAlign.center,
                       style:
-                      (selected
-                          ? AppTypography.captionMedium
-                          : AppTypography.caption)
-                          .copyWith(
-                        fontWeight: selected
-                            ? FontWeight.w700
-                            : FontWeight.w500,
-                        height: 1.25,
-                        color: selected
-                            ? primary
-                            : AppColors.textPrimary(context),
-                      ),
+                          (selected
+                                  ? AppTypography.captionMedium
+                                  : AppTypography.caption)
+                              .copyWith(
+                                fontWeight: selected
+                                    ? FontWeight.w700
+                                    : FontWeight.w500,
+                                height: 1.25,
+                                color: selected
+                                    ? primary
+                                    : AppColors.textPrimary(context),
+                              ),
                     ),
                   ),
                 ],
@@ -1892,12 +2114,12 @@ class _SelectTextCard extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
             textAlign: TextAlign.center,
             style:
-            (selected ? AppTypography.smallBold : AppTypography.smallMedium)
-                .copyWith(
-              color: selected
-                  ? Colors.white
-                  : AppColors.textPrimary(context),
-            ),
+                (selected ? AppTypography.smallBold : AppTypography.smallMedium)
+                    .copyWith(
+                      color: selected
+                          ? Colors.white
+                          : AppColors.textPrimary(context),
+                    ),
           ),
         ),
       ),
@@ -2055,7 +2277,7 @@ class _StepLocationState extends State<_StepLocation> {
                             mapToolbarEnabled: false,
                             onMapCreated: _onMapCreated,
                             onCameraMove: (position) =>
-                            _cameraPosition = position,
+                                _cameraPosition = position,
                             onCameraIdle: () {
                               if (_cameraPosition != null) {
                                 _resolveAddress(_cameraPosition!.target);
@@ -2103,23 +2325,23 @@ class _StepLocationState extends State<_StepLocation> {
                       Expanded(
                         child: _resolvingAddress
                             ? Text(
-                          'resolving_location'.tr,
-                          style: AppTypography.caption.copyWith(
-                            color: AppColors.textSecondary(context),
-                          ),
-                        )
+                                'resolving_location'.tr,
+                                style: AppTypography.caption.copyWith(
+                                  color: AppColors.textSecondary(context),
+                                ),
+                              )
                             : Text(
-                          controller.selectedAddress ??
-                              (hasLocation
-                                  ? '${controller.selectedLatitude!.toStringAsFixed(5)}, '
-                                  '${controller.selectedLongitude!.toStringAsFixed(5)}'
-                                  : 'location_required_hint'.tr),
-                          style: AppTypography.smallMedium.copyWith(
-                            color: hasLocation
-                                ? AppColors.textPrimary(context)
-                                : AppColors.textSecondary(context),
-                          ),
-                        ),
+                                controller.selectedAddress ??
+                                    (hasLocation
+                                        ? '${controller.selectedLatitude!.toStringAsFixed(5)}, '
+                                              '${controller.selectedLongitude!.toStringAsFixed(5)}'
+                                        : 'location_required_hint'.tr),
+                                style: AppTypography.smallMedium.copyWith(
+                                  color: hasLocation
+                                      ? AppColors.textPrimary(context)
+                                      : AppColors.textSecondary(context),
+                                ),
+                              ),
                       ),
                     ],
                   ),
@@ -2159,13 +2381,13 @@ class _MapLocateButton extends StatelessWidget {
           padding: const EdgeInsets.all(12),
           child: loading
               ? SizedBox(
-            width: 20,
-            height: 20,
-            child: CircularProgressIndicator(
-              strokeWidth: 2,
-              color: primary,
-            ),
-          )
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: primary,
+                  ),
+                )
               : Icon(Icons.my_location_rounded, color: primary, size: 22),
         ),
       ),
@@ -2204,8 +2426,8 @@ class _Step4Review extends StatelessWidget {
     final durationLabel = _DurationSelector._options
         .firstWhere(
           (o) => o.$1 == controller.selectedDuration,
-      orElse: () => _DurationSelector._options.first,
-    )
+          orElse: () => _DurationSelector._options.first,
+        )
         .$2
         .tr;
 
@@ -2236,11 +2458,6 @@ class _Step4Review extends StatelessWidget {
                       ? 'خصم ${valueCtrl.text}%'
                       : 'سعر ${valueCtrl.text} ريال',
                 ),
-                if (controller.selectedPlan != null)
-                  _ReviewRow(
-                    'المنتج',
-                    '${controller.selectedPlan!.name} — ${controller.selectedPlan!.price?.toStringAsFixed(0)} ريال/شهر',
-                  ),
                 _ReviewRow('subscription_duration'.tr, durationLabel),
                 _ReviewRow(
                   'المناطق',
@@ -2326,13 +2543,13 @@ class _ReviewRow extends StatelessWidget {
 /// حقل نصي محلي بمقاييس النظام (Height 56 / Radius 12) بدل MyTextField
 /// المشترك (Radius 8) — استبدال محصور بهذه الشاشة فقط.
 Widget _dsTextField(
-    BuildContext context, {
-      required String hintText,
-      required TextEditingController controller,
-      TextInputType keyboardType = TextInputType.text,
-      int maxLines = 1,
-      bool readOnly = false,
-    }) {
+  BuildContext context, {
+  required String hintText,
+  required TextEditingController controller,
+  TextInputType keyboardType = TextInputType.text,
+  int maxLines = 1,
+  bool readOnly = false,
+}) {
   return TextFormField(
     controller: controller,
     keyboardType: keyboardType,
@@ -2514,14 +2731,14 @@ class _ContactTypeSelector extends StatelessWidget {
                   Text(
                     labelKey.tr,
                     style:
-                    (selected
-                        ? AppTypography.captionMedium
-                        : AppTypography.caption)
-                        .copyWith(
-                      color: selected
-                          ? primary
-                          : AppColors.textSecondary(context),
-                    ),
+                        (selected
+                                ? AppTypography.captionMedium
+                                : AppTypography.caption)
+                            .copyWith(
+                              color: selected
+                                  ? primary
+                                  : AppColors.textSecondary(context),
+                            ),
                     textAlign: TextAlign.center,
                   ),
                 ],
@@ -2587,16 +2804,16 @@ class _OfferTypeCard extends StatelessWidget {
             children: [
               useRiyalIcon
                   ? Image.asset(
-                'assets/image/riyals.png',
-                width: IconSpec.small,
-                height: IconSpec.small,
-                color: selected ? primary : unselectedText,
-              )
+                      'assets/image/riyals.png',
+                      width: IconSpec.small,
+                      height: IconSpec.small,
+                      color: selected ? primary : unselectedText,
+                    )
                   : Icon(
-                icon,
-                size: IconSpec.small,
-                color: selected ? primary : unselectedText,
-              ),
+                      icon,
+                      size: IconSpec.small,
+                      color: selected ? primary : unselectedText,
+                    ),
               const SizedBox(height: Spacing.sm),
               Text(
                 title,
@@ -2619,61 +2836,41 @@ class _OfferTypeCard extends StatelessWidget {
 
 /// شارة عائمة (Pill) توضح "المتبقي" من حد الباقة بدل رقم "current/max" جامد
 /// — تتحول للون primary الممتلئ عند اكتمال الاختيار، وللتحذير عند التجاوز.
-class _LimitBadge extends StatelessWidget {
-  final int current;
-  final int max;
+/// شارة عدد العناصر المختارة (منطقة/نوع) — عرض محايد بلا مفهوم "سقف" أو
+/// "اكتمال"، على خلاف _LimitBadge القديمة المرتبطة بحدود الباقات الملغاة.
+class _SelectionCountBadge extends StatelessWidget {
+  final int count;
   final Color primary;
-  const _LimitBadge({
-    required this.current,
-    required this.max,
-    required this.primary,
-  });
+  const _SelectionCountBadge({required this.count, required this.primary});
 
   @override
   Widget build(BuildContext context) {
-    final over = current > max;
-    final remaining = max - current;
-    final full = !over && remaining == 0;
-
-    final String label;
-    final IconData icon;
-    if (over) {
-      label = '+${current - max}';
-      icon = Icons.info_rounded;
-    } else if (full) {
-      label = 'اكتمل الاختيار';
-      icon = Icons.check_circle_rounded;
-    } else {
-      label = 'متبقي $remaining';
-      icon = Icons.radio_button_unchecked_rounded;
-    }
-
-    final Color bg = over
-        ? AppColors.warning.withValues(alpha: 0.12)
-        : full
-        ? primary
-        : primary.withValues(alpha: 0.1);
-    final Color fg = over ? AppColors.warning : (full ? Colors.white : primary);
-
+    final selected = count > 0;
     return AnimatedContainer(
       duration: AnimSpec.button,
       curve: Curves.easeOut,
       padding: const EdgeInsets.symmetric(horizontal: Spacing.md, vertical: 6),
       decoration: BoxDecoration(
-        color: bg,
+        color: selected ? primary : primary.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(99),
-        boxShadow: AppShadows.soft(blur: 8, opacity: full ? 0.18 : 0.05),
+        boxShadow: AppShadows.soft(blur: 8, opacity: selected ? 0.18 : 0.05),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 13, color: fg),
+          Icon(
+            selected
+                ? Icons.check_circle_rounded
+                : Icons.radio_button_unchecked_rounded,
+            size: 13,
+            color: selected ? Colors.white : primary,
+          ),
           const SizedBox(width: 4),
           Text(
-            label,
+            selected ? '$count مختارة' : 'لم يُختر بعد',
             style: AppTypography.badge.copyWith(
               fontWeight: FontWeight.w700,
-              color: fg,
+              color: selected ? Colors.white : primary,
             ),
           ),
         ],
@@ -2682,9 +2879,12 @@ class _LimitBadge extends StatelessWidget {
   }
 }
 
-class _OverLimitWarning extends StatelessWidget {
+/// تلميح تسعير محايد (لا تحذيري) — يحل محل _OverLimitWarning القديمة التي
+/// كانت تظهر فقط عند تجاوز سقف الباقة؛ يظهر الآن دائمًا ليوضّح أن أول عنصر
+/// مشمول وكل إضافي بسعر محدد، بلا أي دلالة خطأ.
+class _PricingHint extends StatelessWidget {
   final String message;
-  const _OverLimitWarning(this.message);
+  const _PricingHint(this.message);
 
   @override
   Widget build(BuildContext context) {
@@ -2692,18 +2892,18 @@ class _OverLimitWarning extends StatelessWidget {
       margin: const EdgeInsets.only(top: Spacing.sm),
       padding: const EdgeInsets.all(Spacing.sm),
       decoration: BoxDecoration(
-        color: AppColors.warning.withValues(alpha: 0.1),
+        color: AppColors.info.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(AppRadius.small),
-        border: Border.all(color: AppColors.warning.withValues(alpha: 0.3)),
+        border: Border.all(color: AppColors.info.withValues(alpha: 0.25)),
       ),
       child: Row(
         children: [
-          Icon(Icons.info_outline_rounded, size: 15, color: AppColors.warning),
+          Icon(Icons.info_outline_rounded, size: 15, color: AppColors.info),
           const SizedBox(width: Spacing.sm),
           Expanded(
             child: Text(
               message,
-              style: AppTypography.caption.copyWith(color: AppColors.warning),
+              style: AppTypography.caption.copyWith(color: AppColors.info),
             ),
           ),
         ],

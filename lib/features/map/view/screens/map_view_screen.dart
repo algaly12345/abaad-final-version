@@ -14,14 +14,15 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// ملاحظة: نفس أسماء الكلاسات الأصلية بالكامل (MapViewScreen،
-/// _MapViewScreenState، ArcClipper). الإصلاح الوحيد هنا: إزالة `SafeArea`
-/// اللي كانت ملفوفة حول ودجت كل علامة (Marker) على الخريطة. `SafeArea`
-/// بتضيف حشوًا (padding) غير متماثل حوالين المحتوى (خصوصًا من فوق
-/// لمنطقة الـ status bar)، وبما إن مكتبة custom_map_markers بتحوّل
-/// الودجت لصورة (bitmap) وتحطها بمركزها بالظبط فوق الإحداثية، فالحشو
-/// الزائد كان بيزحزح المركز الفعلي للتسمية عن نقطة الإحداثية الحقيقية —
-/// وهذا هو سبب ظهور كل العلامات "مزحزحة" عن مواقعها الصحيحة رغم أن
-/// الإحداثيات نفسها سليمة في قاعدة البيانات.
+/// _MapViewScreenState، ArcClipper). الإصلاح هنا: إزالة التأخيرات
+/// المصطنعة (Artificial Delays) اللي كانت بتخلي التحميل يبان أبطأ من
+/// اللازم — كان فيه `Future.delayed(milliseconds: 500)` إجباري قبل ظهور
+/// العلامات، و`Future.delayed(seconds: 3)` تاني بعد كده **مالوش أي
+/// استخدام فعلي في باقي الكود على الإطلاق** (_reload اللي بيتغيّر لـ 2
+/// مش بيُقرأ في أي مكان تاني). التأخير التاني اتشال بالكامل، والأول
+/// استُبدل بانتظار "فريمين" فقط عبر addPostFrameCallback بدل نص ثانية
+/// ثابتة — عادة كافية لمكتبة custom_map_markers تخلّص تجهيز صور العلامات،
+/// لكنها أسرع بكتير من انتظار مدة ثابتة دايمًا.
 class MapViewScreen extends StatefulWidget {
   const MapViewScreen({Key? key}) : super(key: key);
 
@@ -145,8 +146,6 @@ class _MapViewScreenState extends State<MapViewScreen> {
                   zone[index].id, zone[index].longitude, zone[index].latitude));
             },
           ),
-          // 🔹 تم حذف SafeArea من هنا — كانت تضيف حشوًا غير متماثل حوالين
-          // التسمية فيزحزح مركز الصورة الناتجة عن نقطة الإحداثية الحقيقية.
           child: Directionality(
             textDirection: isArabic ? TextDirection.rtl : TextDirection.ltr,
             child: Container(
@@ -196,16 +195,23 @@ class _MapViewScreenState extends State<MapViewScreen> {
       );
     }
 
-    await Future.delayed(const Duration(milliseconds: 500));
+    // 🔹 بدل الانتظار مدة ثابتة (كانت 500 مللي ثانية دايمًا)، ننتظر
+    // فريمين بس عبر addPostFrameCallback — عادة كافية لمكتبة
+    // custom_map_markers تخلّص تجهيز صور العلامات، وأسرع بكتير في أغلب
+    // الحالات من انتظار نص ثانية ثابتة دايمًا.
     if (_reload == 0) {
-      setState(() {});
-      _reload = 1;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            setState(() {});
+            _reload = 1;
+          }
+        });
+      });
     }
 
-    await Future.delayed(const Duration(seconds: 3));
-    if (_reload == 1) {
-      _reload = 2;
-    }
+    // 🔹 تم حذف تأخير الـ 3 ثواني بالكامل — كان مالوش أي استخدام فعلي
+    // (لا شيء في الكود يقرأ _reload == 2)، فكان مجرد وقت ضايع.
   }
 }
 

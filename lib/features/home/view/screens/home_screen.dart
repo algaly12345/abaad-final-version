@@ -54,6 +54,10 @@ class _HomeScreenState extends State<HomeScreen> {
   String? selectedZoneName;
   final TextEditingController _searchController = TextEditingController();
 
+  /// نوع العرض المختار حاليًا: '' = بدون فلتر (زي الوضع الافتراضي الأصلي)،
+  /// أو 'بيع'/'إيجار'.
+  String _selectedType = '';
+
   @override
   void initState() {
     super.initState();
@@ -79,7 +83,7 @@ class _HomeScreenState extends State<HomeScreen> {
             '0',
             arPath: 0,
             sv: 0,
-            type: '',
+            type: _selectedType,
           );
         }
       }
@@ -131,6 +135,13 @@ class _HomeScreenState extends State<HomeScreen> {
                 children: [
                   const SizedBox(height: 12),
                   _buildSubCategoryChips(context, categoryController, isArabic),
+                  const SizedBox(height: 10),
+                  _buildToggleButtons(
+                    context,
+                    Theme.of(context).primaryColor,
+                    isArabic,
+                    categoryController,
+                  ),
                   const SizedBox(height: 8),
                   // _buildZoneBadge(context),
                   products.isNotEmpty
@@ -200,17 +211,17 @@ class _HomeScreenState extends State<HomeScreen> {
                 GestureDetector(
                   onTap: () => Navigator.pop(context),
                   child: Container(
-                    width: 40,
-                    height: 40,
+                    width: 32,
+                    height: 32,
                     alignment: Alignment.center,
                     decoration: BoxDecoration(
                       color: Theme.of(context).primaryColor.withOpacity(0.08),
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(10),
                     ),
                     child: Icon(
                       Icons.arrow_back_ios_rounded,
                       color: Theme.of(context).primaryColor,
-                      size: 18,
+                      size: 15,
                     ),
                   ),
                 ),
@@ -392,6 +403,96 @@ class _HomeScreenState extends State<HomeScreen> {
         },
       ),
     );
+  }
+
+  /// فلتر "الكل / بيع / إيجار" — ٣ أزرار "حبّة" (Pills) مدمجة، بديفولت
+  /// "الكل" مختارة تلقائيًا (تطابق _selectedType == '' في الحالة الأولية).
+  Widget _buildToggleButtons(
+      BuildContext context,
+      Color primaryColor,
+      bool isArabic,
+      CategoryController categoryController,
+      ) {
+    final options = isArabic
+        ? [('', 'الكل'), ('بيع', 'بيع'), ('إيجار', 'إيجار')]
+        : [('', 'All'), ('Sale', 'Sale'), ('Rent', 'Rent')];
+
+    return Row(
+      children: options.map((opt) {
+        final isSelected = _selectedType == opt.$1;
+        return Padding(
+          padding: const EdgeInsets.only(left: 8),
+          child: GestureDetector(
+            onTap: () {
+              if (isSelected) return;
+              setState(() => _selectedType = opt.$1);
+              _applyTypeFilter(categoryController);
+            },
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              padding:
+              const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+              decoration: BoxDecoration(
+                color: isSelected ? primaryColor : Colors.transparent,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: isSelected
+                      ? primaryColor
+                      : primaryColor.withOpacity(0.3),
+                  width: 1.2,
+                ),
+              ),
+              child: Text(
+                opt.$2,
+                style: robotoMedium.copyWith(
+                  color: isSelected ? Colors.white : primaryColor,
+                  fontSize: Dimensions.fontSizeSmall,
+                ),
+              ),
+            ),
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  /// يعيد جلب القائمة بنفس المنطقة والتصنيف الفرعي الحاليين، لكن بنوع
+  /// العرض المختار حديثًا (الكل/بيع/إيجار).
+  ///
+  /// ملاحظة مهمة: العملية كلها ملفوفة بـ try/catch الآن — أي استثناء غير
+  /// متوقع (من SharedPreferences أو من getCategoryProductList نفسها أو من
+  /// أي مكان آخر) هيتم "امتصاصه" وطباعته في اللوج بدل ما ينتشر ويسبب أي
+  /// عدم استقرار في التطبيق. هذا لا يشخّص السبب الجذري لو كان موجودًا،
+  /// لكنه يمنع أي انهيار ناتج عن هذه الدالة تحديدًا بشكل قاطع.
+  void _applyTypeFilter(CategoryController categoryController) async {
+    try {
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      int? savedZoneId = prefs.getInt('zone_id');
+
+      final list = categoryController.subCategoryList;
+      final int idx = categoryController.subCategoryIndex;
+      final String categoryId =
+      (list != null && list.isNotEmpty && idx >= 0 && idx < list.length)
+          ? (list[idx].id?.toString() ?? "0")
+          : "0";
+
+      categoryController.getCategoryProductList(
+        savedZoneId ?? 0,
+        categoryId,
+        0,
+        '0',
+        "0",
+        "0",
+        "0",
+        reload: true,
+        arPath: 0,
+        sv: 0,
+        type: _selectedType,
+      );
+    } catch (e, stackTrace) {
+      debugPrint('❌ _applyTypeFilter error: $e');
+      debugPrint('$stackTrace');
+    }
   }
 
   /// شارة المنطقة المختارة حاليًا (إن وجدت) بشكل شريحة أنيقة بأيقونة موقع

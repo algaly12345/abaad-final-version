@@ -10,11 +10,10 @@ class AppConstants {
   static const String LOGIN_URI = '/api/v1/auth/login';
 
   // عطّل السطر الإنتاجي مؤقتًا
-  // static const String BASE_URL = 'https://app.abaadapp.sa';
+  static const String BASE_URL = 'https://app.abaadapp.sa';
 
   // فعّل هذا للاختبار المحلي
-
-  static const String BASE_URL = 'https://app.abaadapp.sa';
+  // static const String BASE_URL = 'http://10.50.214.99';
 
   // static const String BASE_URL = 'https://baad.arabengksa.com';
   static const String LAND_SERVICE_URL =

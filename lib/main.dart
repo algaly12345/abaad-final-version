@@ -447,6 +447,7 @@ class _MyAppState extends State<MyApp> {
     await ReferralCodeStorage.save(code);
 
     if (!Get.find<AuthController>().isLoggedIn()) {
+      await _waitForNavigatorReady();
       Get.toNamed(RouteHelper.getSignUpRoute());
     }
   }

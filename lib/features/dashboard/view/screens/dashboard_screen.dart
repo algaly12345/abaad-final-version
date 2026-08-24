@@ -12,6 +12,7 @@ import 'package:abaad_flutter/features/profile/controller/user_controller.dart';
 import 'package:abaad_flutter/features/zones/controller/zone_controller.dart';
 import 'package:abaad_flutter/shared/helpers/responsive_helper.dart';
 import 'package:abaad_flutter/core/routes/route_helper.dart';
+import 'package:abaad_flutter/core/routes/route_observer.dart';
 import 'package:abaad_flutter/shared/utils/app_constants.dart';
 import 'package:abaad_flutter/shared/utils/dimensions.dart';
 import 'package:abaad_flutter/shared/utils/images.dart';
@@ -76,7 +77,7 @@ class DashboardScreen extends StatefulWidget {
   State<DashboardScreen> createState() => _DashboardScreenState();
 }
 
-class _DashboardScreenState extends State<DashboardScreen> {
+class _DashboardScreenState extends State<DashboardScreen> with RouteAware {
   PageController? _pageController;
 
   int _pageIndex = 0;
@@ -578,6 +579,32 @@ class _DashboardScreenState extends State<DashboardScreen> {
     } catch (_) {
       // المكوّن غير متاح على هذه المنصة (مثل الويب) — تجاهل بصمت.
     }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final route = ModalRoute.of(context);
+    if (route is PageRoute) routeObserver.subscribe(this, route);
+  }
+
+  // بيانات المستخدم/الصلاحيات (نوع الحساب، هل هو provider، ...) تُحمَّل مرة
+  // واحدة فقط عند initState — فتبقى قديمة طوال الجلسة رغم تغيّرها فعلياً على
+  // الباكند (مثلاً بعد إتمام معالج "الانضمام كمزوّد خدمة" في شاشة مندرجة فوق
+  // هذه، ثم العودة إليها بزر الرجوع). didPopNext يُعاد تحميلها في كل مرة
+  // تعود فيها هذه الشاشة للواجهة بعد إغلاق شاشة فوقها، فتعكس أزرار "انضم
+  // كمزوّد خدمة"/"خدماتي" (ServicesHubScreen) الحالة الحقيقية دائماً بدل
+  // القيمة المخبَّأة من أول فتح للتطبيق.
+  @override
+  void didPopNext() {
+    super.didPopNext();
+    DashboardScreen.loadData(true);
+  }
+
+  @override
+  void dispose() {
+    routeObserver.unsubscribe(this);
+    super.dispose();
   }
 }
 

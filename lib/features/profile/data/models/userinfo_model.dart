@@ -239,11 +239,6 @@ class ProviderIdentity {
   int? zoneId;
   double? latitude;
   double? longitude;
-  // حالة اعتماد الأدمن لطلب مزوّد الخدمة: null (لم يُرسَل بعد)، 'pending'
-  // (دُفع وينتظر مراجعة)، 'approved'، أو 'rejected' — راجع الباكند
-  // App\Enums\ProviderApprovalStatus. منفصلة عن userType بالكامل: يبقى
-  // 'customer' طوال فترة المراجعة، ولا يتحوّل إلى 'provider' إلا بعد approved.
-  String? approvalStatus;
 
   ProviderIdentity({
     this.identityType,
@@ -255,7 +250,6 @@ class ProviderIdentity {
     this.zoneId,
     this.latitude,
     this.longitude,
-    this.approvalStatus,
   });
 
   ProviderIdentity.fromJson(Map<String, dynamic> json) {
@@ -265,7 +259,6 @@ class ProviderIdentity {
     commercialRegistrationNo = json['commercial_registration_no'];
     image = json['image'];
     address = json['address'];
-    approvalStatus = json['approval_status'];
     // decimal/bigint بالباكند قد تصل كنص (Laravel لا يحوّلها افتراضيًا) —
     // tryParse يتعامل مع الحالتين (رقم أو نص) بأمان.
     zoneId = json['zone_id'] is int

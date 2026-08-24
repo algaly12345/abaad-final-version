@@ -838,7 +838,8 @@ class _ProviderSection extends StatelessWidget {
         (provider.instagram?.isNotEmpty ?? false) ||
         (provider.snapchat?.isNotEmpty ?? false) ||
         (provider.tiktok?.isNotEmpty ?? false) ||
-        (provider.website?.isNotEmpty ?? false);
+        (provider.website?.isNotEmpty ?? false) ||
+        (provider.youtube?.isNotEmpty ?? false);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -900,34 +901,37 @@ class _ProviderSection extends StatelessWidget {
                 _ContactChip(
                   label: 'twitter_x_label'.tr,
                   icon: Icons.alternate_email_rounded,
-                  onTap: () => _launch('https://twitter.com/${provider.twitter}'),
+                  onTap: () => _launch(_ensureScheme(provider.twitter!)),
                 ),
               if (provider.instagram?.isNotEmpty ?? false)
                 _ContactChip(
                   label: 'instagram_label'.tr,
                   icon: Icons.camera_alt_rounded,
-                  onTap: () =>
-                      _launch('https://instagram.com/${provider.instagram}'),
+                  onTap: () => _launch(_ensureScheme(provider.instagram!)),
                 ),
               if (provider.snapchat?.isNotEmpty ?? false)
                 _ContactChip(
                   label: 'snapchat_label'.tr,
                   icon: Icons.camera_rounded,
-                  onTap: () => _launch(
-                      'https://www.snapchat.com/add/${provider.snapchat}'),
+                  onTap: () => _launch(_ensureScheme(provider.snapchat!)),
                 ),
               if (provider.tiktok?.isNotEmpty ?? false)
                 _ContactChip(
                   label: 'tiktok_label'.tr,
                   icon: Icons.music_note_rounded,
-                  onTap: () =>
-                      _launch('https://www.tiktok.com/@${provider.tiktok}'),
+                  onTap: () => _launch(_ensureScheme(provider.tiktok!)),
                 ),
               if (provider.website?.isNotEmpty ?? false)
                 _ContactChip(
                   label: 'website_label'.tr,
                   icon: Icons.language_rounded,
                   onTap: () => _launch(_ensureScheme(provider.website!)),
+                ),
+              if (provider.youtube?.isNotEmpty ?? false)
+                _ContactChip(
+                  label: 'youtube_label'.tr,
+                  icon: Icons.smart_display_rounded,
+                  onTap: () => _launch(_ensureScheme(provider.youtube!)),
                 ),
             ],
           ),

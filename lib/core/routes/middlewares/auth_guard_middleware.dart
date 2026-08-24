@@ -1,6 +1,6 @@
 import 'package:abaad_flutter/core/routes/route_helper.dart';
 import 'package:abaad_flutter/features/auth/controller/auth_controller.dart';
-import 'package:abaad_flutter/features/profile/controller/user_controller.dart';
+import 'package:abaad_flutter/features/provider/controller/provider_permission_controller.dart';
 import 'package:abaad_flutter/features/provider/view/screens/add_property_service_offer_screen.dart';
 import 'package:abaad_flutter/features/provider/view/screens/provider_upgrade_screen.dart';
 import 'package:abaad_flutter/features/services/view/screens/my_services_screen.dart';
@@ -31,9 +31,9 @@ class AuthGuardMiddleware extends GetMiddleware {
           // وجهتهما الدقيقة بأمان (الأول يعتمد userType قبل تسجيل الدخول،
           // والثاني يحتاج معاملات دفع ديناميكية). نقطة استهلاك pendingRedirect
           // تجلب بيانات مستخدم طازجة قبل استدعاء هذا الإغلاق، فنقرأ القرار
-          // الصحيح فوراً بلا أي شاشة وسيطة: "خدماتي" لمن لديه طلب مزوّد خدمة
-          // مسبقًا، أو شاشة الانضمام لمن لا يملك طلبًا بعد.
-          _ => Get.find<UserController>().userInfoModel?.provider != null
+          // الصحيح فوراً بلا أي شاشة وسيطة: نوع الحساب (user_type) هو الفيصل
+          // الوحيد — "خدماتي" لمزوّد فعلي، أو شاشة الانضمام لغيره.
+          _ => Get.find<ProviderPermissionController>().isProviderByType
               ? const MyServicesScreen()
               : const ProviderUpgradeScreen(),
         },

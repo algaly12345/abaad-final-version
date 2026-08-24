@@ -1,10 +1,12 @@
 import 'package:abaad_flutter/core/routes/route_helper.dart';
 import 'package:abaad_flutter/features/auth/controller/auth_controller.dart';
 import 'package:abaad_flutter/features/profile/controller/user_controller.dart';
+import 'package:abaad_flutter/features/provider/controller/provider_permission_controller.dart';
 import 'package:abaad_flutter/features/provider/controller/service_offer_controller.dart';
 import 'package:abaad_flutter/features/services/view/screens/my_services_screen.dart';
 import 'package:abaad_flutter/shared/theme/design_system.dart';
 import 'package:abaad_flutter/shared/widgets/not_logged_in_screen.dart';
+import 'package:abaad_flutter/shared/widgets/root_fallback_scope.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
@@ -30,6 +32,14 @@ class ProviderUpgradeScreen extends StatefulWidget {
 
 class _ProviderUpgradeScreenState extends State<ProviderUpgradeScreen> {
   late final ServiceOfferController _offerController;
+
+  // يغطي التسلسل الكامل لـ _continue() (حفظ الهوية + تحديث المستخدم + التنقّل)
+  // لا استدعاء saveIdentityNow() فقط — controller.isSubmitting يعود false فور
+  // انتهاء نداء الشبكة الأول فيه، أي قبل بدء getUserInfo() بلحظات، فيصبح زرّ
+  // "متابعة" قابلاً للنقر مجدداً أثناء ذلك الفاصل ويُمكن أن يدفع معالج "إضافة
+  // خدمة" مرتين متتاليتين على المكدّس بضغطة مزدوجة. نفس نمط _isSubmitting في
+  // CompleteProviderProfileScreen._continue().
+  bool _isNavigatingToOffer = false;
 
   static const String _freelancePrefix = 'FL-';
 
@@ -57,9 +67,23 @@ class _ProviderUpgradeScreenState extends State<ProviderUpgradeScreen> {
   // إتمام معالج "إضافة خدمة" بالكامل — فلا تُفقَد لو غادر المستخدم المعالج
   // قبل إكماله. saveIdentityNow() تعرض رسالة الخطأ بنفسها لو فشل الحفظ.
   Future<void> _continue() async {
+    if (_isNavigatingToOffer) return;
+    setState(() => _isNavigatingToOffer = true);
+
     final saved = await _offerController.saveIdentityNow();
-    if (!saved) return;
-    Get.find<UserController>().getUserInfo();
+    if (!saved) {
+      if (mounted) setState(() => _isNavigatingToOffer = false);
+      return;
+    }
+    // ننتظر اكتمالها هنا عمداً (لا fire-and-forget): إن رجع المستخدم لاحقاً
+    // من معالج "إضافة خدمة" إلى هذه الشاشة (المكدّس)، فحص hasChosenIdentityType
+    // أعلى build() يقرأ userInfoModel المخزَّن نفسه — لو لم يكتمل هذا التحديث
+    // بعد، يبقى قديماً (provider=null) فيُعاد عرض النموذج من جديد رغم أن
+    // البيانات أُرسلت فعلياً للباكند بنجاح.
+    await Get.find<UserController>().getUserInfo();
+
+    if (!mounted) return;
+    setState(() => _isNavigatingToOffer = false);
     Get.toNamed(RouteHelper.getAddServiceOfferRoute());
   }
 
@@ -67,22 +91,36 @@ class _ProviderUpgradeScreenState extends State<ProviderUpgradeScreen> {
   // المزوّد استكمالها، لكنها لا تُحجب المتابعة هنا — تُستكمل/تُراجَع يدويًا
   // لاحقًا. تلميحات الصيغة (_FormatHint) تبقى ظاهرة لإرشاد المستخدم فقط،
   // دون منعه من المتابعة ببيانات ناقصة.
-  bool get _canContinue => _offerController.entityType != null;
+  bool get _canContinue =>
+      _offerController.entityType != null && !_isNavigatingToOffer;
 
   @override
   Widget build(BuildContext context) {
     if (!Get.find<AuthController>().isLoggedIn()) {
       // بلا شاشة وسيطة: نقطة استهلاك pendingRedirect (sign_in_screen.dart /
       // verification_screen.dart) تجلب بيانات مستخدم طازجة قبل استدعاء هذا
-      // الإغلاق، فيقرأ القرار الصحيح فوراً بلا أي انتقال إضافي — لمن لديه
-      // طلب مزوّد خدمة مسبقًا (بغضّ النظر عن اعتماده) "خدماتي" مباشرة بدل
-      // إعادة سؤاله عن فرد/منشأة من جديد.
+      // الإغلاق، فيقرأ القرار الصحيح فوراً بلا أي انتقال إضافي — نوع الحساب
+      // (users.user_type) هو الفيصل الوحيد: "خدماتي" لمزوّد فعلي، أو نموذج
+      // الهوية من جديد لغيره.
       return NotLoggedInScreen(
         redirectAfterLogin: () =>
-            Get.find<UserController>().userInfoModel?.provider != null
+            Get.find<ProviderPermissionController>().isProviderByType
                 ? const MyServicesScreen()
                 : const ProviderUpgradeScreen(),
       );
+    }
+
+    // مستخدم مسجّل دخوله سبق له إرسال بيانات الهوية (فرد/منشأة) بالفعل —
+    // الباكند يُرقّيه إلى provider فور تلك الخطوة (راجع
+    // ServiceProviderService::updateProviderIdentity)، فلا داعي لعرض النموذج
+    // من جديد. يمنع هذا تحديداً ظهور النموذج عند الرجوع بزر الرجوع من معالج
+    // "إضافة خدمة" (AddPropertyServiceOfferScreen يفتح هذه الشاشة عبر
+    // Get.toNamed لا Get.off، فتبقى ProviderUpgradeScreen في المكدّس) —
+    // ينتقل مباشرة إلى "خدماتي" حيث تظهر عروضه بدل إعادة سؤاله عن فرد/منشأة.
+    // نفس فيصل نوع الحساب (user_type) المستخدَم بكل مكان آخر، لا وجود سجل
+    // service_providers وحده.
+    if (Get.find<ProviderPermissionController>().isProviderByType) {
+      return const MyServicesScreen();
     }
 
     return GetBuilder<ServiceOfferController>(
@@ -117,7 +155,11 @@ class _ProviderUpgradeScreenState extends State<ProviderUpgradeScreen> {
         bottom: false,
         child: Row(
           children: [
-            _TopBarBackButton(onTap: () => Get.back()),
+            // يذهب مباشرة إلى "قائمة الخدمات" (لا Get.back() عبر
+            // ProviderLandingScreen الوسيطة) — تجربة أنظف: من عدل عن التسجيل
+            // كمزوّد خدمة يعود مباشرة لتصفّح الخدمات بدل المرور بشاشة تعريفية
+            // رآها للتوّ.
+            _TopBarBackButton(onTap: RootFallbackScope.goToServices),
             const SizedBox(width: 8),
             Expanded(
               child: Text(
@@ -207,7 +249,7 @@ class _ProviderUpgradeScreenState extends State<ProviderUpgradeScreen> {
           padding: const EdgeInsets.all(Spacing.pagePadding),
           child: DSPrimaryButton(
             label: 'continue_label'.tr,
-            loading: _offerController.isSubmitting,
+            loading: _isNavigatingToOffer || _offerController.isSubmitting,
             onPressed: _canContinue ? _continue : null,
           ),
         ),

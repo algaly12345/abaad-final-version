@@ -7,6 +7,7 @@ import 'package:abaad_flutter/features/provider/controller/service_offer_control
 import 'package:abaad_flutter/features/provider/view/screens/add_property_service_offer_screen.dart';
 import 'package:abaad_flutter/shared/theme/design_system.dart';
 import 'package:abaad_flutter/shared/widgets/not_logged_in_screen.dart';
+import 'package:abaad_flutter/shared/widgets/root_fallback_scope.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -139,7 +140,8 @@ class _CompleteProviderProfileScreenState
         bottom: false,
         child: Row(
           children: [
-            _TopBarBackButton(onTap: () => Get.back()),
+            _TopBarBackButton(
+                onTap: () => RootFallbackScope.handleBackTap(context)),
             const SizedBox(width: 8),
             Expanded(
               child: Text(

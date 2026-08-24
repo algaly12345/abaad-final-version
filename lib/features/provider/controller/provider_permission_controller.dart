@@ -24,7 +24,13 @@ class ProviderPermissionController extends GetxController
   //     نرجع إلى user_type: أي مستخدم من نوع "provider" يملك
   //     صلاحيات المزود كاملة بشكل افتراضي حتى يقيّدها الأدمن.
 
-  bool get _isProviderByType {
+  /// نوع الحساب فعلياً (عميل عادي أم مزوّد خدمة) — المصدر الوحيد لهذا
+  /// القرار هو عمود users.user_type، بلا أي إشارة أخرى (وجود سجل
+  /// service_providers، الصلاحيات الصريحة، ...). يُستخدم لقرارات "هوية
+  /// الحساب" مثل زر "خدماتي" مقابل "انضم كمزوّد خدمة" — بخلاف canCreateServices
+  /// وأخواتها (أدناه) التي تحكم صلاحيات فعلية قابلة لتقييد الأدمن حتى لو كان
+  /// الحساب provider أصلاً.
+  bool get isProviderByType {
     try {
       final userType =
           Get.find<UserController>().userInfoModel?.userType ?? '';
@@ -34,28 +40,12 @@ class ProviderPermissionController extends GetxController
     }
   }
 
-
-
   bool _check(String permission) {
     if (_hasExplicitPermissions) {
       return _permissions.contains(permission);
     }
     // لم يُعيَّن شيء صريح بعد → يعتمد على نوع المستخدم
-    return _isProviderByType;
-  }
-
-  /// هل قدَّم هذا الحساب طلب "ترقية إلى مزوّد خدمة" (بغضّ النظر عن اعتماد
-  /// الأدمن)؟ يعتمد على وجود سجل service_providers نفسه (UserInfoModel.provider)
-  /// لا على userType — فيبقى صحيحًا طوال فترة "قيد المراجعة" حيث userType ما
-  /// زال 'customer' (راجع App\Enums\ProviderApprovalStatus بالباكند). يُستخدم
-  /// فقط لقرارات تنقّل (مثل زر "خدماتي" مقابل "انضم كمزوّد خدمة")، لا لصلاحيات
-  /// فعلية — إضافة/تعديل الخدمات تبقى محكومة حصرًا بـ canCreateServices وأخواتها.
-  bool get hasProviderApplication {
-    try {
-      return Get.find<UserController>().userInfoModel?.provider != null;
-    } catch (_) {
-      return false;
-    }
+    return isProviderByType;
   }
 
   bool get canCreateServices => _check('services.create');

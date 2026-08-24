@@ -1,5 +1,4 @@
 ﻿import 'package:abaad_flutter/features/auth/controller/auth_controller.dart';
-import 'package:abaad_flutter/features/profile/controller/user_controller.dart';
 import 'package:abaad_flutter/features/provider/controller/provider_permission_controller.dart';
 import 'package:abaad_flutter/features/services/controller/services_controller.dart';
 import 'package:abaad_flutter/features/provider/data/models/service_offer_model.dart';
@@ -9,6 +8,7 @@ import 'package:abaad_flutter/shared/theme/design_system.dart';
 import 'package:abaad_flutter/shared/utils/styles.dart';
 import 'package:abaad_flutter/shared/widgets/custom_image.dart';
 import 'package:abaad_flutter/shared/widgets/not_logged_in_screen.dart';
+import 'package:abaad_flutter/shared/widgets/root_fallback_scope.dart';
 import 'package:abaad_flutter/features/services/view/screens/service_details_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -56,6 +56,10 @@ class _MyServicesScreenState extends State<MyServicesScreen>
         myServices: true,
         silentReload: silentReload,
       );
+      // زرّ "إضافة خدمة" هنا مربوط بـ canCreateServices — يُعاد تحميلها في كل
+      // عودة لهذه الشاشة (مثلاً بعد استكمال بيانات الهوية/العمل في شاشة فوقها)
+      // بدل بقاء صلاحيات أول تحميل للتطبيق مخبَّأة طوال الجلسة.
+      Get.find<ProviderPermissionController>().loadPermissions();
     }
   }
 
@@ -98,7 +102,7 @@ class _MyServicesScreenState extends State<MyServicesScreen>
         child: Row(
           children: [
             InkWell(
-              onTap: () => Get.back(),
+              onTap: () => RootFallbackScope.handleBackTap(context),
               borderRadius: BorderRadius.circular(14),
               child: Container(
                 width: 48,
@@ -122,61 +126,6 @@ class _MyServicesScreenState extends State<MyServicesScreen>
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  // ─── شريط حالة اعتماد الحساب — يظهر فقط لمزوّد أرسل طلبه ولم يُبتّ فيه
-  // بعد (pending) أو رُفض (rejected)؛ يختفي تمامًا لمزوّد معتمَد أو لمن لم
-  // يقدّم طلبًا بعد أصلاً (approvalStatus == null)، فلا يُكرَّر مع تبويب
-  // "قيد المراجعة"/"مرفوض" أدناه بل يوضّح حالة الحساب ذاته بغضّ النظر عن
-  // التبويب المفتوح حاليًا (راجع الفرق بين هذا وبين ProviderApprovalStatus
-  // بالباكند: approval_status هنا خاص بالحساب، لا بعرض معيّن). ─────────────
-  Widget _buildApprovalStatusBanner(BuildContext context) {
-    final status =
-        Get.find<UserController>().userInfoModel?.provider?.approvalStatus;
-
-    late final Color color;
-    late final IconData icon;
-    late final String message;
-
-    switch (status) {
-      case 'pending':
-        color = Colors.orange.shade700;
-        icon = Icons.hourglass_top_rounded;
-        message =
-            'حسابك كمزوّد خدمة قيد المراجعة من الإدارة، سيصلك إشعار فور اعتماده';
-        break;
-      case 'rejected':
-        color = Colors.red.shade700;
-        icon = Icons.error_outline_rounded;
-        message = 'تم رفض طلب اعتماد حسابك كمزوّد خدمة، تواصل معنا للمزيد';
-        break;
-      default:
-        return const SizedBox.shrink();
-    }
-
-    return Container(
-      width: double.infinity,
-      margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(AppRadius.medium),
-        border: Border.all(color: color.withValues(alpha: 0.35)),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, size: 20, color: color),
-          const SizedBox(width: Spacing.sm),
-          Expanded(
-            child: Text(
-              message,
-              style: AppTypography.smallMedium.copyWith(color: color),
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -323,7 +272,6 @@ class _MyServicesScreenState extends State<MyServicesScreen>
       body: Column(
         children: [
           _buildTopBar(context),
-          _buildApprovalStatusBanner(context),
           _buildTabBar(context, primary),
           Expanded(child: content),
         ],

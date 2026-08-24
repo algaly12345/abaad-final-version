@@ -195,6 +195,7 @@ class ProviderData {
   String? website;
   String? tiktok;
   String? twitter;
+  String? youtube;
   String? image;
   // عرض فقط حاليًا — لا توجد آلية لتقديم تقييم بعد
   double? rating;
@@ -209,6 +210,7 @@ class ProviderData {
     website = json['website'];
     tiktok = json['tiktok'];
     twitter = json['twitter'];
+    youtube = json['youtube'];
     image = json['image'];
     rating = json['rating'] != null
         ? double.tryParse(json['rating'].toString())

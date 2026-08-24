@@ -68,7 +68,9 @@ class _AddPropertyServiceOfferScreenState
       if (offerController.entityType == null) {
         final userInfo = Get.find<UserController>().userInfoModel;
         final provider = userInfo?.provider;
-        if (userInfo == null || provider == null || !provider.isComplete) {
+        if (userInfo == null ||
+            provider == null ||
+            !provider.hasChosenIdentityType) {
           Get.off(() => const ProviderUpgradeScreen());
         } else if (!userInfo.isProviderProfileComplete) {
           // بيانات الهوية مكتملة لكن بيانات العمل (شعار/عنوان/جوال) ناقصة —
@@ -518,7 +520,8 @@ class _WizardScreenState extends State<_WizardScreen> {
   final TextEditingController _titleCtrl = TextEditingController();
   final TextEditingController _valueCtrl = TextEditingController();
   final TextEditingController _descCtrl = TextEditingController();
-  // عنوان تفصيلي إلزامي (مثل "خميس مشيط - حي المروج").
+  // عنوان تفصيلي اختياري (مثل "خميس مشيط - حي المروج") — لا حقل إدخال له في
+  // الخطوة الأولى، يُملأ تلقائياً لاحقاً (راجع _canGoNext حالة 0).
   final TextEditingController _addressCtrl = TextEditingController();
   // رقم التواصل الخاص بهذا العرض — يُعبَّأ افتراضياً من رقم حساب المستخدم
   // (أدناه في initState) لكنه قابل للتعديل قبل الإرسال.
@@ -627,11 +630,16 @@ class _WizardScreenState extends State<_WizardScreen> {
   bool _canGoNext(ServiceOfferController c) {
     switch (_step) {
       case 0:
+        // _addressCtrl مستثنى عمداً هنا: هذه الخطوة لا تعرض له أي حقل إدخال
+        // إطلاقاً — يُملأ إما من عنوان النشاط المحفوظ سلفاً (initState) أو من
+        // ترميز جوجل العكسي عند خطوة "الموقع" (_StepLocation) لاحقاً. لمزوّد
+        // جديد بلا عنوان نشاط محفوظ، اشتراطه هنا كان يمنعه نهائياً من تجاوز
+        // هذه الخطوة إذ لا توجد وسيلة لملئه قبلها. الباكند نفسه يعامله كحقل
+        // اختياري (StoreOfferRequest: 'address' => 'nullable').
         return c.selectedServiceTypeIndex >= 0 &&
             _titleCtrl.text.trim().isNotEmpty &&
             _valueCtrl.text.trim().isNotEmpty &&
             _descCtrl.text.trim().isNotEmpty &&
-            _addressCtrl.text.trim().isNotEmpty &&
             _phoneCtrl.text.trim().isNotEmpty;
       case 1:
         // خطوة صيغة التسعير/المدة — مدة الاشتراك دائماً محددة بقيمة افتراضية

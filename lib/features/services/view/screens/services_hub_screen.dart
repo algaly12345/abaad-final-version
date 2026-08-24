@@ -19,7 +19,13 @@ class ServicesHubScreen extends StatelessWidget {
         // ServicesCatalogScreen بدل تكراره هنا — هذه الشاشة تمرّر فقط
         // زر الإجراء العائم. أيقونة "طلباتي/خدماتي" أُزيلت لأنها باتت
         // مكررة بعد أن صار الزرّ العائم ينقل مزوّد الخدمة إلى نفس الشاشة.
-        final fab = pc.isProvider
+        //
+        // hasProviderApplication (لا isProvider وحدها) هنا عمداً: مزوّد قدَّم
+        // طلبه ودفع وينتظر اعتماد الأدمن ما زال userType == 'customer' فلا
+        // يملك صلاحيات فعلية بعد (isProvider=false)، لكنه لا يجب أن يُعاد
+        // توجيهه لشاشة "انضم كمزوّد خدمة" من جديد كأن شيئًا لم يُرسَل — بل
+        // لشاشة "خدماتي" ليرى طلبه قيد المراجعة (تبويب "قيد المراجعة" هناك).
+        final fab = (pc.isProvider || pc.hasProviderApplication)
             ? FloatingActionButton.extended(
 
           backgroundColor: primary,

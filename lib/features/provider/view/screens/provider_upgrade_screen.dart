@@ -2,6 +2,7 @@ import 'package:abaad_flutter/core/routes/route_helper.dart';
 import 'package:abaad_flutter/features/auth/controller/auth_controller.dart';
 import 'package:abaad_flutter/features/profile/controller/user_controller.dart';
 import 'package:abaad_flutter/features/provider/controller/service_offer_controller.dart';
+import 'package:abaad_flutter/features/services/view/screens/my_services_screen.dart';
 import 'package:abaad_flutter/shared/theme/design_system.dart';
 import 'package:abaad_flutter/shared/widgets/not_logged_in_screen.dart';
 import 'package:flutter/material.dart';
@@ -62,32 +63,26 @@ class _ProviderUpgradeScreenState extends State<ProviderUpgradeScreen> {
     Get.toNamed(RouteHelper.getAddServiceOfferRoute());
   }
 
-  bool get _canContinue {
-    final type = _offerController.entityType;
-    if (type == 'individual') {
-      return RegExp(
-            r'^[12]\d{9}$',
-          ).hasMatch(_offerController.identityNumberController.text.trim()) &&
-          RegExp(r'^FL-\d+$').hasMatch(
-            _offerController.freelanceMembershipController.text.trim(),
-          );
-    }
-    if (type == 'organization') {
-      final idType = _offerController.organizationIdType;
-      if (idType == null) return false;
-      final regex =
-          idType == 'unified' ? RegExp(r'^70\d{8}$') : RegExp(r'^\d{10}$');
-      return regex.hasMatch(
-        _offerController.commercialRegistrationController.text.trim(),
-      );
-    }
-    return false;
-  }
+  // يكفي اختيار فرد/منشأة للمتابعة. أرقام الهوية بيانات ضرورية يُطلب من
+  // المزوّد استكمالها، لكنها لا تُحجب المتابعة هنا — تُستكمل/تُراجَع يدويًا
+  // لاحقًا. تلميحات الصيغة (_FormatHint) تبقى ظاهرة لإرشاد المستخدم فقط،
+  // دون منعه من المتابعة ببيانات ناقصة.
+  bool get _canContinue => _offerController.entityType != null;
 
   @override
   Widget build(BuildContext context) {
     if (!Get.find<AuthController>().isLoggedIn()) {
-      return const NotLoggedInScreen();
+      // بلا شاشة وسيطة: نقطة استهلاك pendingRedirect (sign_in_screen.dart /
+      // verification_screen.dart) تجلب بيانات مستخدم طازجة قبل استدعاء هذا
+      // الإغلاق، فيقرأ القرار الصحيح فوراً بلا أي انتقال إضافي — لمن لديه
+      // طلب مزوّد خدمة مسبقًا (بغضّ النظر عن اعتماده) "خدماتي" مباشرة بدل
+      // إعادة سؤاله عن فرد/منشأة من جديد.
+      return NotLoggedInScreen(
+        redirectAfterLogin: () =>
+            Get.find<UserController>().userInfoModel?.provider != null
+                ? const MyServicesScreen()
+                : const ProviderUpgradeScreen(),
+      );
     }
 
     return GetBuilder<ServiceOfferController>(

@@ -44,6 +44,20 @@ class ProviderPermissionController extends GetxController
     return _isProviderByType;
   }
 
+  /// هل قدَّم هذا الحساب طلب "ترقية إلى مزوّد خدمة" (بغضّ النظر عن اعتماد
+  /// الأدمن)؟ يعتمد على وجود سجل service_providers نفسه (UserInfoModel.provider)
+  /// لا على userType — فيبقى صحيحًا طوال فترة "قيد المراجعة" حيث userType ما
+  /// زال 'customer' (راجع App\Enums\ProviderApprovalStatus بالباكند). يُستخدم
+  /// فقط لقرارات تنقّل (مثل زر "خدماتي" مقابل "انضم كمزوّد خدمة")، لا لصلاحيات
+  /// فعلية — إضافة/تعديل الخدمات تبقى محكومة حصرًا بـ canCreateServices وأخواتها.
+  bool get hasProviderApplication {
+    try {
+      return Get.find<UserController>().userInfoModel?.provider != null;
+    } catch (_) {
+      return false;
+    }
+  }
+
   bool get canCreateServices => _check('services.create');
   bool get canViewServices => _check('services.view');
   bool get canUpdateServices => _check('services.update');

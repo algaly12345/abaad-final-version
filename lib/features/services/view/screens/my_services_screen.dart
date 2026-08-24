@@ -1,8 +1,10 @@
 ﻿import 'package:abaad_flutter/features/auth/controller/auth_controller.dart';
+import 'package:abaad_flutter/features/profile/controller/user_controller.dart';
 import 'package:abaad_flutter/features/provider/controller/provider_permission_controller.dart';
 import 'package:abaad_flutter/features/services/controller/services_controller.dart';
 import 'package:abaad_flutter/features/provider/data/models/service_offer_model.dart';
 import 'package:abaad_flutter/core/routes/route_helper.dart';
+import 'package:abaad_flutter/core/routes/route_observer.dart';
 import 'package:abaad_flutter/shared/theme/design_system.dart';
 import 'package:abaad_flutter/shared/utils/styles.dart';
 import 'package:abaad_flutter/shared/widgets/custom_image.dart';
@@ -19,26 +21,47 @@ class MyServicesScreen extends StatefulWidget {
 }
 
 class _MyServicesScreenState extends State<MyServicesScreen>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, RouteAware {
   late TabController _tabController;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 5, vsync: this);
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (Get.find<AuthController>().isLoggedIn()) {
-        Get.find<ServicesController>().getServicesList(
-          1,
-          reload: true,
-          myServices: true,
-        );
-      }
-    });
+    WidgetsBinding.instance.addPostFrameCallback((_) => _refreshServices());
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final route = ModalRoute.of(context);
+    if (route is PageRoute) routeObserver.subscribe(this, route);
+  }
+
+  // بلا هذا: العودة لهذه الشاشة عبر Get.back()/Get.until() (مثلاً من شاشة
+  // "إضافة خدمة" بعد نجاح الإضافة) تُعيد نفس نسخة الودجت القائمة أصلاً في
+  // المكدّس دون إعادة تشغيل initState()، فتبقى الخدمة المضافة حديثاً غائبة
+  // عن القائمة حتى يفعل المستخدم شيئاً آخر يدوياً.
+  @override
+  void didPopNext() {
+    super.didPopNext();
+    _refreshServices(silentReload: true);
+  }
+
+  void _refreshServices({bool silentReload = false}) {
+    if (Get.find<AuthController>().isLoggedIn()) {
+      Get.find<ServicesController>().getServicesList(
+        1,
+        reload: true,
+        myServices: true,
+        silentReload: silentReload,
+      );
+    }
   }
 
   @override
   void dispose() {
+    routeObserver.unsubscribe(this);
     _tabController.dispose();
     super.dispose();
   }
@@ -46,7 +69,9 @@ class _MyServicesScreenState extends State<MyServicesScreen>
   @override
   Widget build(BuildContext context) {
     if (!Get.find<AuthController>().isLoggedIn()) {
-      return NotLoggedInScreen();
+      return NotLoggedInScreen(
+        redirectAfterLogin: () => const MyServicesScreen(),
+      );
     }
 
     // GetBuilder يُعيد بناء الشاشة عند انتهاء loadPermissions()
@@ -97,6 +122,61 @@ class _MyServicesScreenState extends State<MyServicesScreen>
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  // ─── شريط حالة اعتماد الحساب — يظهر فقط لمزوّد أرسل طلبه ولم يُبتّ فيه
+  // بعد (pending) أو رُفض (rejected)؛ يختفي تمامًا لمزوّد معتمَد أو لمن لم
+  // يقدّم طلبًا بعد أصلاً (approvalStatus == null)، فلا يُكرَّر مع تبويب
+  // "قيد المراجعة"/"مرفوض" أدناه بل يوضّح حالة الحساب ذاته بغضّ النظر عن
+  // التبويب المفتوح حاليًا (راجع الفرق بين هذا وبين ProviderApprovalStatus
+  // بالباكند: approval_status هنا خاص بالحساب، لا بعرض معيّن). ─────────────
+  Widget _buildApprovalStatusBanner(BuildContext context) {
+    final status =
+        Get.find<UserController>().userInfoModel?.provider?.approvalStatus;
+
+    late final Color color;
+    late final IconData icon;
+    late final String message;
+
+    switch (status) {
+      case 'pending':
+        color = Colors.orange.shade700;
+        icon = Icons.hourglass_top_rounded;
+        message =
+            'حسابك كمزوّد خدمة قيد المراجعة من الإدارة، سيصلك إشعار فور اعتماده';
+        break;
+      case 'rejected':
+        color = Colors.red.shade700;
+        icon = Icons.error_outline_rounded;
+        message = 'تم رفض طلب اعتماد حسابك كمزوّد خدمة، تواصل معنا للمزيد';
+        break;
+      default:
+        return const SizedBox.shrink();
+    }
+
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(AppRadius.medium),
+        border: Border.all(color: color.withValues(alpha: 0.35)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 20, color: color),
+          const SizedBox(width: Spacing.sm),
+          Expanded(
+            child: Text(
+              message,
+              style: AppTypography.smallMedium.copyWith(color: color),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -243,6 +323,7 @@ class _MyServicesScreenState extends State<MyServicesScreen>
       body: Column(
         children: [
           _buildTopBar(context),
+          _buildApprovalStatusBanner(context),
           _buildTabBar(context, primary),
           Expanded(child: content),
         ],

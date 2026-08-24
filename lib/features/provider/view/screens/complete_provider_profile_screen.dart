@@ -47,17 +47,14 @@ class _CompleteProviderProfileScreenState
   UserInfoModel? get _userInfo => Get.find<UserController>().userInfoModel;
   ProviderIdentity? get _provider => _userInfo?.provider;
 
+  // الشعار والعنوان بيانات ضرورية يُطلب من المزوّد استكمالها، لكنها لا تُحجب
+  // المتابعة هنا — تُستكمل/تُراجَع يدويًا لاحقًا (لوحة الأدمن). الجوال وحده
+  // يبقى إلزاميًا لإكمال هذه الخطوة: شرط الاستمرار هو التحقق الفعلي عبر OTP
+  // لا مجرّد إدخال نص — راجع _PhoneSection.
   bool get _canContinue {
     final userInfo = _userInfo;
     final provider = _provider;
     if (userInfo == null || provider == null) return false;
-    if (!provider.hasLogo && _offerController.pickedLogo == null) return false;
-    if (!provider.hasAddress &&
-        _offerController.businessAddressController.text.trim().isEmpty) {
-      return false;
-    }
-    // الجوال: شرط الاستمرار هو التحقق الفعلي عبر OTP لا مجرّد إدخال نص —
-    // راجع _PhoneSection.
     if (!userInfo.hasPhone && !_offerController.isPhoneVerified) {
       return false;
     }
@@ -99,7 +96,9 @@ class _CompleteProviderProfileScreenState
   @override
   Widget build(BuildContext context) {
     if (!Get.find<AuthController>().isLoggedIn()) {
-      return const NotLoggedInScreen();
+      return NotLoggedInScreen(
+        redirectAfterLogin: () => const CompleteProviderProfileScreen(),
+      );
     }
 
     final userInfo = _userInfo;

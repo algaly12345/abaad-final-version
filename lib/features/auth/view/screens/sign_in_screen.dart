@@ -3,7 +3,9 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:abaad_flutter/features/auth/controller/auth_controller.dart';
+import 'package:abaad_flutter/features/profile/controller/user_controller.dart';
 import 'package:abaad_flutter/shared/helpers/responsive_helper.dart';
+import 'package:abaad_flutter/shared/widgets/root_fallback_scope.dart';
 import 'package:abaad_flutter/core/routes/route_helper.dart';
 import 'package:abaad_flutter/shared/theme/design_system.dart';
 import 'package:abaad_flutter/shared/utils/images.dart';
@@ -387,12 +389,31 @@ class _SignInScreenState extends State<SignInScreen> {
     final String phone = _phoneController.text.trim();
     final String fullPhone = '+966$phone';
 
-    authController.login(fullPhone, '1234567').then((status) {
+    authController.login(fullPhone, '1234567').then((status) async {
       if (status.isSuccess) {
         final String token = status.token ?? status.message;
 
         if (status.isPhoneVerified == true) {
-          Get.offAllNamed(RouteHelper.getInitialRoute());
+          // شاشة مُعلَّقة للعودة إليها (مثلاً ProviderLandingScreen لزائر أراد
+          // الانضمام كمزوّد قبل أن يُطلَب منه تسجيل الدخول) — راجع
+          // AuthController.setPendingPostAuthRedirect / NotLoggedInScreen.
+          // null دائمًا لأي تسجيل دخول عادي، فيبقى السلوك الافتراضي كما هو.
+          final pendingRedirect =
+              authController.consumePendingPostAuthRedirect();
+          if (pendingRedirect != null) {
+            // بيانات مستخدم طازجة قبل استدعاء الإغلاق: بعض الوجهات (مثلاً
+            // ProviderUpgradeScreen) تقرر "خدماتي" مقابل شاشة الانضمام بناءً
+            // على UserController.userInfoModel الحالي مباشرة دون أي شاشة
+            // وسيطة أو انتظار إضافي بعد هذا الانتقال. RootFallbackScope يمنع
+            // إغلاق التطبيق بزر الرجوع بعد أن يمسح offAll المكدّس بالكامل —
+            // راجع تعليق الملف نفسه لتفصيل لماذا استُبعد نهج "انتقالين
+            // متتاليين" (offAllNamed ثم to): يتصادم مع بناء الشجرة الجديدة
+            // ويرمي "setState() called during build" فيفشل الانتقال بصمت.
+            await Get.find<UserController>().getUserInfo();
+            Get.offAll(() => RootFallbackScope(child: pendingRedirect()));
+          } else {
+            Get.offAllNamed(RouteHelper.getInitialRoute());
+          }
           return;
         }
 

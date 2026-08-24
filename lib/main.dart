@@ -287,6 +287,7 @@ import 'package:abaad_flutter/features/notification/data/models/notification_bod
 import 'package:abaad_flutter/shared/helpers/notification_helper.dart';
 import 'package:abaad_flutter/shared/helpers/responsive_helper.dart';
 import 'package:abaad_flutter/core/routes/route_helper.dart';
+import 'package:abaad_flutter/core/routes/route_observer.dart';
 import 'package:abaad_flutter/shared/theme/dark_theme.dart';
 import 'package:abaad_flutter/shared/theme/light_theme.dart';
 import 'package:abaad_flutter/shared/utils/app_constants.dart';
@@ -494,6 +495,7 @@ class _MyAppState extends State<MyApp> {
                         title: AppConstants.APP_NAME,
                         debugShowCheckedModeBanner: false,
                         navigatorKey: Get.key,
+                        navigatorObservers: [routeObserver],
                         scrollBehavior: MaterialScrollBehavior().copyWith(
                           dragDevices: {
                             PointerDeviceKind.mouse,

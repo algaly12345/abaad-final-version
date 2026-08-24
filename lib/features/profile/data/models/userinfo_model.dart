@@ -239,6 +239,11 @@ class ProviderIdentity {
   int? zoneId;
   double? latitude;
   double? longitude;
+  // حالة اعتماد الأدمن لطلب مزوّد الخدمة: null (لم يُرسَل بعد)، 'pending'
+  // (دُفع وينتظر مراجعة)، 'approved'، أو 'rejected' — راجع الباكند
+  // App\Enums\ProviderApprovalStatus. منفصلة عن userType بالكامل: يبقى
+  // 'customer' طوال فترة المراجعة، ولا يتحوّل إلى 'provider' إلا بعد approved.
+  String? approvalStatus;
 
   ProviderIdentity({
     this.identityType,
@@ -250,6 +255,7 @@ class ProviderIdentity {
     this.zoneId,
     this.latitude,
     this.longitude,
+    this.approvalStatus,
   });
 
   ProviderIdentity.fromJson(Map<String, dynamic> json) {
@@ -259,6 +265,7 @@ class ProviderIdentity {
     commercialRegistrationNo = json['commercial_registration_no'];
     image = json['image'];
     address = json['address'];
+    approvalStatus = json['approval_status'];
     // decimal/bigint بالباكند قد تصل كنص (Laravel لا يحوّلها افتراضيًا) —
     // tryParse يتعامل مع الحالتين (رقم أو نص) بأمان.
     zoneId = json['zone_id'] is int
@@ -278,6 +285,15 @@ class ProviderIdentity {
           (identityType == 'company' &&
               (commercialRegistrationNo?.isNotEmpty ?? false) &&
               commercialRegistrationNo != 'pending');
+
+  // نسخة أخف من isComplete: يكفي اختيار فرد/منشأة، دون اشتراط اكتمال رقم
+  // الهوية/السجل التجاري نفسه — تُستخدَم فقط لبوابة الدخول لمعالج "إضافة
+  // خدمة" (AddPropertyServiceOfferScreen)، إذ يُسمح بإرسال بيانات الهوية
+  // ناقصة مع العرض لمراجعتها يدويًا لاحقًا. isComplete الأصلية تبقى كما هي
+  // وتُستخدَم في نقاط أخرى (مثل ReferralScreen) حيث يبقى التحقق الصارم
+  // مطلوبًا قبل السماح بعمليات مالية.
+  bool get hasChosenIdentityType =>
+      identityType == 'individual' || identityType == 'company';
 
   // اكتمال بيانات "العمل" (منفصل عن اكتمال الهوية أعلاه) — تُستخدَم لتحديد
   // متى تظهر CompleteProviderProfileScreen قبل معالج إنشاء العرض. المنطقة

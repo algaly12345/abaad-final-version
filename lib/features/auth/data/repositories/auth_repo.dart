@@ -179,7 +179,7 @@ class AuthRepo {
   bool clearSharedData() {
     if(!GetPlatform.isWeb) {
       FirebaseMessaging.instance.unsubscribeFromTopic(AppConstants.TOPIC);
-      apiClient.postData(AppConstants.TOKEN_URI, {"cm_firebase_token": '@'});
+      apiClient.postData(AppConstants.TOKEN_URI, {"cm_firebase_token": '@'}, handleError: false);
     }
     sharedPreferences.remove(AppConstants.TOKEN);
     sharedPreferences.remove(AppConstants.userAddress);

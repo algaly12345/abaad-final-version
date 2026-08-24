@@ -2,7 +2,9 @@
 import 'dart:convert';
 
 import 'package:abaad_flutter/features/auth/controller/auth_controller.dart';
+import 'package:abaad_flutter/features/profile/controller/user_controller.dart';
 import 'package:abaad_flutter/shared/controllers/splash_controller.dart';
+import 'package:abaad_flutter/shared/widgets/root_fallback_scope.dart';
 import 'package:abaad_flutter/core/routes/route_helper.dart';
 import 'package:abaad_flutter/shared/utils/dimensions.dart';
 import 'package:abaad_flutter/shared/utils/images.dart';
@@ -394,10 +396,27 @@ class _VerificationScreenState extends State<VerificationScreen> {
       authController.verifyPhone(_number, widget.token).then((value) {
         if (value.isSuccess) {
           _showSuccessDialog();
-          Future.delayed(const Duration(seconds: 2), () {
-            Get.offNamed(
-              RouteHelper.getAccessLocationRoute('verification'),
-            );
+          Future.delayed(const Duration(seconds: 2), () async {
+            // شاشة مُعلَّقة للعودة إليها بعد إتمام التسجيل (مثلاً
+            // ProviderLandingScreen لزائر جديد أراد الانضمام كمزوّد قبل
+            // تسجيل الدخول) — راجع AuthController.setPendingPostAuthRedirect
+            // / NotLoggedInScreen. accessLocation يُصيّر DashboardScreen
+            // (الرئيسية) مباشرة فهذه النقطة الفعلية التي ينتهي إليها تسجيل
+            // مستخدم جديد، لا autoNavigate في LocationController كما بدا
+            // ظاهريًا. null دائمًا لأي تسجيل عادي فيبقى المسار كما كان تمامًا.
+            final pendingRedirect =
+                authController.consumePendingPostAuthRedirect();
+            if (pendingRedirect != null) {
+              // بيانات مستخدم طازجة قبل استدعاء الإغلاق، وRootFallbackScope
+              // يمنع إغلاق التطبيق بزر الرجوع — راجع نفس التعليق بـ
+              // sign_in_screen.dart._login().
+              await Get.find<UserController>().getUserInfo();
+              Get.offAll(() => RootFallbackScope(child: pendingRedirect()));
+            } else {
+              Get.offNamed(
+                RouteHelper.getAccessLocationRoute('verification'),
+              );
+            }
           });
         } else {
           showCustomSnackBar(value.message);

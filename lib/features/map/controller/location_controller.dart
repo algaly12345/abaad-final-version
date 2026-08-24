@@ -399,7 +399,16 @@ class LocationController extends GetxController implements GetxService {
     }
     // HomeScreen.loadData(true);
     if(fromSignUp) {
-
+      // شاشة مُعلَّقة للعودة إليها بعد إتمام التسجيل (مثلاً ProviderLandingScreen
+      // لزائر جديد أراد الانضمام كمزوّد قبل تسجيل الدخول) — راجع
+      // AuthController.setPendingPostAuthRedirect / NotLoggedInScreen. لا شيء
+      // يتغيّر هنا لو لم تُضبَط (تبقى null دائمًا لأي تسجيل عادي)، فالسلوك
+      // الافتراضي (لا تنقّل من هذه الدالة لمسار التسجيل) كما كان تمامًا.
+      final pendingRedirect =
+          Get.find<AuthController>().consumePendingPostAuthRedirect();
+      if (pendingRedirect != null) {
+        Get.offAll(pendingRedirect);
+      }
     }else {
       if(canRoute) {
         Get.offAllNamed(route);

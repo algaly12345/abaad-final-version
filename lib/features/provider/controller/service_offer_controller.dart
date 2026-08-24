@@ -64,64 +64,15 @@ class ServiceOfferController extends GetxController implements GetxService {
     update();
   }
 
-  /// تحقّق من اختيار فرد/منشأة وصحة صيغة بيانات الهوية المدخلة — مشترك بين
-  /// saveIdentityNow() (الحفظ الفوري من ProviderUpgradeScreen) وsubmitOffer()
-  /// (كتأكيد إضافي غير ضار عند إرسال العرض). يعرض رسالة الخطأ المناسبة
-  /// ويعيد false عند أول مخالفة، أو true لو كانت البيانات محفوظة سلفاً
-  /// (identityAlreadyOnFile) فلا داعي لإعادة التحقق من صيغتها.
+  /// تحقّق من اختيار فرد/منشأة فقط — مشترك بين saveIdentityNow() (الحفظ
+  /// الفوري من ProviderUpgradeScreen) وsubmitOffer() (كتأكيد إضافي غير ضار
+  /// عند إرسال العرض). لا يتحقق من صيغة/اكتمال أرقام الهوية عمداً: يُسمح
+  /// بإرسالها ناقصة أو بصيغة غير مكتملة مع العرض لأن هناك مراجعة يدوية لاحقة
+  /// (لوحة الأدمن) تتحقق من صحتها، فلا داعي لحجب المستخدم في هذه الخطوة.
   bool _validateEntityIdentity() {
     if (_entityType == null) {
       showCustomSnackBar('اختر فرد أو منشأة');
       return false;
-    }
-    if (_identityAlreadyOnFile) {
-      return true;
-    }
-    if (_entityType == 'individual') {
-      final identityNumber = identityNumberController.text.trim();
-      if (identityNumber.isEmpty) {
-        showCustomSnackBar('رقم الهوية الوطنية مطلوب');
-        return false;
-      }
-      if (!RegExp(r'^[12]\d{9}$').hasMatch(identityNumber)) {
-        showCustomSnackBar('رقم الهوية يجب أن يتكون من 10 أرقام ويبدأ بـ 1 أو 2');
-        return false;
-      }
-      final freelanceNumber = freelanceMembershipController.text.trim();
-      if (freelanceNumber.isEmpty) {
-        showCustomSnackBar('رقم وثيقة العمل الحر مطلوب');
-        return false;
-      }
-      if (!RegExp(r'^FL-\d+$').hasMatch(freelanceNumber)) {
-        showCustomSnackBar(
-          'رقم وثيقة العمل الحر يجب أن يبدأ بـ FL- متبوعاً بأرقام (مثال: FL-240629681)',
-        );
-        return false;
-      }
-    } else if (_entityType == 'organization') {
-      if (_organizationIdType == null) {
-        showCustomSnackBar('اختر رقم السجل التجاري أو الرقم الموحد');
-        return false;
-      }
-      final registrationNumber = commercialRegistrationController.text.trim();
-      if (registrationNumber.isEmpty) {
-        showCustomSnackBar(
-          _organizationIdType == 'unified'
-              ? 'الرقم الموحد مطلوب'
-              : 'رقم السجل التجاري مطلوب',
-        );
-        return false;
-      }
-      final isUnified = _organizationIdType == 'unified';
-      final regex = isUnified ? RegExp(r'^70\d{8}$') : RegExp(r'^\d{10}$');
-      if (!regex.hasMatch(registrationNumber)) {
-        showCustomSnackBar(
-          isUnified
-              ? 'الرقم الموحد يجب أن يتكون من 10 أرقام ويبدأ بـ 70'
-              : 'رقم السجل التجاري يجب أن يتكون من 10 أرقام',
-        );
-        return false;
-      }
     }
     return true;
   }
@@ -399,12 +350,10 @@ class ServiceOfferController extends GetxController implements GetxService {
 
   /// حفظ عنوان العمل — الحقل الوحيد الذي تجمعه CompleteProviderProfileScreen
   /// حاليًا من قسم "بيانات العمل" (إلى جانب الشعار المُرفَع بشكل منفصل).
+  /// العنوان بيانات ضرورية لكنها لا تُحجب المتابعة: يُرسَل فارغًا لو لم
+  /// يكتبه المستخدم، ويُستكمل/يُراجَع يدويًا لاحقًا بدل منعه من الاستمرار الآن.
   Future<bool> saveBusinessInfoNow() async {
     final address = businessAddressController.text.trim();
-    if (address.isEmpty) {
-      showCustomSnackBar('العنوان مطلوب');
-      return false;
-    }
 
     _isSavingBusinessInfo = true;
     update();

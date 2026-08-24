@@ -68,7 +68,9 @@ class _AddPropertyServiceOfferScreenState
       if (offerController.entityType == null) {
         final userInfo = Get.find<UserController>().userInfoModel;
         final provider = userInfo?.provider;
-        if (userInfo == null || provider == null || !provider.isComplete) {
+        if (userInfo == null ||
+            provider == null ||
+            !provider.hasChosenIdentityType) {
           Get.off(() => const ProviderUpgradeScreen());
         } else if (!userInfo.isProviderProfileComplete) {
           // بيانات الهوية مكتملة لكن بيانات العمل (شعار/عنوان/جوال) ناقصة —
@@ -518,7 +520,8 @@ class _WizardScreenState extends State<_WizardScreen> {
   final TextEditingController _titleCtrl = TextEditingController();
   final TextEditingController _valueCtrl = TextEditingController();
   final TextEditingController _descCtrl = TextEditingController();
-  // عنوان تفصيلي إلزامي (مثل "خميس مشيط - حي المروج").
+  // عنوان تفصيلي اختياري (مثل "خميس مشيط - حي المروج") — لا حقل إدخال له في
+  // الخطوة الأولى، يُملأ تلقائياً لاحقاً (راجع _canGoNext حالة 0).
   final TextEditingController _addressCtrl = TextEditingController();
   // رقم التواصل الخاص بهذا العرض — يُعبَّأ افتراضياً من رقم حساب المستخدم
   // (أدناه في initState) لكنه قابل للتعديل قبل الإرسال.
@@ -627,11 +630,16 @@ class _WizardScreenState extends State<_WizardScreen> {
   bool _canGoNext(ServiceOfferController c) {
     switch (_step) {
       case 0:
+        // _addressCtrl مستثنى عمداً هنا: هذه الخطوة لا تعرض له أي حقل إدخال
+        // إطلاقاً — يُملأ إما من عنوان النشاط المحفوظ سلفاً (initState) أو من
+        // ترميز جوجل العكسي عند خطوة "الموقع" (_StepLocation) لاحقاً. لمزوّد
+        // جديد بلا عنوان نشاط محفوظ، اشتراطه هنا كان يمنعه نهائياً من تجاوز
+        // هذه الخطوة إذ لا توجد وسيلة لملئه قبلها. الباكند نفسه يعامله كحقل
+        // اختياري (StoreOfferRequest: 'address' => 'nullable').
         return c.selectedServiceTypeIndex >= 0 &&
             _titleCtrl.text.trim().isNotEmpty &&
             _valueCtrl.text.trim().isNotEmpty &&
             _descCtrl.text.trim().isNotEmpty &&
-            _addressCtrl.text.trim().isNotEmpty &&
             _phoneCtrl.text.trim().isNotEmpty;
       case 1:
         // خطوة صيغة التسعير/المدة — مدة الاشتراك دائماً محددة بقيمة افتراضية
@@ -844,11 +852,13 @@ class _WizardScreenState extends State<_WizardScreen> {
     final isLast = _step == _totalSteps - 1;
     final canNext = _canGoNext(c);
     final total = c.priceCalculation?.totalPrice ?? c.pricingSettings.basePrice;
-    // يظهر الشريط فقط بين خطوة المنتج وخطوة الموقع (الخطوات 2-4 من 5): يُخفى
-    // في خطوة بيانات الخدمة الأولى (السعر ليس القرار الحالي بعد)، وفي خطوة
-    // المراجعة الأخيرة لأن السعر معروض هناك أصلاً ضمن صفّ "المنتج" فلا داعي
-    // لتكراره.
-    final showTotal = total > 0 && _step > 0 && !isLast;
+    // يظهر الشريط فقط في خطوتي المناطق والموقع (لا مقابل رقم آخر معروض في
+    // نفس الصفحة هناك): يُخفى في خطوة بيانات الخدمة الأولى (السعر ليس القرار
+    // الحالي بعد)، وفي خطوة الباقة لأن _LiveTotalCard يعرض نفس الإجمالي
+    // بالفعل ضمن محتوى الصفحة (نفس الرقم كان يظهر مرتين على الشاشة معًا)،
+    // وفي خطوة المراجعة الأخيرة لأن السعر معروض هناك أصلاً ضمن صفّ "المنتج"
+    // فلا داعي لتكراره.
+    final showTotal = total > 0 && _step > 1 && !isLast;
 
     return Container(
       decoration: BoxDecoration(
@@ -1895,9 +1905,9 @@ class _TargetingSection extends StatelessWidget {
               _SelectionCountBadge(count: selectedCount, primary: primary),
             ],
           ),
+          _PricingHint(hint),
           const SizedBox(height: Spacing.lg),
           if (itemCount > 0) _buildGrid(),
-          _PricingHint(hint),
         ],
       ),
     );

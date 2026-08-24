@@ -91,8 +91,12 @@ class ProviderLandingScreen extends StatelessWidget {
             children: [
               DSPrimaryButton(
                 label: 'إنشاء حساب مزود خدمة',
+                // Get.offNamed لا toNamed: يستبدل هذه الشاشة التعريفية بدل
+                // دفعها كخطوة وسيطة على المكدّس — فور المتابعة لا داعي
+                // للرجوع إليها مجدداً (لا بزر الرجوع اليدوي ولا بزر/إيماءة
+                // النظام)، فيعود الرجوع مباشرة لما قبلها (تبويب الخدمات).
                 onPressed: () =>
-                    Get.toNamed(RouteHelper.getServiceProviderRoute()),
+                    Get.offNamed(RouteHelper.getServiceProviderRoute()),
               ),
               const SizedBox(height: 6),
               TextButton(

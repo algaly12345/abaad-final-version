@@ -279,6 +279,15 @@ class ProviderIdentity {
               (commercialRegistrationNo?.isNotEmpty ?? false) &&
               commercialRegistrationNo != 'pending');
 
+  // نسخة أخف من isComplete: يكفي اختيار فرد/منشأة، دون اشتراط اكتمال رقم
+  // الهوية/السجل التجاري نفسه — تُستخدَم فقط لبوابة الدخول لمعالج "إضافة
+  // خدمة" (AddPropertyServiceOfferScreen)، إذ يُسمح بإرسال بيانات الهوية
+  // ناقصة مع العرض لمراجعتها يدويًا لاحقًا. isComplete الأصلية تبقى كما هي
+  // وتُستخدَم في نقاط أخرى (مثل ReferralScreen) حيث يبقى التحقق الصارم
+  // مطلوبًا قبل السماح بعمليات مالية.
+  bool get hasChosenIdentityType =>
+      identityType == 'individual' || identityType == 'company';
+
   // اكتمال بيانات "العمل" (منفصل عن اكتمال الهوية أعلاه) — تُستخدَم لتحديد
   // متى تظهر CompleteProviderProfileScreen قبل معالج إنشاء العرض. المنطقة
   // والموقع الجغرافي (zoneId/latitude/longitude) استُبعدا من هذا الشرط بناءً

@@ -3,10 +3,12 @@ import 'package:abaad_flutter/features/provider/controller/provider_permission_c
 import 'package:abaad_flutter/features/services/controller/services_controller.dart';
 import 'package:abaad_flutter/features/provider/data/models/service_offer_model.dart';
 import 'package:abaad_flutter/core/routes/route_helper.dart';
+import 'package:abaad_flutter/core/routes/route_observer.dart';
 import 'package:abaad_flutter/shared/theme/design_system.dart';
 import 'package:abaad_flutter/shared/utils/styles.dart';
 import 'package:abaad_flutter/shared/widgets/custom_image.dart';
 import 'package:abaad_flutter/shared/widgets/not_logged_in_screen.dart';
+import 'package:abaad_flutter/shared/widgets/root_fallback_scope.dart';
 import 'package:abaad_flutter/features/services/view/screens/service_details_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -19,26 +21,51 @@ class MyServicesScreen extends StatefulWidget {
 }
 
 class _MyServicesScreenState extends State<MyServicesScreen>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, RouteAware {
   late TabController _tabController;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 5, vsync: this);
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (Get.find<AuthController>().isLoggedIn()) {
-        Get.find<ServicesController>().getServicesList(
-          1,
-          reload: true,
-          myServices: true,
-        );
-      }
-    });
+    WidgetsBinding.instance.addPostFrameCallback((_) => _refreshServices());
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final route = ModalRoute.of(context);
+    if (route is PageRoute) routeObserver.subscribe(this, route);
+  }
+
+  // بلا هذا: العودة لهذه الشاشة عبر Get.back()/Get.until() (مثلاً من شاشة
+  // "إضافة خدمة" بعد نجاح الإضافة) تُعيد نفس نسخة الودجت القائمة أصلاً في
+  // المكدّس دون إعادة تشغيل initState()، فتبقى الخدمة المضافة حديثاً غائبة
+  // عن القائمة حتى يفعل المستخدم شيئاً آخر يدوياً.
+  @override
+  void didPopNext() {
+    super.didPopNext();
+    _refreshServices(silentReload: true);
+  }
+
+  void _refreshServices({bool silentReload = false}) {
+    if (Get.find<AuthController>().isLoggedIn()) {
+      Get.find<ServicesController>().getServicesList(
+        1,
+        reload: true,
+        myServices: true,
+        silentReload: silentReload,
+      );
+      // زرّ "إضافة خدمة" هنا مربوط بـ canCreateServices — يُعاد تحميلها في كل
+      // عودة لهذه الشاشة (مثلاً بعد استكمال بيانات الهوية/العمل في شاشة فوقها)
+      // بدل بقاء صلاحيات أول تحميل للتطبيق مخبَّأة طوال الجلسة.
+      Get.find<ProviderPermissionController>().loadPermissions();
+    }
   }
 
   @override
   void dispose() {
+    routeObserver.unsubscribe(this);
     _tabController.dispose();
     super.dispose();
   }
@@ -46,7 +73,9 @@ class _MyServicesScreenState extends State<MyServicesScreen>
   @override
   Widget build(BuildContext context) {
     if (!Get.find<AuthController>().isLoggedIn()) {
-      return NotLoggedInScreen();
+      return NotLoggedInScreen(
+        redirectAfterLogin: () => const MyServicesScreen(),
+      );
     }
 
     // GetBuilder يُعيد بناء الشاشة عند انتهاء loadPermissions()
@@ -73,7 +102,7 @@ class _MyServicesScreenState extends State<MyServicesScreen>
         child: Row(
           children: [
             InkWell(
-              onTap: () => Get.back(),
+              onTap: () => RootFallbackScope.handleBackTap(context),
               borderRadius: BorderRadius.circular(14),
               child: Container(
                 width: 48,

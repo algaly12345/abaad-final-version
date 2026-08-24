@@ -1,11 +1,18 @@
 ﻿import 'package:abaad_flutter/core/routes/route_helper.dart';
+import 'package:abaad_flutter/features/auth/controller/auth_controller.dart';
 import 'package:abaad_flutter/shared/utils/images.dart';
 import 'package:abaad_flutter/shared/utils/styles.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 class NotLoggedInScreen extends StatelessWidget {
-  const NotLoggedInScreen({super.key});
+  // الشاشة المطلوب العودة إليها بعد نجاح تسجيل الدخول/التسجيل بدل الصفحة
+  // الرئيسية الافتراضية (مثلاً ProviderLandingScreen لمن أراد الانضمام
+  // كمزوّد خدمة قبل تسجيل الدخول) — راجع AuthController.setPendingPostAuthRedirect.
+  // اختياري: لو تُرك فارغًا يبقى السلوك الحالي (العودة للرئيسية) كما هو.
+  final Widget Function()? redirectAfterLogin;
+
+  const NotLoggedInScreen({super.key, this.redirectAfterLogin});
 
   @override
   Widget build(BuildContext context) {
@@ -94,6 +101,10 @@ class NotLoggedInScreen extends StatelessWidget {
                     child: InkWell(
                       borderRadius: BorderRadius.circular(16),
                       onTap: () {
+                        if (redirectAfterLogin != null) {
+                          Get.find<AuthController>()
+                              .setPendingPostAuthRedirect(redirectAfterLogin!);
+                        }
                         Get.toNamed(
                           RouteHelper.getSignInRoute(RouteHelper.main),
                         );

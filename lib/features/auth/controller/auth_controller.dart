@@ -16,6 +16,7 @@ import 'package:abaad_flutter/shared/utils/images.dart';
 import 'package:abaad_flutter/shared/widgets/confirmation_dialog.dart';
 import 'package:abaad_flutter/shared/widgets/custom_snackbar.dart';
 
+import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:image_picker/image_picker.dart';
@@ -31,6 +32,25 @@ class AuthController extends GetxController implements GetxService {
   bool _acceptTerms = true;
   XFile? _pickedLogo;
   XFile? _pickedCover;
+
+  // شاشة يُعاد توجيه المستخدم إليها بعد نجاح تسجيل الدخول/التسجيل — تُضبَط من
+  // NotLoggedInScreen عند وجود redirectAfterLogin قبل الانتقال لتسجيل الدخول
+  // (مثلاً: زائر ضغط "انضم كمزوّد خدمة" فطُلب منه تسجيل الدخول أولاً؛ بعد
+  // نجاحه يعود لنفس شاشة "انضم" بدل الصفحة الرئيسية). تُستهلَك مرة واحدة فقط
+  // (consumePendingPostAuthRedirect تصفّرها فور قراءتها) حتى لا تؤثر على أي
+  // تسجيل دخول لاحق غير مرتبط بهذا السياق. لا قيمة افتراضية = لا تغيير في
+  // سلوك أي مسار تسجيل دخول/تسجيل حالي لم يضبطها صراحةً.
+  Widget Function()? _pendingPostAuthRedirect;
+
+  void setPendingPostAuthRedirect(Widget Function() screenBuilder) {
+    _pendingPostAuthRedirect = screenBuilder;
+  }
+
+  Widget Function()? consumePendingPostAuthRedirect() {
+    final builder = _pendingPostAuthRedirect;
+    _pendingPostAuthRedirect = null;
+    return builder;
+  }
 
   // ZoneModel _zoneModel;
   List<ZoneModel>? _zoneList;

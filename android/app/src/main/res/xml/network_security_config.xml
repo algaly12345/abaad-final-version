@@ -8,6 +8,6 @@
          أجهزة تطوير أخرى، وأُضيف العنوان الحالي. عند تغيّر شبكتك مجدداً حدّث
          BASE_URL هنا وفي app_constants.dart معاً. -->
     <domain-config cleartextTrafficPermitted="true">
-        <domain includeSubdomains="true">10.142.190.214</domain>
+        <domain includeSubdomains="true">app.abaadapp.sa</domain>
     </domain-config>
 </network-security-config>

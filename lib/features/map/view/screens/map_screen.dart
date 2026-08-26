@@ -1854,7 +1854,7 @@ class _MapViewScreenState extends State<MapScreen> {
     super.initState();
     // lat=widget.mainCategory.latitude as double;
     // lot=widget.mainCategory.longitude as double;
-
+    Get.find<CategoryController>().getSubCategoryList("0",1);
     _pageController = PageController(initialPage: 1, viewportFraction: 0.85)
       ..addListener(_onScroll);
     lat = double.parse(widget.mainCategory.latitude);

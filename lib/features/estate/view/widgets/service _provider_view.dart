@@ -100,6 +100,8 @@ class _ServiceProivderViewState extends State<ServiceProivderView> {
           // ============ الكاروسيل ============
           GetBuilder<SplashController>(
             builder: (splashController) {
+              print("---------------------------${    Get.find<SplashController>().configModel?.baseUrls?.provider ??
+                  ''}");
               final baseUrl =
                   Get.find<SplashController>().configModel?.baseUrls?.provider ??
                       '';

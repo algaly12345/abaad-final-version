@@ -82,7 +82,7 @@ class _FiltersScreenState extends State<FiltersScreen>
     _animController.forward();
 
     Get.find<ZoneController>().getCategoryList();
-    Get.find<CategoryController>().getSubCategoryList("0");
+    Get.find<CategoryController>().getSubCategoryList("0",1);
     ctiy_name = "";
 
     int offset = 1;
@@ -337,8 +337,8 @@ class _FiltersScreenState extends State<FiltersScreen>
                                                 .getInstance();
                                             if (value != 0) {
                                               final selectedZone =
-                                                  zoneController.categoryList![
-                                                      value - 1];
+                                              zoneController.categoryList![
+                                              value - 1];
                                               await prefs.setString(
                                                   'zone_name',
                                                   isArabic
@@ -352,11 +352,11 @@ class _FiltersScreenState extends State<FiltersScreen>
                                               // الكاميرا لهذا الموقع مباشرة
                                               // بعد تطبيق الفلتر.
                                               final double? zoneLat =
-                                                  double.tryParse(
-                                                      selectedZone.latitude);
+                                              double.tryParse(
+                                                  selectedZone.latitude);
                                               final double? zoneLng =
-                                                  double.tryParse(
-                                                      selectedZone.longitude);
+                                              double.tryParse(
+                                                  selectedZone.longitude);
                                               if (zoneLat != null) {
                                                 await prefs.setDouble(
                                                     'filter_zone_lat',

@@ -41,7 +41,7 @@ class _EstateViewState extends State<EstateView> {
     sampleData.add(RadioModel(2, false, 'virtual_ture'.tr, Images.vt));
     sampleData.add(RadioModel(3, false, 'street_view'.tr, Images.street_view));
     sampleData.add(RadioModel(4, false, 'planned'.tr, Images.planed));
-    sampleData.add(RadioModel(5, false, 'sky_§view'.tr, Images.street_view));
+    sampleData.add(RadioModel(5, false, 'sky_view'.tr, Images.street_view));
     sampleData.add(RadioModel(6, false, 'video'.tr, Images.video));
   }
 

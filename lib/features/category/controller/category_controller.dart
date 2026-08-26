@@ -213,7 +213,7 @@ class CategoryController extends GetxController implements GetxService {
     update();
   }
 
-  Future<void> getSubCategoryList(String categoryID) async {
+  Future<void> getSubCategoryList(String categoryID  , int zone_id) async {
     final currentLocale = Get.locale;
     bool isArabic = currentLocale?.languageCode == 'ar';
 
@@ -248,7 +248,7 @@ class CategoryController extends GetxController implements GetxService {
       });
 
       await getCategoryProductList(
-        0,
+        zone_id,
         categoryID,
         0,
         '0',

@@ -18,6 +18,7 @@ import 'package:get/get.dart';
 
 import 'package:abaad_flutter/features/favourite/controller/wishlist_controller.dart';
 
+import '../../../category/controller/category_controller.dart';
 import '../widgets/splash_background.dart';
 
 /// ملاحظة: نفس اسم الكلاس وكل الدوال (initState، _route، openApp،

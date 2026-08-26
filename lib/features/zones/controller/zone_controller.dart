@@ -48,8 +48,8 @@ class ZoneController extends GetxController implements GetxService {
     Response response = await zoneRepo.getLandService();
 
     if (response.statusCode == 200) {
-    {
-      //print("land response ............${response.body}");
+      {
+        //print("land response ............${response.body}");
         _estateModel = LandModel.fromJson(response.body);
 
 
@@ -81,7 +81,7 @@ class ZoneController extends GetxController implements GetxService {
 
       }
 
-        } else {
+    } else {
       ApiChecker.checkApi(response, showToaster: true);
     }
     update();
@@ -106,11 +106,11 @@ class ZoneController extends GetxController implements GetxService {
         // if(product != null && product.categoryIds.length > 1) {
         //   setSubCategoryIndex(_subCategoryIds.indexOf(int.parse(product.categoryIds[1].id)), false);
         // }
-            } else {
+      } else {
         ApiChecker.checkApi(response, showToaster: true);
       }
     }
-  //  update();
+    //  update();
   }
 
 
@@ -130,7 +130,7 @@ class ZoneController extends GetxController implements GetxService {
         // if(product != null && product.categoryIds.length > 1) {
         //   setSubCategoryIndex(_subCategoryIds.indexOf(int.parse(product.categoryIds[1].id)), false);
         // }
-            } else {
+      } else {
         ApiChecker.checkApi(response, showToaster: true);
       }
     }

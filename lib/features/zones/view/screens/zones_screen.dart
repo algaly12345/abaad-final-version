@@ -14,6 +14,8 @@ class ZonesScreen extends StatefulWidget {
   const ZonesScreen({super.key});
 
   static Future<void> loadData(bool reload) async {
+
+
     Get.find<CategoryController>().getCategoryProductList(
       0, "0", 0, '0', "0", "0", "0",
       reload: true, arPath: 0, sv: 0, type: "",
@@ -33,6 +35,7 @@ class _ZonesScreenState extends State<ZonesScreen> {
   void initState() {
     super.initState();
     _loadSavedZone();
+
     Get.find<AuthController>().getZoneList();
     Get.find<BannerController>().getBannerList(false, 1);
   }
@@ -54,71 +57,71 @@ class _ZonesScreenState extends State<ZonesScreen> {
       body: GetBuilder<CategoryController>(builder: (categoryController) {
         return (categoryController.subCategoryList != null)
             ? CustomScrollView(
-                slivers: [
-                  // Header with gradient
+          slivers: [
+            // Header with gradient
 
-                  // Banner
-                  const SliverToBoxAdapter                                                                                                                                                                                                                                                                                              (
-                    child: Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 16),
-                      child: BannerView(),
-                    ),
-                  ),
-                  // Section title
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 4,
-                            height: 20,
-                            decoration: BoxDecoration(
-                              color: Theme.of(context).primaryColor,
-                              borderRadius: BorderRadius.circular(2),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            'المناطق ',
-                            style: TextStyle(
-                              fontFamily: 'IBMPlexSansArabic',
-                              fontSize: 18,
-                              fontWeight: FontWeight.w700,
-                              color: Theme.of(context).primaryColor,
-                            ),
-                          ),
-                        ],
+            // Banner
+            const SliverToBoxAdapter                                                                                                                                                                                                                                                                                              (
+              child: Padding(
+                padding: EdgeInsets.symmetric(horizontal: 16),
+                child: BannerView(),
+              ),
+            ),
+            // Section title
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 4,
+                      height: 20,
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).primaryColor,
+                        borderRadius: BorderRadius.circular(2),
                       ),
                     ),
-                  ),
-                  // Zones grid
-                  SliverPadding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    sliver: GetBuilder<AuthController>(
-                      builder: (locationController) {
-                        final zones = locationController.zoneList ?? [];
-                        return SliverGrid(
-                          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 2,
-                            mainAxisSpacing: 14,
-                            crossAxisSpacing: 14,
-                            childAspectRatio: 1.15,
-                          ),
-                          delegate: SliverChildBuilderDelegate(
-                            (context, index) {
-                              final zone = zones[index];
-                              return _buildZoneCard(context, zone);
-                            },
-                            childCount: zones.length,
-                          ),
-                        );
-                      },
+                    const SizedBox(width: 8),
+                    Text(
+                      'المناطق ',
+                      style: TextStyle(
+                        fontFamily: 'IBMPlexSansArabic',
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        color: Theme.of(context).primaryColor,
+                      ),
                     ),
-                  ),
-                  const SliverToBoxAdapter(child: SizedBox(height: 24)),
-                ],
-              )
+                  ],
+                ),
+              ),
+            ),
+            // Zones grid
+            SliverPadding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              sliver: GetBuilder<AuthController>(
+                builder: (locationController) {
+                  final zones = locationController.zoneList ?? [];
+                  return SliverGrid(
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      mainAxisSpacing: 14,
+                      crossAxisSpacing: 14,
+                      childAspectRatio: 1.15,
+                    ),
+                    delegate: SliverChildBuilderDelegate(
+                          (context, index) {
+                        final zone = zones[index];
+                        return _buildZoneCard(context, zone);
+                      },
+                      childCount: zones.length,
+                    ),
+                  );
+                },
+              ),
+            ),
+            const SliverToBoxAdapter(child: SizedBox(height: 24)),
+          ],
+        )
             : const Center(child: CircularProgressIndicator());
       }),
     );

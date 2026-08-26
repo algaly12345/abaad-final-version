@@ -28,6 +28,8 @@ class HomeScreen extends StatefulWidget {
   final ScrollController scrollController = ScrollController();
 
   static Future<void> loadData(bool reload) async {
+
+
     Get.find<CategoryController>().getCategoryProductList(
       0,
       "0",
@@ -62,7 +64,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _loadSavedZone();
-
+    Get.find<CategoryController>().getSubCategoryList("0",widget.zoneId);
     widget.scrollController.addListener(() {
       if (widget.scrollController.position.pixels >=
           widget.scrollController.position.maxScrollExtent - 200) {

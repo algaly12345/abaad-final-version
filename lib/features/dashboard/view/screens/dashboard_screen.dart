@@ -61,7 +61,7 @@ class DashboardScreen extends StatefulWidget {
   static Future<void> loadData(bool reload) async {
 
     Get.find<AuthController>().getZoneList();
-    Get.find<CategoryController>().getSubCategoryList("0");
+
     // Get.find<ZoneController>().getCategoryList();
     Get.find<UserController>().getUserInfo();
     // Get.find<AuthController>().getZoneList();

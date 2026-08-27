@@ -508,23 +508,32 @@ class ServiceOffers {
   String? offer_id = "";
   String? provider_name = "";
 
+  // 🔹 حقول جديدة: خط الطول والعرض وعنوان موقع الخدمة — تُستخدم لعرض زر
+  // "الموقع على الخريطة" في واجهة العرض عند توفرها.
+  String? latitude = "";
+  String? longitude = "";
+  String? address = "";
+
   ServiceOffers({
-     this.id,
-     this.title,
-     this.expiryDate,
-     this.servicePrice,
-     this.description,
-     this.discount,
-     this.sendedAt,
-     this.serviceTypeId,
-     this.offerType,
-     this.createdAt,
-     this.updatedAt,
-     this.image,
-     this.phoneProvider,
-     this.category_id,
-     this.offer_id,
-     this.provider_name});
+    this.id,
+    this.title,
+    this.expiryDate,
+    this.servicePrice,
+    this.description,
+    this.discount,
+    this.sendedAt,
+    this.serviceTypeId,
+    this.offerType,
+    this.createdAt,
+    this.updatedAt,
+    this.image,
+    this.phoneProvider,
+    this.category_id,
+    this.offer_id,
+    this.provider_name,
+    this.latitude,
+    this.longitude,
+    this.address});
 
   ServiceOffers.fromJson(Map<String, dynamic> json) {
     id = json['id']?.toString();
@@ -543,6 +552,9 @@ class ServiceOffers {
     offer_id = json['offer_id']?.toString();
     category_id = json['category_id']?.toString();
     provider_name = json['provider_name']?.toString();
+    latitude = json['latitude']?.toString();
+    longitude = json['longitude']?.toString();
+    address = json['address']?.toString();
   }
 
   Map<String, dynamic> toJson() {
@@ -564,6 +576,9 @@ class ServiceOffers {
     data['category_id'] = category_id;
 
     data['provider_name'] = provider_name;
+    data['latitude'] = latitude;
+    data['longitude'] = longitude;
+    data['address'] = address;
 
 
 

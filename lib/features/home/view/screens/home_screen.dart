@@ -44,7 +44,7 @@ class HomeScreen extends StatefulWidget {
       type: "",
     );
 
-    Get.find<BannerController>().getBannerList(reload, 1);
+
     Get.find<AuthController>().getZoneList();
   }
 

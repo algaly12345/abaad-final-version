@@ -27,7 +27,7 @@ class WebMenuBar extends StatelessWidget implements PreferredSizeWidget {
       child: Padding(
         // 🔹 المسافة الفاصلة بين الشريط وحافة الشاشة من كل الجهات —
         // هذا بالضبط ما يعطي إحساس "الفصل عن أعلى الشاشة" المطلوب.
-        padding: const EdgeInsets.fromLTRB(12, 10, 12, 0),
+        padding: const EdgeInsets.fromLTRB(12, 10, 12, 7),
         child: Container(
           height: 60,
           decoration: BoxDecoration(

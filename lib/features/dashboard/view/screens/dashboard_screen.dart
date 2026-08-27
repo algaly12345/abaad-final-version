@@ -65,7 +65,7 @@ class DashboardScreen extends StatefulWidget {
     // Get.find<ZoneController>().getCategoryList();
     Get.find<UserController>().getUserInfo();
     // Get.find<AuthController>().getZoneList();
-    Get.find<BannerController>().getBannerList(true, 1);
+
 
     if (Get.find<AuthController>().isLoggedIn()) {
       Get.find<UserController>().getUserInfo();

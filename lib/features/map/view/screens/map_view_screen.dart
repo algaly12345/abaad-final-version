@@ -42,7 +42,7 @@ class _MapViewScreenState extends State<MapViewScreen> {
   final Set<Polygon> _polygon = HashSet<Polygon>();
 
   static const CameraPosition _initialCamera = CameraPosition(
-    zoom: 5.2,
+    zoom: 5.0,
     target: LatLng(24.263867, 45.033284),
   );
 
@@ -95,7 +95,7 @@ class _MapViewScreenState extends State<MapViewScreen> {
               mapToolbarEnabled: false,
               compassEnabled: false,
               zoomControlsEnabled: true,
-              minMaxZoomPreference: const MinMaxZoomPreference(0, 16),
+              minMaxZoomPreference: const MinMaxZoomPreference(0, 15),
               onTap: (position) =>
                   Get.find<SplashController>().setNearestEstateIndex(-1),
               onMapCreated: (GoogleMapController controller) {

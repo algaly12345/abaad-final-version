@@ -63,25 +63,25 @@ class _ZonesScreenState extends State<ZonesScreen> {
             // Banner
             const SliverToBoxAdapter                                                                                                                                                                                                                                                                                              (
               child: Padding(
-                padding: EdgeInsets.symmetric(horizontal: 16),
+                padding: EdgeInsets.symmetric(horizontal: 10),
                 child: BannerView(),
               ),
             ),
             // Section title
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
+                padding: const EdgeInsets.fromLTRB(18, 10, 20, 12),
                 child: Row(
                   children: [
                     Container(
                       width: 4,
-                      height: 20,
+                      height: 15,
                       decoration: BoxDecoration(
                         color: Theme.of(context).primaryColor,
                         borderRadius: BorderRadius.circular(2),
                       ),
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 2),
                     Text(
                       'المناطق ',
                       style: TextStyle(

@@ -10,6 +10,7 @@ import 'package:abaad_flutter/features/map/controller/location_controller.dart';
 import 'package:abaad_flutter/features/notification/controller/notification_controller.dart';
 import 'package:abaad_flutter/features/onboarding/controller/onboarding_controller.dart';
 import 'package:abaad_flutter/features/services/controller/services_controller.dart';
+import 'package:abaad_flutter/features/services/controller/provider_statistics_controller.dart';
 import 'package:abaad_flutter/shared/controllers/splash_controller.dart';
 import 'package:abaad_flutter/shared/controllers/theme_controller.dart';
 import 'package:abaad_flutter/features/profile/controller/user_controller.dart';
@@ -31,6 +32,7 @@ import 'package:abaad_flutter/features/map/data/repositories/location_repo.dart'
 import 'package:abaad_flutter/features/notification/data/repositories/notification_repo.dart';
 import 'package:abaad_flutter/features/onboarding/data/repositories/onboarding_repo.dart';
 import 'package:abaad_flutter/features/services/data/repositories/services_repo.dart';
+import 'package:abaad_flutter/features/services/data/repositories/provider_statistics_repo.dart';
 import 'package:abaad_flutter/features/profile/data/repositories/user_repo.dart';
 import 'package:abaad_flutter/features/wallet/data/repositories/wallet_repo.dart';
 import 'package:abaad_flutter/features/referrals/data/repositories/referral_repo.dart';
@@ -117,6 +119,9 @@ Future<Map<String, Map<String, String>>> init() async {
 
   Get.lazyPut(() => ServicesRepo(apiClient: Get.find()));
   Get.lazyPut(() => ServicesController(servicesRepo: Get.find()));
+
+  Get.lazyPut(() => ProviderStatisticsRepo(apiClient: Get.find()));
+  Get.lazyPut(() => ProviderStatisticsController(providerStatisticsRepo: Get.find(), servicesRepo: Get.find()));
 
   Get.lazyPut(() => ProviderPermissionRepo(apiClient: Get.find()));
   Get.lazyPut(() => ProviderPermissionController(repo: Get.find()));

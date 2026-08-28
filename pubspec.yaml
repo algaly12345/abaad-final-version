@@ -35,6 +35,11 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  # بلا هذه: أي ودجت Material أصلي (DateRangePicker مثلاً) يبقى بالإنجليزية
+  # دومًا بغضّ النظر عن locale التطبيق — GlobalMaterialLocalizations.delegate
+  # بحاجة لهذه الحزمة لتوفير ترجمات 'ar' الجاهزة من Flutter SDK نفسه.
+  flutter_localizations:
+    sdk: flutter
 
   # معلَّقة مؤقتًا: مستودعها الخاص أصبح غير قابل للوصول (Repository not
   # found) ويمنع flutter pub get عن كل المشروع — أعد تفعيلها متى ما رجع

@@ -274,6 +274,7 @@
 //import 'package:abaad_chatbot_ui/abaad_chatbot_ui.dart';
 import 'package:abaad_flutter/shared/widgets/details_dilog.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'dart:io';
 
 import 'package:abaad_flutter/features/auth/controller/auth_controller.dart';
@@ -510,6 +511,18 @@ class _MyAppState extends State<MyApp> {
                           AppConstants.languages[0].languageCode,
                           AppConstants.languages[0].countryCode,
                         ),
+                        // بلا هذين: أي ودجت Material أصلي (DateRangePicker
+                        // مثلاً) يبقى بالإنجليزية دومًا حتى مع locale عربي،
+                        // لأن Flutter يقتصر افتراضياً على دعم en فقط لودجتاته
+                        // الأصلية إن لم تُذكر باقي اللغات صراحة هنا.
+                        localizationsDelegates: const [
+                          GlobalMaterialLocalizations.delegate,
+                          GlobalWidgetsLocalizations.delegate,
+                          GlobalCupertinoLocalizations.delegate,
+                        ],
+                        supportedLocales: AppConstants.languages
+                            .map((l) => Locale(l.languageCode, l.countryCode))
+                            .toList(),
                         initialRoute: GetPlatform.isWeb
                             ? RouteHelper.getInitialRoute()
                             : RouteHelper.getSplashRoute(widget.body),

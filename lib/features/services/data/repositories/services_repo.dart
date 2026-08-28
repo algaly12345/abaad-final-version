@@ -20,6 +20,8 @@ class ServicesRepo {
     String? radiusKm,
     double? minPrice,
     double? maxPrice,
+    String? fromDate,
+    String? toDate,
   }) async {
     // لوحة "خدماتي" لها مسار محمي بتسجيل الدخول مستقل عن كتالوج الخدمات العام،
     // ولا يجوز إرسال نفس استعلام الكتالوج العام مع my_services=true لأنه غير مدعوم بعد الآن.
@@ -63,6 +65,14 @@ class ServicesRepo {
     }
     if (maxPrice != null) {
       uri += '&max_price=$maxPrice';
+    }
+    // فلتر فترة الإنشاء — يُستخدم حاليًا فقط من شاشة إحصائيات مزود الخدمة
+    // (قسم "تفاصيل كل خدمة") لعرض الخدمات المضافة خلال فترة محددة.
+    if (fromDate != null && fromDate.isNotEmpty) {
+      uri += '&from_date=$fromDate';
+    }
+    if (toDate != null && toDate.isNotEmpty) {
+      uri += '&to_date=$toDate';
     }
 
     return await apiClient.getData(uri);

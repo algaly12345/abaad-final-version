@@ -50,10 +50,7 @@ class _MyServicesScreenState extends State<MyServicesScreen>
 
   void _refreshServices({bool silentReload = false}) {
     if (Get.find<AuthController>().isLoggedIn()) {
-      Get.find<ServicesController>().getServicesList(
-        1,
-        reload: true,
-        myServices: true,
+      Get.find<ServicesController>().loadAllMyServices(
         silentReload: silentReload,
       );
       // زرّ "إضافة خدمة" هنا مربوط بـ canCreateServices — يُعاد تحميلها في كل
@@ -124,6 +121,22 @@ class _MyServicesScreenState extends State<MyServicesScreen>
                     fontSize: 17, color: AppColors.textPrimary(context)),
               ),
             ),
+            InkWell(
+              onTap: () =>
+                  Get.toNamed(RouteHelper.getProviderStatisticsRoute()),
+              borderRadius: BorderRadius.circular(14),
+              child: Container(
+                width: 48,
+                height: 48,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Theme.of(context).dividerColor),
+                ),
+                child: Icon(Icons.bar_chart_rounded,
+                    size: 20, color: Theme.of(context).primaryColor),
+              ),
+            ),
           ],
         ),
       ),
@@ -171,7 +184,12 @@ class _MyServicesScreenState extends State<MyServicesScreen>
 
     final content = GetBuilder<ServicesController>(
       builder: (controller) {
-        if (controller.isMyServicesLoading) {
+        // نفس نمط services_catalog_screen.dart: الفحص على القائمة نفسها
+        // (null = لا بيانات بعد) لا على isMyServicesLoading — فهذا الأخير
+        // يبقى true طوال أي reload حتى الصامت منها (didPopNext عند العودة
+        // للشاشة)، فلو اعتمدنا عليه لاختفت القائمة المعروضة فعليًا خلف مؤشر
+        // تحميل في كل رجوع للشاشة رغم أنّ silentReload صُمم أصلاً لإبقائها.
+        if (controller.myServicesList == null) {
           return const Center(child: CircularProgressIndicator());
         }
 

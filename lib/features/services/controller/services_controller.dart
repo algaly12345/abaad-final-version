@@ -128,6 +128,7 @@ class ServicesController extends GetxController implements GetxService {
     bool reload = false,
     bool myServices = false,
     bool silentReload = false,
+    bool notify = true,
   }) async {
     if (reload) {
       offset = 1;
@@ -201,8 +202,38 @@ class ServicesController extends GetxController implements GetxService {
       } else {
         _isLoading = false;
       }
-      update();
+      if (notify) update();
     }
+  }
+
+  // ─── "لوحة خدماتي" تبوّب القائمة الكاملة محليًا (نشط/قيد المراجعة/غير
+  // مدفوعة/مرفوض/منتهية) بدل تصفية الخادم لكل تبويب على حدة — فلا يكفي جلب
+  // الصفحة الأولى فقط (per_page=10) كما تفعل getServicesList وحدها، وإلا
+  // اختفت عروض بأكملها من التبويبات لمجرد وقوعها بعد الصفحة الأولى رغم
+  // ظهورها في إحصائيات لوحة التحكم (/reports/provider/dashboard) التي تحسب
+  // الإجمالي الحقيقي من قاعدة البيانات لا من القائمة المحمَّلة محليًا.
+  Future<void> loadAllMyServices({bool silentReload = false}) async {
+    // notify:false على كل صفحة عدا الأخيرة: قائمة "لوحة خدماتي" تُبوَّب محليًا
+    // فور كل update() — فلو أعاد GetBuilder البناء بعد كل صفحة على حدة، تظهر
+    // تبويبة (مثل "نشط") فارغة للحظة بعروضها الحقيقية لا تزال في صفحة لاحقة
+    // لم تُجلب بعد، ثم "تظهر" فجأة عند اكتمال الصفحة التي تحويها — وميض مربك
+    // يوحي بخطأ. تحديث واحد فقط بعد اكتمال كل الصفحات يمنع هذا الوميض.
+    await getServicesList(1,
+        reload: true,
+        myServices: true,
+        silentReload: silentReload,
+        notify: false);
+    while (hasMoreMyServices) {
+      final previousLength = _myServicesList?.length ?? 0;
+      await getServicesList(offset + 1,
+          myServices: true, silentReload: true, notify: false);
+      // لو فشل جلب هذه الصفحة (استثناء/رد غير 200) لا يتقدّم offset ولا
+      // يتحدّث pageSize في getServicesList، فتبقى hasMoreMyServices صحيحة
+      // إلى الأبد وتتكرّر نفس الصفحة الفاشلة بلا نهاية — نوقف الحلقة بمجرد
+      // أن يتوقف طول القائمة عن الازدياد بدل الاعتماد على hasMoreMyServices وحدها.
+      if ((_myServicesList?.length ?? 0) == previousLength) break;
+    }
+    update();
   }
 
   Future<void> getFilters() async {
@@ -254,7 +285,7 @@ class ServicesController extends GetxController implements GetxService {
           response.body['message'] ?? 'تم تحديث حالة الخدمة',
           isError: false,
         );
-        await getServicesList(1, reload: true, myServices: true);
+        await loadAllMyServices();
       } else {
         final message = (response.body is Map)
             ? (response.body['message'] ?? 'فشل تحديث حالة الخدمة')

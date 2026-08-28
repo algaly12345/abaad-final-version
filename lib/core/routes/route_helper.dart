@@ -43,6 +43,7 @@ import 'package:abaad_flutter/features/provider/view/screens/add_property_servic
 import 'package:abaad_flutter/features/provider/view/screens/provider_upgrade_screen.dart';
 import 'package:abaad_flutter/features/provider/view/screens/service_offer_payment_screen.dart';
 import 'package:abaad_flutter/features/services/view/screens/my_services_screen.dart';
+import 'package:abaad_flutter/features/services/view/screens/provider_statistics_screen.dart';
 import 'package:abaad_flutter/features/services/view/screens/services_catalog_screen.dart';
 import 'package:abaad_flutter/features/onboarding/view/screens/splash_screen.dart';
 import 'package:abaad_flutter/features/support/view/screens/support_screen.dart';
@@ -99,6 +100,7 @@ class RouteHelper {
   static const String serviceOfferPayment = '/service-offer-payment';
   static const String servicesCatalog = '/services-catalog';
   static const String myServices = '/my-services';
+  static const String providerStatistics = '/provider-statistics';
   static const String settings = '/settings';
 
   static String getSettingsRoute() => settings;
@@ -269,6 +271,11 @@ class RouteHelper {
       name: myServices,
       middlewares: [AuthGuardMiddleware()],
       page: () => MyServicesScreen(),
+    ),
+    GetPage(
+      name: providerStatistics,
+      middlewares: [AuthGuardMiddleware()],
+      page: () => const ProviderStatisticsScreen(),
     ),
     GetPage(name: success, page: () => ScreenSuccess()),
     GetPage(
@@ -543,6 +550,7 @@ class RouteHelper {
 
   static String getServicesCatalogRoute() => servicesCatalog;
   static String getMyServicesRoute() => myServices;
+  static String getProviderStatisticsRoute() => providerStatistics;
 
   static getRoute(Widget? navigateTo, {bool byPuss = false}) {
     // Forced update / maintenance check temporarily disabled.

@@ -205,7 +205,8 @@ class _DashboardScreenState extends State<DashboardScreen> with RouteAware {
               Scaffold(
                 key: _key,
                 extendBody: true,
-                backgroundColor: Colors.white,
+                extendBodyBehindAppBar: true,   // ← أضف هذا السطر
+                backgroundColor: Colors.transparent,   // ← بدل ما تكون معلّقة بتعليق، خليها شفافة صراحة
 
                 appBar: WebMenuBar(
                   ontop: () => _key.currentState?.openDrawer(),

@@ -14,15 +14,11 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// ملاحظة: نفس أسماء الكلاسات الأصلية بالكامل (MapViewScreen،
-/// _MapViewScreenState، ArcClipper). الإصلاح هنا: إزالة التأخيرات
-/// المصطنعة (Artificial Delays) اللي كانت بتخلي التحميل يبان أبطأ من
-/// اللازم — كان فيه `Future.delayed(milliseconds: 500)` إجباري قبل ظهور
-/// العلامات، و`Future.delayed(seconds: 3)` تاني بعد كده **مالوش أي
-/// استخدام فعلي في باقي الكود على الإطلاق** (_reload اللي بيتغيّر لـ 2
-/// مش بيُقرأ في أي مكان تاني). التأخير التاني اتشال بالكامل، والأول
-/// استُبدل بانتظار "فريمين" فقط عبر addPostFrameCallback بدل نص ثانية
-/// ثابتة — عادة كافية لمكتبة custom_map_markers تخلّص تجهيز صور العلامات،
-/// لكنها أسرع بكتير من انتظار مدة ثابتة دايمًا.
+/// _MapViewScreenState، ArcClipper). الإضافة هنا: تنسيق مخصّص لخريطة
+/// جوجل (_mapStyleJson) بيوقف ظهور كل تسميات الخريطة الافتراضية (أسماء
+/// الدول، المدن، الطرق، الأماكن) — فتبقى الخريطة نظيفة وتظهر فيها بس
+/// علامات المناطق المخصّصة بتاعت التطبيق (الشرائح الزرقاء بأسماء
+/// المناطق) بدون أي تشويش من نصوص جوجل الافتراضية.
 class MapViewScreen extends StatefulWidget {
   const MapViewScreen({Key? key}) : super(key: key);
 
@@ -45,6 +41,20 @@ class _MapViewScreenState extends State<MapViewScreen> {
     zoom: 5.0,
     target: LatLng(24.263867, 45.033284),
   );
+
+  /// تنسيق خريطة مخصّص يوقف ظهور كل التسميات (Labels) — أسماء الدول
+  /// والمدن والطرق والأماكن — مع الإبقاء على شكل الخريطة الجغرافي نفسه
+  /// (الألوان، الحدود، المسطحات المائية) زي ما هو، بدون أي نص عليه.
+  static const String _mapStyleJson = '''
+  [
+    {
+      "elementType": "labels",
+      "stylers": [
+        { "visibility": "off" }
+      ]
+    }
+  ]
+  ''';
 
   @override
   void initState() {
@@ -100,6 +110,9 @@ class _MapViewScreenState extends State<MapViewScreen> {
                   Get.find<SplashController>().setNearestEstateIndex(-1),
               onMapCreated: (GoogleMapController controller) {
                 _controller = controller;
+                // 🔹 تطبيق التنسيق المخصّص فور إنشاء الخريطة — يوقف كل
+                // تسميات جوجل الافتراضية فورًا.
+                _controller?.setMapStyle(_mapStyleJson);
                 _setMarkersZone(zoneList);
               },
             ),
@@ -120,7 +133,8 @@ class _MapViewScreenState extends State<MapViewScreen> {
     _customMarkersZone.add(MarkerData(
       marker: const Marker(
         markerId: MarkerId('id-0'),
-        position: LatLng(24.263867, 45.033284),
+        position: LatLng(25.338589, 43.685518
+        ),
       ),
       child: Image.asset(Images.mail, height: 20, width: 20),
     ));
@@ -195,10 +209,6 @@ class _MapViewScreenState extends State<MapViewScreen> {
       );
     }
 
-    // 🔹 بدل الانتظار مدة ثابتة (كانت 500 مللي ثانية دايمًا)، ننتظر
-    // فريمين بس عبر addPostFrameCallback — عادة كافية لمكتبة
-    // custom_map_markers تخلّص تجهيز صور العلامات، وأسرع بكتير في أغلب
-    // الحالات من انتظار نص ثانية ثابتة دايمًا.
     if (_reload == 0) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -209,9 +219,6 @@ class _MapViewScreenState extends State<MapViewScreen> {
         });
       });
     }
-
-    // 🔹 تم حذف تأخير الـ 3 ثواني بالكامل — كان مالوش أي استخدام فعلي
-    // (لا شيء في الكود يقرأ _reload == 2)، فكان مجرد وقت ضايع.
   }
 }
 

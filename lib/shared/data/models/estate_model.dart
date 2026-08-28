@@ -1,3 +1,28 @@
+import 'dart:convert';
+
+/// دالة مساعدة عامة: بعض نقاط النهاية (زي البحث) بترجّع حقول المصفوفات
+/// (property, service_offers, ...) كنص فيه JSON مُرمّز (String) بدل
+/// Array حقيقي زي باقي نقاط النهاية — فبتفشل .forEach() مباشرة برسالة
+/// "Class 'String' has no instance method 'forEach'". هذه الدالة بتتعامل
+/// مع الحالتين: لو القيمة List فعلًا بترجعها زي ما هي، ولو String بتفك
+/// تشفيرها (jsonDecode) الأول، ولو فشل التحويل أو كانت null بترجع قائمة
+/// فاضية بدل ما تسبب أي كراش.
+List<dynamic> asJsonList(dynamic raw) {
+  if (raw == null) return [];
+  if (raw is List) return raw;
+  if (raw is String) {
+    final String trimmed = raw.trim();
+    if (trimmed.isEmpty) return [];
+    try {
+      final dynamic decoded = jsonDecode(trimmed);
+      if (decoded is List) return decoded;
+    } catch (_) {
+      return [];
+    }
+  }
+  return [];
+}
+
 class EstateModel {
   int? totalSize = 0;
   String? limit = "";
@@ -6,13 +31,27 @@ class EstateModel {
 
   EstateModel({  this.totalSize,   this.limit,   this.offset,   this.estates});
 
+  /// ملاحظة: تم إصلاح fromJson فقط — نفس الحقول والاسم كما هي.
+  /// المشكلتان اللي كانتا هنا:
+  /// 1) offset كان بينتهي بـ `!` (null check) بدون أي قيمة بديلة — لو
+  ///    استجابة معينة (زي نتائج البحث) معندهاش حقل offset، كان بيحصل
+  ///    كراش فوري "Null check operator used on a null value".
+  /// 2) الكود كان بيدوّر على مفتاح 'estate' (مفرد) بس — لكن بعض نقاط
+  ///    النهاية (زي البحث) بترجّع 'estates' (جمع)، فكانت القائمة تفضل
+  ///    فاضية بصمت حتى لو البيانات موجودة فعليًا في الاستجابة. دلوقتي
+  ///    بيدوّر على المفتاحين الاتنين، أيهما موجود.
   EstateModel.fromJson(Map<String, dynamic> json) {
     totalSize = json['total_size'];
-    limit = json['limit'].toString();
-    offset = ((json['offset'] != null && json['offset'].toString().trim().isNotEmpty) ? int.parse(json['offset'].toString()) : null)!;
-    if (json['estate'] != null) {
+    limit = json['limit']?.toString();
+    offset = (json['offset'] != null &&
+            json['offset'].toString().trim().isNotEmpty)
+        ? int.tryParse(json['offset'].toString())
+        : 0;
+
+    final dynamic estatesJson = json['estates'] ?? json['estate'];
+    if (estatesJson != null) {
       estates = [];
-      json['estate'].forEach((v) {
+      estatesJson.forEach((v) {
         estates?.add(Estate.fromJson(v));
       });
     }
@@ -226,12 +265,10 @@ class Estate {
   Estate.fromJson(Map<String, dynamic> json) {
     id = json['id'];
     address = json['address'];
-    if (json['property'] != null) {
-      property = <Property>[];
-      json['property'].forEach((v) {
-        property?.add(Property.fromJson(v));
-      });
-    }
+    property = <Property>[];
+    asJsonList(json['property']).forEach((v) {
+      property?.add(Property.fromJson(v));
+    });
     space = json['space']?.toString();
     categoryId = json['category_id'] != null ? int.tryParse(json['category_id'].toString()) : 0;
     price = json['price']?.toString();
@@ -243,15 +280,13 @@ class Estate {
     height = json['height'] != null ? int.tryParse(json['height'].toString()) : 0;
     estate_id = json['estate_id'] != null ? int.tryParse(json['estate_id'].toString()) : 0;
     width = json['width'] != null ? int.tryParse(json['width'].toString()) : 0;
-    if (json['service_offers'] != null) {
-      serviceOffers = <ServiceOffers>[];
-      json['service_offers'].forEach((v) {
-        serviceOffers?.add(ServiceOffers.fromJson(v));
-      });
-    }
+    serviceOffers = <ServiceOffers>[];
+    asJsonList(json['service_offers']).forEach((v) {
+      serviceOffers?.add(ServiceOffers.fromJson(v));
+    });
     qr = json['qr'];
-    images = json['images'] != null ? json['images'].cast<String>() : [];
-    planned = json['planned'] != null ? json['planned'].cast<String>() : [];
+    images = asJsonList(json['images']).map((e) => e.toString()).toList();
+    planned = asJsonList(json['planned']).map((e) => e.toString()).toList();
     arPath = json['ar_path'];
     latitude = json['latitude']?.toString();
     longitude = json['longitude']?.toString();
@@ -275,27 +310,20 @@ class Estate {
     authorization_number = json["authorization_number"]?.toString();
 
     userId = json['user_id'] != null ? int.tryParse(json['user_id'].toString()) : 0;
-    if (json['network_type'] != null) {
-      networkType = <NetworkType>[];
-      json['network_type'].forEach((v) {
-        networkType?.add(NetworkType.fromJson(v));
-      });
+    networkType = <NetworkType>[];
+    asJsonList(json['network_type']).forEach((v) {
+      networkType?.add(NetworkType.fromJson(v));
+    });
 
-    }
+    otherAdvantages = <OtherAdvantages>[];
+    asJsonList(json['other_advantages']).forEach((v) {
+      otherAdvantages?.add(OtherAdvantages.fromJson(v));
+    });
 
-    if (json['other_advantages'] != null) {
-      otherAdvantages = <OtherAdvantages>[];
-      json['other_advantages'].forEach((v) {
-        otherAdvantages?.add(OtherAdvantages.fromJson(v));
-      });
-    }
-
-    if (json['interface'] != null) {
-      interface = <Interface>[];
-      json['interface'].forEach((v) {
-        interface?.add(Interface.fromJson(v));
-      });
-    }
+    interface = <Interface>[];
+    asJsonList(json['interface']).forEach((v) {
+      interface?.add(Interface.fromJson(v));
+    });
     streetSpace = json["street_space"]?.toString();
     buildSpace = json["build_space"]?.toString();
     documentNumber = json["document_number"]?.toString();
@@ -332,7 +360,7 @@ class Estate {
     locationDescriptionOnMOJDeed = json['locationDescriptionOnMOJDeed']?.toString();
     numberOfRooms = json['numberOfRooms']?.toString();
     mainLandUseTypeName = json['mainLandUseTypeName']?.toString();
-    propertyUtilities = json['propertyUtilities'] != null ? List<String>.from(json['propertyUtilities'].map((e) => e.toString())) : [];
+    propertyUtilities = asJsonList(json['propertyUtilities']).map((e) => e.toString()).toList();
     landNumber = json['landNumber']?.toString();
     propertyUsages = json['propertyUsages']?.toString();
 

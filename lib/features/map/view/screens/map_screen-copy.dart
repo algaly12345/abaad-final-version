@@ -31,7 +31,6 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../widgets/location_search_dialog.dart';
-import 'package:abaad_flutter/features/estate/view/screens/estate_search_screen.dart';
 import '../widgets/permission_dialog.dart';
 import '../widgets/service_provider.dart';
 
@@ -441,9 +440,13 @@ class _MapViewScreenState extends State<MapScreen> {
                                     children: [
                                       InkWell(
                                         onTap: () {
-                                          // 🔹 بحث العقارات الشامل بدل بحث
-                                          // الموقع الجغرافي (LocationSearchDialog).
-                                          Get.to(() => const EstateSearchScreen());
+                                          if (_mapReady) {
+                                            Get.dialog(
+                                              LocationSearchDialog(
+                                                mapController: _controller,
+                                              ),
+                                            );
+                                          }
                                         },
                                         child: Container(
                                           height: 43,

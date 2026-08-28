@@ -1,4 +1,5 @@
-﻿import 'package:abaad_flutter/features/notification/controller/notification_controller.dart';
+﻿import 'package:abaad_flutter/features/estate/view/screens/estate_search_screen.dart';
+import 'package:abaad_flutter/features/notification/controller/notification_controller.dart';
 import 'package:abaad_flutter/features/profile/controller/user_controller.dart';
 import 'package:abaad_flutter/core/routes/route_helper.dart';
 import 'package:abaad_flutter/shared/utils/dimensions.dart';
@@ -9,10 +10,9 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 /// ملاحظة: نفس اسم الكلاس وكل الخصائص (ontop, fromPage) بدون أي تغيير في
-/// المنطق أو البيانات المعروضة. التعديل الوحيد: الشريط أصبح "عايمًا"
-/// (Floating Card) بحواف دائرية ومسافة واضحة (margin) من كل الجهات —
-/// خصوصًا من أعلى الشاشة — بدل ما يكون ملتصقًا مباشرة بحافة الشاشة
-/// وبمنطقة الـ status bar.
+/// المنطق أو البيانات المعروضة. الإضافة الوحيدة هنا: زر بحث دائري بتصميم
+/// موحّد مع باقي أزرار الشريط (نفس شكل زر القائمة والإشعارات)، يفتح شاشة
+/// البحث الشامل عن العقارات (EstateSearchScreen) مباشرة.
 class WebMenuBar extends StatelessWidget implements PreferredSizeWidget {
   final Function? ontop;
   final String? fromPage;
@@ -46,18 +46,24 @@ class WebMenuBar extends StatelessWidget implements PreferredSizeWidget {
             child: GetBuilder<UserController>(builder: (estateController) {
               return Row(
                 children: [
-                  // زر القائمة
+                  // زر القائمة — دائرة بخلفية ناعمة (لون التطبيق الأساسي
+                  // بشفافية خفيفة جدًا) بدل الأيقونة العارية بلا خلفية.
                   Material(
                     color: Colors.transparent,
                     child: InkWell(
                       onTap: ontop as GestureTapCallback?,
-                      borderRadius: BorderRadius.circular(10),
-                      child: Padding(
-                        padding: const EdgeInsets.all(6),
+                      borderRadius: BorderRadius.circular(30),
+                      child: Container(
+                        padding: const EdgeInsets.all(9),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF1A3C5E).withOpacity(0.06),
+                          shape: BoxShape.circle,
+                        ),
                         child: Image.asset(
                           Images.menu,
-                          width: 28.0,
-                          height: 28.0,
+                          width: 22.0,
+                          height: 22.0,
+                          color: const Color(0xFF1A3C5E),
                         ),
                       ),
                     ),
@@ -86,6 +92,41 @@ class WebMenuBar extends StatelessWidget implements PreferredSizeWidget {
                           ),
                         ),
                       ],
+                    ),
+                  ),
+
+                  // 🔹 زر البحث — دائرة متدرّجة اللون (نفس تدرّج زر "+"
+                  // العائم في باقي التطبيق) بظل ناعم بلون التدرّج نفسه،
+                  // بدل خلفية شفافة مسطّحة — شكل أكتر بروزًا واحترافية.
+                  Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(30),
+                      onTap: () => Get.to(() => const EstateSearchScreen()),
+                      child: Container(
+                        margin: const EdgeInsets.symmetric(horizontal: 4),
+                        padding: const EdgeInsets.all(9),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: const LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [Color(0xFF2E6DA4), Color(0xFF1A3C5E)],
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFF1A3C5E).withOpacity(0.35),
+                              blurRadius: 10,
+                              offset: const Offset(0, 3),
+                            ),
+                          ],
+                        ),
+                        child: const Icon(
+                          Icons.search_rounded,
+                          size: 20,
+                          color: Colors.white,
+                        ),
+                      ),
                     ),
                   ),
 

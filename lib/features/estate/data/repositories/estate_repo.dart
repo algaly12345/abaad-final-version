@@ -16,6 +16,14 @@ class EstateRepo {
     return await apiClient.getData('${AppConstants.CATEGORY_ESTATEURI}?type=$type');
   }
 
+  /// بحث شامل عن العقارات بالاسم — يستخدم نقطة النهاية:
+  /// GET /api/v1/estate/search?name=<query>
+  Future<Response> searchEstates(String name) async {
+    return await apiClient.getData(
+      '/api/v1/estate/search?name=${Uri.encodeQueryComponent(name)}',
+    );
+  }
+
 
   Future<Response> getCategorisEstateList( int offset, int categoryID, String type) async {
     return await apiClient.getData(

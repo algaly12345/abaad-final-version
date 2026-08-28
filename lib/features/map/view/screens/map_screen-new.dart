@@ -31,7 +31,6 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../widgets/location_search_dialog.dart';
-import 'package:abaad_flutter/features/estate/view/screens/estate_search_screen.dart';
 import '../widgets/permission_dialog.dart';
 import '../widgets/service_provider.dart';
 
@@ -185,6 +184,125 @@ class _MapViewScreenState extends State<MapScreen> {
 
     await _loadInitialEstatesFromPoint();
     _didInitialLoad = true;
+
+    // 🔹 لو المنطقة المفتوحة مفيهاش أي عقارات، نوسّع نطاق البحث تدريجيًا
+    // (بدل ما نسيب الخريطة فاضية بلا أي عقار ظاهر) لحد ما نلاقي عقارات،
+    // وننقل الكاميرا لأول عقار اتلاقى.
+    await _ensureEstatesVisibleOrExpandSearch();
+
+    // 🔹 بعد ما عقارات المنطقة تتحمّل، اعرض آخر عقار موجود فيها تلقائيًا
+    // (آخر عنصر في القائمة) بدل ما تبدأ الشاشة من الصفحة الافتراضية
+    // الثابتة (رقم 1) بغض النظر عن المحتوى.
+    _showLastEstateInZone();
+  }
+
+  /// لو مفيش أي عقارات في نطاق البحث الأولي حوالين المنطقة، يوسّع نطاق
+  /// البحث تدريجيًا (2 → 5 → 10 → 25 درجة) لحد ما يلاقي عقارات فعلية، ثم
+  /// ينقل الكاميرا لموقع أول عقار اتلاقى — بدل ما تفضل الخريطة فاضية
+  /// تمامًا لو المنطقة المحدّدة نفسها معندهاش أي عقار مسجّل.
+  Future<void> _ensureEstatesVisibleOrExpandSearch() async {
+    final categoryController = Get.find<CategoryController>();
+
+    const List<double> expandingDeltas = [2.0, 5.0, 10.0, 25.0];
+
+    for (final double delta in expandingDeltas) {
+      final List<Estate>? current = categoryController.mapEstateList;
+      if (current != null && current.isNotEmpty) {
+        // لقينا عقارات بالفعل، مفيش داعي نوسّع البحث أكتر.
+        return;
+      }
+
+      final double northEastLat = lat + delta;
+      final double northEastLng = lot + delta;
+      final double southWestLat = lat - delta;
+      final double southWestLng = lot - delta;
+
+      await categoryController.getMapCategoryProductListByBounds(
+        widget.mainCategory.id,
+        categoryController.subCategoryList != null &&
+                categoryController.subCategoryList!.isNotEmpty
+            ? categoryController
+                .subCategoryList![categoryController.subCategoryIndex].id
+                .toString()
+            : "0",
+        0,
+        categoryController.filterCity,
+        categoryController.filterDistrict,
+        categoryController.filterSpace,
+        "0",
+        northEastLat,
+        northEastLng,
+        southWestLat,
+        southWestLng,
+        reload: true,
+        arPath: 0,
+        sv: 0,
+        type: selectedOption,
+      );
+    }
+
+    // بعد آخر محاولة، لو اتلاقت عقارات فعلًا، انقل الكاميرا لموقع أول
+    // عقار منهم عشان يبان على الخريطة بدل ما تفضل مركّزة على نقطة فاضية.
+    final List<Estate>? finalList = categoryController.mapEstateList;
+    if (finalList != null && finalList.isNotEmpty) {
+      final Estate first = finalList.first;
+      final double? foundLat = double.tryParse(first.latitude ?? '');
+      final double? foundLng = double.tryParse(first.longitude ?? '');
+      if (foundLat != null && foundLng != null) {
+        lat = foundLat;
+        lot = foundLng;
+        await _controller.animateCamera(
+          CameraUpdate.newCameraPosition(
+            CameraPosition(target: LatLng(lat, lot), zoom: 10),
+          ),
+        );
+      }
+    }
+  }
+
+  /// يحدد آخر عقار في قائمة عقارات المنطقة الحالية (mapEstateList) وينقل
+  /// شريط البطاقات أسفل الخريطة (PageView) إليه مباشرة، مع تحديث تظليل
+  /// العلامة الخاصة به على الخريطة.
+  void _showLastEstateInZone() {
+    final categoryController = Get.find<CategoryController>();
+    final List<Estate>? list = categoryController.mapEstateList;
+
+    if (list == null || list.isEmpty) return;
+
+    final int lastIndex = list.length - 1;
+    final Estate lastEstate = list[lastIndex];
+
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+
+      setState(() {
+        selectedIndex = lastIndex;
+      });
+
+      if (_pageController.hasClients) {
+        _pageController.jumpToPage(lastIndex);
+      }
+
+      // إعادة رسم العلامات عشان علامة العقار المعروض تظهر بشكل "مُحدَّد"
+      // (Highlighted) على الخريطة أيضًا.
+      _setMarkers(list);
+
+      // 🔹 نقل الكاميرا فورًا لموقع العقار المعروض بالظبط (بدون أنيميشن
+      // تحرّك — moveCamera بدل animateCamera) — عشان يبان واضح على
+      // الخريطة مباشرة، مش بس مظلّل في القائمة أسفلها.
+      final double? estateLat = double.tryParse(lastEstate.latitude ?? '');
+      final double? estateLng = double.tryParse(lastEstate.longitude ?? '');
+      if (estateLat != null && estateLng != null && _mapReady) {
+        _controller.moveCamera(
+          CameraUpdate.newCameraPosition(
+            CameraPosition(
+              target: LatLng(estateLat, estateLng),
+              zoom: 16,
+            ),
+          ),
+        );
+      }
+    });
   }
 
   void _setCircle(LatLng point) async {
@@ -441,9 +559,13 @@ class _MapViewScreenState extends State<MapScreen> {
                                     children: [
                                       InkWell(
                                         onTap: () {
-                                          // 🔹 بحث العقارات الشامل بدل بحث
-                                          // الموقع الجغرافي (LocationSearchDialog).
-                                          Get.to(() => const EstateSearchScreen());
+                                          if (_mapReady) {
+                                            Get.dialog(
+                                              LocationSearchDialog(
+                                                mapController: _controller,
+                                              ),
+                                            );
+                                          }
                                         },
                                         child: Container(
                                           height: 43,

@@ -120,6 +120,15 @@ class EstateController extends GetxController implements GetxService {
   List<String> get reportList => _reportList;
   RxBool isLoading2 = false.obs;
 
+  // 🔹 حالة البحث الشامل عن العقارات
+  List<Estate>? _searchResults;
+  bool _isSearchingEstates = false;
+  String _lastSearchQuery = '';
+
+  List<Estate>? get searchResults => _searchResults;
+  bool get isSearchingEstates => _isSearchingEstates;
+  String get lastSearchQuery => _lastSearchQuery;
+
 
 
 
@@ -156,6 +165,69 @@ class EstateController extends GetxController implements GetxService {
     } else {
       ApiChecker.checkApi(response, showToaster: true);
     }
+  }
+
+  /// بحث شامل عن العقارات بالاسم — لكل نداء رقم تسلسلي خاص به (Request
+  /// Token) يمنع أي رد متأخر من نداء قديم من الكتابة فوق نتيجة نداء أحدث
+  /// (حالة تسابق شائعة في البحث الفوري أثناء الكتابة).
+  int _searchRequestId = 0;
+
+  Future<void> searchEstateByName(String name) async {
+    final String query = name.trim();
+    final int currentRequestId = ++_searchRequestId;
+
+    if (query.isEmpty) {
+      _searchResults = null;
+      _lastSearchQuery = '';
+      _isSearchingEstates = false;
+      update();
+      return;
+    }
+
+    _isSearchingEstates = true;
+    _lastSearchQuery = query;
+    update();
+
+    try {
+      final Response response = await estateRepo.searchEstates(query);
+
+      // 🔹 طباعة تشخيصية مؤقتة — هنشيلها بعد ما نحل المشكلة.
+      print('🔍 SEARCH URL/STATUS: ${response.statusCode} for query "$query"');
+      print('🔍 SEARCH RAW BODY: ${response.body}');
+
+      if (currentRequestId != _searchRequestId) {
+        return;
+      }
+
+      if (response.statusCode == 200) {
+        final EstateModel model = EstateModel.fromJson(response.body);
+        print('🔍 PARSED estates COUNT: ${model.estates?.length}');
+        _searchResults = model.estates ?? [];
+      } else {
+        _searchResults = [];
+        ApiChecker.checkApi(response, showToaster: true);
+      }
+    } catch (e, stackTrace) {
+      print('🔍 SEARCH EXCEPTION: $e');
+      print('🔍 SEARCH STACK TRACE:');
+      print(stackTrace);
+      if (currentRequestId == _searchRequestId) {
+        _searchResults = [];
+      }
+    } finally {
+      if (currentRequestId == _searchRequestId) {
+        _isSearchingEstates = false;
+        update();
+      }
+    }
+  }
+
+  void clearEstateSearch() {
+    _searchRequestId++;
+    _searchResults = null;
+    _lastSearchQuery = '';
+    _isSearchingEstates = false;
+    update();
   }
 
 
@@ -269,8 +341,13 @@ class EstateController extends GetxController implements GetxService {
 
       Response response = await estateRepo.getEstateDetails(estate.id.toString());
 
+      // 🔹 طباعة تشخيصية مؤقتة
+      print('📍 DETAILS STATUS: ${response.statusCode}');
+      print('📍 DETAILS RAW BODY: ${response.body}');
+
       if (response.statusCode == 200) {
         _estate = Estate.fromJson(response.body);
+        print('📍 PARSED lat/lng: ${_estate?.latitude} / ${_estate?.longitude}');
       } else {
         ApiChecker.checkApi(response, showToaster: true);
       }

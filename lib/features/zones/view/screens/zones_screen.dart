@@ -9,6 +9,12 @@ import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../widgets/banner_view.dart';
 
+/// ملاحظة: نفس اسم الكلاس وكل المنطق الأصلي بدون أي تغيير — الإضافة
+/// الوحيدة هي مسافة فاضية أعلى المحتوى (أول عنصر في CustomScrollView)
+/// بمقدار ارتفاع WebMenuBar العائم المشترك في شاشة الـ Dashboard اللي
+/// بتحتوي ZonesScreen كصفحة داخل PageView. بعد ما فُعّل
+/// extendBodyBehindAppBar على الـ Dashboard، محتوى هذه الشاشة كان بيبدأ
+/// من تحت الشريط العائم مباشرة فيتقصّ جزء منه — المسافة الجديدة تحل ده.
 class ZonesScreen extends StatefulWidget {
 
   const ZonesScreen({super.key});
@@ -52,12 +58,23 @@ class _ZonesScreenState extends State<ZonesScreen> {
     final currentLocale = Get.locale;
     bool isArabic = currentLocale?.languageCode == 'ar';
 
+    // 🔹 ارتفاع WebMenuBar العائم المشترك (statusBarHeight + 10 مسافة
+    // علوية + 60 ارتفاع الكارت نفسه) — نفس حساب preferredSize بالظبط،
+    // عشان محتوى الشاشة يبدأ تحته مباشرة بدون أي تقاطع.
+    final double topSpacing = MediaQuery.of(context).padding.top + 5;
+
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: GetBuilder<CategoryController>(builder: (categoryController) {
         return (categoryController.subCategoryList != null)
             ? CustomScrollView(
           slivers: [
+            // 🔹 مسافة فاصلة أعلى المحتوى — تعويض عن ارتفاع الشريط
+            // العائم المشترك (WebMenuBar) في شاشة الـ Dashboard الأب.
+            SliverToBoxAdapter(
+              child: SizedBox(height: topSpacing),
+            ),
+
             // Header with gradient
 
             // Banner

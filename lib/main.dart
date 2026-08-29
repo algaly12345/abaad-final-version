@@ -400,6 +400,7 @@ class _MyAppState extends State<MyApp> {
     if (!GetPlatform.isMobile) return;
 
     unawaited(ReferralCodeStorage.captureFromPlayInstallReferrer());
+    unawaited(ReferralCodeStorage.captureFromPasteboard());
 
     try {
       final Uri? initialUri = await _appLinks.getInitialLink();

@@ -228,14 +228,27 @@ class _EstateViewState extends State<EstateView> {
                   final String estateLink =
                       'https://app.abaadapp.sa/details/${widget.estate?.id}';
                   final String message = 'شاهد هذا العقار: $estateLink';
+                  final String encodedMessage = Uri.encodeComponent(message);
 
-                  final Uri whatsappUrl = Uri.parse(
-                      "https://wa.me/?text=${Uri.encodeComponent(message)}");
+                  final Uri whatsappAppUri =
+                  Uri.parse("whatsapp://send?text=$encodedMessage");
+                  final Uri whatsappWebUri =
+                  Uri.parse("https://wa.me/?text=$encodedMessage");
 
-                  if (await canLaunchUrl(whatsappUrl)) {
-                    await launchUrl(whatsappUrl,
-                        mode: LaunchMode.externalApplication);
+                  // 🔹 طباعة تشخيصية مؤقتة
+                  final bool canOpenApp = await canLaunchUrl(whatsappAppUri);
+                  print('📲 canLaunchUrl(whatsapp://): $canOpenApp');
+                  print('📲 whatsappAppUri: $whatsappAppUri');
+                  print('📲 whatsappWebUri: $whatsappWebUri');
+
+                  if (canOpenApp) {
+                    print('📲 فتح عبر whatsapp:// (التطبيق مباشرة)');
+                    await launchUrl(whatsappAppUri, mode: LaunchMode.externalApplication);
+                  } else if (await canLaunchUrl(whatsappWebUri)) {
+                    print('📲 فتح عبر wa.me (المتصفح/الويب)');
+                    await launchUrl(whatsappWebUri, mode: LaunchMode.externalApplication);
                   } else if (mounted) {
+                    print('📲 فشل فتح الاثنين خالص');
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(content: Text("لا يمكن فتح واتساب")),
                     );

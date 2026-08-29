@@ -441,6 +441,8 @@ class _FeatureScreenState extends State<FeatureScreen> {
               )
                   : CircularProgressIndicator(),
             ),
+
+
             ):NoDataScreen(
               text: 'no_data_available',
             ),

@@ -39,7 +39,7 @@ class _MapViewScreenState extends State<MapViewScreen> {
 
   static const CameraPosition _initialCamera = CameraPosition(
     zoom: 5.0,
-    target: LatLng(24.263867, 45.033284),
+    target: LatLng(25.338515, 44.264379),
   );
 
   /// تنسيق خريطة مخصّص يوقف ظهور كل التسميات (Labels) — أسماء الدول
@@ -133,7 +133,7 @@ class _MapViewScreenState extends State<MapViewScreen> {
     _customMarkersZone.add(MarkerData(
       marker: const Marker(
         markerId: MarkerId('id-0'),
-        position: LatLng(25.338589, 43.685518
+        position: LatLng(27.421792, 40.600602
         ),
       ),
       child: Image.asset(Images.mail, height: 20, width: 20),

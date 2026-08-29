@@ -1,6 +1,11 @@
 import 'dart:convert';
 
 import 'package:abaad_flutter/features/auth/controller/auth_controller.dart';
+import 'package:abaad_flutter/features/profile/controller/user_controller.dart';
+import 'package:abaad_flutter/features/provider/controller/service_offer_controller.dart';
+import 'package:abaad_flutter/features/provider/view/screens/provider_upgrade_screen.dart';
+import 'package:abaad_flutter/features/provider/view/widgets/provider_identity_form.dart';
+import 'package:abaad_flutter/features/services/view/screens/my_services_screen.dart';
 import 'package:abaad_flutter/shared/controllers/splash_controller.dart';
 import 'package:abaad_flutter/features/auth/data/models/signup_body.dart';
 import 'package:abaad_flutter/shared/helpers/responsive_helper.dart';
@@ -10,6 +15,7 @@ import 'package:abaad_flutter/shared/utils/images.dart';
 import 'package:abaad_flutter/shared/utils/referral_code_storage.dart';
 import 'package:abaad_flutter/shared/widgets/app_dropdown.dart';
 import 'package:abaad_flutter/shared/widgets/custom_snackbar.dart';
+import 'package:abaad_flutter/shared/widgets/root_fallback_scope.dart';
 import 'package:abaad_flutter/shared/widgets/web_menu_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -41,6 +47,12 @@ class _SignUpScreenState extends State<SignUpScreen> {
   String? _registrationType = 'individual';
   String? _selectedUserType;
 
+  /// المصدر الوحيد الذي يملأ _referCodeController هو رابط الإحالة (لا يوجد
+  /// حقل يدوي له في الواجهة) — فوجود قيمة هنا يعني تحديداً أن هذا التسجيل
+  /// جاء عبر رابط إحالة مزوّد خدمة، فنسجّله هو أيضاً كمزوّد خدمة مباشرة بلا
+  /// سؤاله عن نوع الحساب (راجع طلب اختصار المسار لمن يُحال عبر الرابط).
+  bool get _isReferralSignUp => _referCodeController.text.trim().isNotEmpty;
+
   @override
   void initState() {
     super.initState();
@@ -53,7 +65,12 @@ class _SignUpScreenState extends State<SignUpScreen> {
   Future<void> _prefillReferralCode() async {
     final String? code = await ReferralCodeStorage.consume();
     if (code != null && code.isNotEmpty && mounted) {
-      setState(() => _referCodeController.text = code);
+      setState(() {
+        _referCodeController.text = code;
+        // يخفي حقل "نوع المستخدم" في الواجهة (انظر أدناه) فلا بد من قيمة
+        // مسبقة هنا حتى يمر تحقق _register() دون أن يظهر الحقل أصلاً.
+        _selectedUserType = 'مسوق عقاري';
+      });
     }
   }
 
@@ -211,64 +228,84 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                       _buildPhoneField(primary),
                                       const SizedBox(height: Spacing.md),
 
-                                      // User type
-                                      _fieldLabel('user_type'.tr),
-                                      const SizedBox(height: Spacing.sm),
-                                      AppDropdown<String>(
-                                        value: _selectedUserType,
-                                        hintText: 'please_select_user_type'.tr,
-                                        items: [
-                                          DropdownMenuItem(
-                                            value: 'باحث عن عقار',
-                                            child: Text('property_seeker'.tr),
-                                          ),
-                                          DropdownMenuItem(
-                                            value: 'مسوق عقاري',
-                                            child: Text('real_estate_marketer'.tr),
-                                          ),
-                                        ],
-                                        onChanged: (value) =>
-                                            setState(() => _selectedUserType = value),
-                                      ),
-                                      const SizedBox(height: Spacing.md),
-
-                                      // Registration type
-                                      _fieldLabel('registration_type'.tr),
-                                      const SizedBox(height: Spacing.sm),
-                                      AppDropdown<String>(
-                                        value: _registrationType,
-                                        hintText: 'registration_type'.tr,
-                                        items: [
-                                          DropdownMenuItem(
-                                            value: 'individual',
-                                            child: Text('individual'.tr),
-                                          ),
-                                          DropdownMenuItem(
-                                            value: 'organization',
-                                            child: Text('organization_label'.tr),
-                                          ),
-                                        ],
-                                        onChanged: (value) =>
-                                            setState(() => _registrationType = value),
-                                      ),
-
-                                      // Unified number (organization only)
-                                      if (_registrationType == 'organization') ...[
-                                        const SizedBox(height: Spacing.md),
-                                        _fieldLabel('unified_number'.tr),
+                                      // User type / نوع التسجيل / الرقم الموحد —
+                                      // تختفي جميعها لمن جاء عبر رابط إحالة (انظر
+                                      // _isReferralSignUp)، ويظهر بدلاً منها نموذج
+                                      // "اختر نوع الحساب" (بيانات الهوية كمزوّد
+                                      // خدمة) في مكانها مباشرة — فيُسجَّل بذلك
+                                      // كمزوّد خدمة بتسجيل واحد متصل، لا تسجيل
+                                      // كمستخدم ثم "انضمام كمزوّد خدمة" منفصل لاحقاً.
+                                      if (!_isReferralSignUp) ...[
+                                        _fieldLabel('user_type'.tr),
                                         const SizedBox(height: Spacing.sm),
-                                        _textField(
-                                          controller: _unifiedNumberController,
-                                          focusNode: _unifiedNumberFocus,
-                                          hint: 'enter_unified_number'.tr,
-                                          icon: Icons.badge_outlined,
-                                          primary: primary,
-                                          keyboardType: TextInputType.number,
-                                          textInputAction: TextInputAction.done,
-                                          inputFormatters: [
-                                            FilteringTextInputFormatter.digitsOnly,
+                                        AppDropdown<String>(
+                                          value: _selectedUserType,
+                                          hintText: 'please_select_user_type'.tr,
+                                          items: [
+                                            DropdownMenuItem(
+                                              value: 'باحث عن عقار',
+                                              child: Text('property_seeker'.tr),
+                                            ),
+                                            DropdownMenuItem(
+                                              value: 'مسوق عقاري',
+                                              child: Text('real_estate_marketer'.tr),
+                                            ),
                                           ],
+                                          onChanged: (value) =>
+                                              setState(() => _selectedUserType = value),
                                         ),
+                                        const SizedBox(height: Spacing.md),
+
+                                        // Registration type
+                                        _fieldLabel('registration_type'.tr),
+                                        const SizedBox(height: Spacing.sm),
+                                        AppDropdown<String>(
+                                          value: _registrationType,
+                                          hintText: 'registration_type'.tr,
+                                          items: [
+                                            DropdownMenuItem(
+                                              value: 'individual',
+                                              child: Text('individual'.tr),
+                                            ),
+                                            DropdownMenuItem(
+                                              value: 'organization',
+                                              child: Text('organization_label'.tr),
+                                            ),
+                                          ],
+                                          onChanged: (value) =>
+                                              setState(() => _registrationType = value),
+                                        ),
+
+                                        // Unified number (organization only)
+                                        if (_registrationType == 'organization') ...[
+                                          const SizedBox(height: Spacing.md),
+                                          _fieldLabel('unified_number'.tr),
+                                          const SizedBox(height: Spacing.sm),
+                                          _textField(
+                                            controller: _unifiedNumberController,
+                                            focusNode: _unifiedNumberFocus,
+                                            hint: 'enter_unified_number'.tr,
+                                            icon: Icons.badge_outlined,
+                                            primary: primary,
+                                            keyboardType: TextInputType.number,
+                                            textInputAction: TextInputAction.done,
+                                            inputFormatters: [
+                                              FilteringTextInputFormatter.digitsOnly,
+                                            ],
+                                          ),
+                                        ],
+                                      ] else ...[
+                                        _fieldLabel('choose_account_type'.tr),
+                                        const SizedBox(height: Spacing.xs),
+                                        Text(
+                                          'provider_upgrade_subtitle'.tr,
+                                          style: AppTypography.caption.copyWith(
+                                            color: const Color(0xFF6B7280),
+                                          ),
+                                        ),
+                                        const SizedBox(height: Spacing.md),
+                                        const ProviderIdentityForm(),
+                                        const SizedBox(height: Spacing.md),
                                       ],
 
                                       // Applied referral code (read-only confirmation, only when auto-filled via link)
@@ -545,7 +582,15 @@ class _SignUpScreenState extends State<SignUpScreen> {
       showCustomSnackBar('please_select_user_type'.tr);
       return;
     }
-    if (_registrationType == 'organization' &&
+    if (_isReferralSignUp) {
+      // نفس رسالة/شرط ServiceOfferController._validateEntityIdentity() —
+      // نكرره هنا مسبقًا كي لا يُنشأ حساب مصادَق (تسجيل + تحقق OTP) دون بيانات
+      // هوية أصلاً، بدل اكتشاف ذلك لاحقًا في _ReferralIdentitySubmitGate.
+      if (Get.find<ServiceOfferController>().entityType == null) {
+        showCustomSnackBar('اختر فرد أو منشأة');
+        return;
+      }
+    } else if (_registrationType == 'organization' &&
         _unifiedNumberController.text.trim().isEmpty) {
       showCustomSnackBar('please_enter_unified_number'.tr);
       return;
@@ -559,6 +604,22 @@ class _SignUpScreenState extends State<SignUpScreen> {
     }
 
     final String numberWithCountryCode = '+966$number';
+
+    if (_isReferralSignUp) {
+      // بيانات الهوية (فرد/منشأة) جُمعت للتوّ أعلاه عبر ProviderIdentityForm
+      // ضمن نفس نموذج التسجيل، لكن إرسالها لـ updateIdentity API يتطلب توكن
+      // مصادقة — غير متوفر إلا بعد نجاح التحقق من الجوال (verifyPhone تحفظه).
+      // لذا تُرسَل فعليًا من _ReferralIdentitySubmitGate بعد ذلك مباشرة، لا من
+      // هنا، فيبدو التسجيل بأكمله (بيانات أساسية + هوية) خطوة واحدة متصلة
+      // للمستخدم رغم أن الإرسال الفعلي يحدث على دفعتين خلف الكواليس. نفس آلية
+      // إعادة التوجيه بعد تسجيل الدخول المستخدمة أصلاً لزائر ضغط "انضم كمزوّد
+      // خدمة" (راجع AuthController.setPendingPostAuthRedirect وطريقة
+      // استهلاكها في verification_screen.dart)، وتُستهلَك مرة واحدة فتلقائيًا
+      // لا تؤثر على أي تسجيل لاحق.
+      authController.setPendingPostAuthRedirect(
+        () => const _ReferralIdentitySubmitGate(),
+      );
+    }
 
     final SignUpBody signUpBody = SignUpBody(
       fName: fullName,
@@ -588,6 +649,14 @@ class _SignUpScreenState extends State<SignUpScreen> {
               data,
             ),
           );
+        } else if (_isReferralSignUp) {
+          // لا خطوة تحقق OTP هنا: registration() سجّل الدخول فوراً، فنستهلك
+          // إعادة التوجيه المضبوطة أعلاه يدوياً بدل الاعتماد على
+          // verification_screen.dart (التي لن تُفتَح إطلاقاً بهذا المسار).
+          authController.consumePendingPostAuthRedirect();
+          Get.offAll(
+            () => const RootFallbackScope(child: _ReferralIdentitySubmitGate()),
+          );
         } else {
           Get.toNamed(
             RouteHelper.getAccessLocationRoute(RouteHelper.signUp),
@@ -597,5 +666,53 @@ class _SignUpScreenState extends State<SignUpScreen> {
         showCustomSnackBar(status.message);
       }
     });
+  }
+}
+
+/// شاشة انتقالية موجزة (لا تظهر أي نموذج) تُرسل بيانات الهوية التي جُمعت
+/// أثناء التسجيل نفسه (ProviderIdentityForm أعلاه) بمجرد توفر توكن مصادقة
+/// صالح بعد نجاح تسجيل الدخول/التحقق — لا يمكن إرسالها قبل ذلك لأن
+/// updateIdentity API محمي بـ auth:api. عند النجاح تنتقل مباشرة إلى "خدماتي"،
+/// أو تعرض شاشة "إنشاء حساب مزود خدمة" (مسبوقة بنفس البيانات المُدخلة، لأنها
+/// تُقرأ من نفس ServiceOfferController) لإتاحة إعادة المحاولة لو فشل الإرسال
+/// (مثلاً بسبب انقطاع شبكة لحظي) بدل حجب الوصول لـ"خدماتي" بصمت.
+class _ReferralIdentitySubmitGate extends StatefulWidget {
+  const _ReferralIdentitySubmitGate();
+
+  @override
+  State<_ReferralIdentitySubmitGate> createState() =>
+      _ReferralIdentitySubmitGateState();
+}
+
+class _ReferralIdentitySubmitGateState
+    extends State<_ReferralIdentitySubmitGate> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _submit());
+  }
+
+  Future<void> _submit() async {
+    final saved = await Get.find<ServiceOfferController>().saveIdentityNow();
+    if (saved) {
+      await Get.find<UserController>().getUserInfo();
+    }
+    if (!mounted) return;
+    // يُعاد اللف بـ RootFallbackScope هنا مجدداً رغم أن هذه الشاشة نفسها قد
+    // تكون أصلاً داخل واحدة (استهلاك pendingPostAuthRedirect): Get.offAll()
+    // يمسح المكدّس بالكامل بما فيه أي لفّ سابق، فبلا هذا يصل المستخدم لشاشة
+    // بلا حماية زرّ الرجوع (راجع تعليق RootFallbackScope.handleBackTap).
+    if (saved) {
+      Get.offAll(() => const RootFallbackScope(child: MyServicesScreen()));
+    } else {
+      Get.offAll(
+        () => const RootFallbackScope(child: ProviderUpgradeScreen()),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(body: Center(child: CircularProgressIndicator()));
   }
 }

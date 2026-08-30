@@ -372,6 +372,20 @@ class MyApp extends StatefulWidget {
   /// تسلسلها الطبيعي (Get.offNamed) لتفادي تعارض توقيت يمسح التنقّل المباشر.
   static int? pendingDetailsEstateId;
 
+  /// إحالة معلَّقة تنتظر البتّ في وجهتها: تُقرأ من شاشة السبلاش
+  /// (SplashScreen._navigateToApp) لتذهب لصفحة التسجيل بدل الرئيسية مباشرة،
+  /// عوضًا عن تنقّل مستقل هنا قد يتسابق مع تنقّل السبلاش الافتراضي (Get.offNamed
+  /// للرئيسية) ويُطاح به بمجرد اكتمال جلب إعدادات السيرفر — وهذا ما كان يجعل
+  /// رابط الإحالة يفتح صفحة التسجيل للحظة ثم يُعاد المستخدم للرئيسية (لوحظ
+  /// تكراره تحديدًا على آيفون، حيث يصل الرابط الأولي عبر getInitialLink بعد
+  /// أن يكون تنقّل السبلاش الافتراضي قد اكتمل غالبًا).
+  static bool pendingReferralSignUp = false;
+
+  /// صحيح فور أول استدعاء لـ SplashScreen._navigateToApp — يُستخدم هنا لمعرفة
+  /// هل السبلاش انتهت من قرارها الأول (فتح دافئ لاحق للرابط) أم لا تزال
+  /// تنتظر (فتح بارد، فنترك لها البتّ في pendingReferralSignUp بنفسها).
+  static bool splashHasRouted = false;
+
   @override
   State<MyApp> createState() => _MyAppState();
 }
@@ -449,8 +463,16 @@ class _MyAppState extends State<MyApp> {
     await ReferralCodeStorage.save(code);
 
     if (!Get.find<AuthController>().isLoggedIn()) {
+      MyApp.pendingReferralSignUp = true;
       await _waitForNavigatorReady();
-      Get.toNamed(RouteHelper.getSignUpRoute());
+
+      // إن كانت السبلاش لم تبتّ في وجهتها بعد (فتح بارد)، نترك لها القرار
+      // (انظر SplashScreen._navigateToApp) لتفادي تسابق يُطيح بصفحة التسجيل
+      // بمجرد فتحها. غير ذلك (فتح دافئ: السبلاش انتهت أصلًا)، ننقّل هنا مباشرة.
+      if (MyApp.pendingReferralSignUp && MyApp.splashHasRouted) {
+        MyApp.pendingReferralSignUp = false;
+        Get.offNamed(RouteHelper.getSignUpRoute());
+      }
     }
   }
 

@@ -92,6 +92,8 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   void _navigateToApp() async {
+    app_main.MyApp.splashHasRouted = true;
+
     // رابط تفاصيل عقار معلَّق: نتخطى فتح الرئيسية/تسجيل الدخول بالكامل هنا،
     // ونترك GetX ينتقل مباشرة لصفحة /details عبر GetPage المسجَّلة، لتفادي
     // ظهور الرئيسية للحظة قبل شاشة التفاصيل (الرمشة).
@@ -110,6 +112,15 @@ class _SplashScreenState extends State<SplashScreen> {
         Get.offNamed(RouteHelper.getAccessLocationRoute('splash'));
       }
     } else {
+      // إحالة معلَّقة (رابط abaadapp.sa/ref/CODE): اذهب لصفحة التسجيل مباشرة
+      // بدل الرئيسية/الإعداد الأولي — هذا هو القرار الحاسم الوحيد الذي يمنع
+      // تسابق مع main.dart._handleReferralLink (انظر MyApp.pendingReferralSignUp).
+      if (app_main.MyApp.pendingReferralSignUp) {
+        app_main.MyApp.pendingReferralSignUp = false;
+        Get.offNamed(RouteHelper.getSignUpRoute());
+        return;
+      }
+
       if (Get.find<SplashController>().showIntro() ?? false) {
         if (AppConstants.languages.length > 1) {
           Get.offNamed(RouteHelper.getLanguageRoute('splash'));

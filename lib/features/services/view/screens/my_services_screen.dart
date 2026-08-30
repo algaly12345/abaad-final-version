@@ -479,21 +479,20 @@ class _ServiceCard extends StatelessWidget {
               ),
             ),
             // Toggle switch
-            Padding(
-              padding: const EdgeInsets.only(left: 12, right: 4),
-              child: Switch(
-                value: isActive,
-                activeThumbColor: primary,
-                activeTrackColor: primary.withValues(alpha: 0.4),
-                inactiveThumbColor: Colors.grey.shade400,
-                inactiveTrackColor: Colors.grey.shade200,
-                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                onChanged: canToggle
-                    ? (_) => Get.find<ServicesController>()
-                    .toggleServiceStatus(service.id!)
-                    : null,
+            if (canToggle)
+              Padding(
+                padding: const EdgeInsets.only(left: 12, right: 4),
+                child: Switch(
+                  value: isActive,
+                  activeThumbColor: primary,
+                  activeTrackColor: primary.withValues(alpha: 0.4),
+                  inactiveThumbColor: Colors.grey.shade400,
+                  inactiveTrackColor: Colors.grey.shade200,
+                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  onChanged: (_) => Get.find<ServicesController>()
+                      .toggleServiceStatus(service.id!),
+                ),
               ),
-            ),
           ],
         ),
       ),

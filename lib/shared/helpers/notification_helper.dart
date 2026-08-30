@@ -220,6 +220,10 @@ class NotificationHelper {
     } else if (notificationBody.notificationType == NotificationType.offerStatus ||
         notificationBody.notificationType == NotificationType.subscriptionStatus) {
       Get.toNamed(RouteHelper.getMyServicesRoute());
+    } else if (notificationBody.notificationType == NotificationType.verificationStatus) {
+      Get.toNamed(RouteHelper.getProfileRoute());
+    } else if (notificationBody.notificationType == NotificationType.commissionStatus) {
+      Get.toNamed(RouteHelper.getReferralsRoute());
     } else {
       Get.toNamed(RouteHelper.getNotificationRoute());
     }
@@ -246,6 +250,12 @@ class NotificationHelper {
     }
     if (data['type'] == 'account_status') {
       return NotificationBody(notificationType: NotificationType.accountStatus);
+    }
+    if (data['type'] == 'verification_status') {
+      return NotificationBody(notificationType: NotificationType.verificationStatus);
+    }
+    if (data['type'] == 'commission_status') {
+      return NotificationBody(notificationType: NotificationType.commissionStatus);
     }
     return NotificationBody(notificationType: NotificationType.general);
   }

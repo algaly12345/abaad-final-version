@@ -358,9 +358,12 @@ class _ServiceCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isUnpaid =
+        service.paymentStatus == 'unpaid' || service.paymentStatus == 'failed';
     final canToggle = service.status != 'cancelled' &&
         service.status != 'rejected' &&
-        service.id != null;
+        service.id != null &&
+        !(service.status != 'accept' && isUnpaid);
     final isActive = service.status == 'accept';
 
     return GestureDetector(

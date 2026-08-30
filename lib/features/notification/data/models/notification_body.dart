@@ -6,6 +6,8 @@ enum NotificationType{
   offerStatus,
   subscriptionStatus,
   accountStatus,
+  verificationStatus,
+  commissionStatus,
 }
 
 class NotificationBody {
@@ -62,6 +64,10 @@ class NotificationBody {
       return NotificationType.subscriptionStatus;
     }else if(enumString == NotificationType.accountStatus.toString()) {
       return NotificationType.accountStatus;
+    }else if(enumString == NotificationType.verificationStatus.toString()) {
+      return NotificationType.verificationStatus;
+    }else if(enumString == NotificationType.commissionStatus.toString()) {
+      return NotificationType.commissionStatus;
     }
     return NotificationType.general;
   }

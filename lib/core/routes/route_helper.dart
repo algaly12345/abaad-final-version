@@ -263,6 +263,7 @@ class RouteHelper {
         return ServiceOfferPaymentScreen(
           paymentUrl: args?['url'] ?? '',
           subscriptionNumber: args?['number'] ?? '',
+          serviceId: (args?['serviceId'] as num?)?.toInt() ?? 0,
         );
       },
     ),

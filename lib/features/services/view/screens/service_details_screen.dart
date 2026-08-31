@@ -1080,7 +1080,13 @@ class _PayNowBottomBarState extends State<_PayNowBottomBar> {
     if (result != null) {
       Get.toNamed(
         RouteHelper.getServiceOfferPaymentRoute(),
-        arguments: {'url': result['url'], 'number': result['number']},
+        arguments: {
+          'url': result['url'],
+          'number': result['number'],
+          // كي تعيد شاشة الدفع المستخدم لتفاصيل هذه الخدمة نفسها بعد نتيجة
+          // الدفع بدل السقوط لجذر المكدّس/تسجيل الدخول.
+          'serviceId': widget.service.id,
+        },
       );
     }
   }

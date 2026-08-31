@@ -671,6 +671,8 @@ class _WizardScreenState extends State<_WizardScreen> {
         arguments: {
           'url': result.paymentUrl,
           'number': result.subscriptionNumber,
+          // كي تعيد شاشة الدفع المستخدم لتفاصيل هذه الخدمة بعد نتيجة الدفع.
+          'serviceId': result.offerId,
         },
       );
     }

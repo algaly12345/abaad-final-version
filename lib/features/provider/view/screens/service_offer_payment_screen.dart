@@ -1,5 +1,6 @@
 import 'package:abaad_flutter/core/routes/route_helper.dart';
 import 'package:abaad_flutter/features/provider/controller/service_offer_controller.dart';
+import 'package:abaad_flutter/features/services/view/screens/service_details_screen.dart';
 import 'package:abaad_flutter/shared/theme/design_system.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -9,10 +10,18 @@ class ServiceOfferPaymentScreen extends StatefulWidget {
   final String paymentUrl;
   final String subscriptionNumber;
 
+  // معرّف العرض (offer_id) الذي يُدفَع اشتراكه — يُمرَّر من معالج "إضافة خدمة"
+  // (StoreOfferResponseModel.offerId) ومن زر "ادفع الآن" في تفاصيل الخدمة
+  // (service.id). يُستخدم لإعادة المستخدم إلى صفحة تفاصيل هذه الخدمة نفسها
+  // بعد نتيجة الدفع بدل السقوط للجذر/تسجيل الدخول. 0 = غير معروف (يسقط
+  // لسلوك "خدماتي").
+  final int serviceId;
+
   const ServiceOfferPaymentScreen({
     super.key,
     required this.paymentUrl,
     required this.subscriptionNumber,
+    this.serviceId = 0,
   });
 
   @override
@@ -122,7 +131,7 @@ class _ServiceOfferPaymentScreenState extends State<ServiceOfferPaymentScreen> {
           TextButton(
             onPressed: () {
               Navigator.of(context).pop();
-              Get.until((route) => route.isFirst);
+              _goToServiceDetails();
             },
             child: Text(
               'حسناً',
@@ -150,6 +159,31 @@ class _ServiceOfferPaymentScreenState extends State<ServiceOfferPaymentScreen> {
   void _goToMyServices() {
     Get.until((route) =>
     route.settings.name == RouteHelper.myServices || route.isFirst);
+  }
+
+  // بعد ظهور نتيجة الدفع (نجاح أو فشل) نُعيد المستخدم إلى صفحة تفاصيل هذه
+  // الخدمة نفسها — لا للجذر ولا لتسجيل الدخول (الخطأ السابق: زر "حسناً" كان
+  // ينادي Get.until((r) => r.isFirst) فيمسح المكدّس بالكامل وصولاً لأول
+  // صفحة، وهي في تدفّق "زائر ← تسجيل دخول ← معالج" شاشة مصادَقة، فيهبط
+  // المستخدم عليها). Get.offUntil عملية Navigator واحدة ذرّية (دفع الصفحة
+  // الجديدة + إزالة ما تحتها معاً) فتتفادى وميض إعادة بناء الشجرة الذي منع
+  // سابقاً نهج "انتقالين متتاليين" (راجع تعليق _goToMyServices). المُسند
+  // يُبقي كل شيء حتى "خدماتي" إن كانت بالمكدّس وإلا حتى أول صفحة، ثم يضع
+  // التفاصيل فوقها فيبقى زر رجوعها سليماً. لو لم يصل serviceId (0) نسقط
+  // لسلوك "خدماتي" الافتراضي.
+  void _goToServiceDetails() {
+    if (widget.serviceId <= 0) {
+      _goToMyServices();
+      return;
+    }
+    Get.offUntil(
+      GetPageRoute(
+        page: () => ServiceDetailsScreen(serviceId: widget.serviceId),
+        transition: Transition.cupertino,
+      ),
+      (route) =>
+      route.settings.name == RouteHelper.myServices || route.isFirst,
+    );
   }
 
   Widget _buildTopBar(BuildContext context) {

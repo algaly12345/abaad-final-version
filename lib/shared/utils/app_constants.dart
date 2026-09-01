@@ -13,7 +13,7 @@ class AppConstants {
   static const String BASE_URL = 'https://app.abaadapp.sa';
 
   // فعّل هذا للاختبار المحلي
-  //static const String BASE_URL = 'http://10.50.214.222';
+  ///static const String BASE_URL = 'http://10.108.21.177';
 
   // static const String BASE_URL = 'https://baad.arabengksa.com';
   static const String LAND_SERVICE_URL =
@@ -113,6 +113,8 @@ class AppConstants {
   static const String REFERRAL_SUMMARY_URL = '/api/v1/referrals/summary';
   static const String REFERRAL_WITHDRAWALS_URL =
       '/api/v1/referrals/withdrawals';
+  static const String REFERRAL_PAYOUT_METHOD_URL =
+      '/api/v1/referrals/payout-method';
   static const String LOYALTY_TRANSACTION_URL =
       '/api/v1/loyalty-point/transactions';
   static const String LOYALTY_POINT_TRANSFER_URL =

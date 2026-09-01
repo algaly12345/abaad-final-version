@@ -86,16 +86,56 @@ class WithdrawalRequestModel {
   int? id;
   double amount = 0;
   String status = "";
+  String? accountHolderName;
+  String? iban;
+  String? bankName;
+  String? nationalId;
   DateTime? requestedAt;
   DateTime? processedAt;
 
-  WithdrawalRequestModel({this.id, required this.amount, required this.status, this.requestedAt, this.processedAt});
+  WithdrawalRequestModel({
+    this.id,
+    required this.amount,
+    required this.status,
+    this.accountHolderName,
+    this.iban,
+    this.bankName,
+    this.nationalId,
+    this.requestedAt,
+    this.processedAt,
+  });
 
   WithdrawalRequestModel.fromJson(Map<String, dynamic> json) {
     id = json['id'];
     amount = double.tryParse(json['amount'].toString()) ?? 0;
     status = json['status'] ?? "";
+    accountHolderName = json['account_holder_name'];
+    iban = json['iban'];
+    bankName = json['bank_name'];
+    nationalId = json['national_id'];
     requestedAt = json['requested_at'] != null ? DateTime.tryParse(json['requested_at']) : null;
     processedAt = json['processed_at'] != null ? DateTime.tryParse(json['processed_at']) : null;
+  }
+}
+
+/// حساب الإيداع المحفوظ لمزوّد الخدمة — يُعبّئ ورقة السحب مسبقًا.
+class PayoutMethodModel {
+  String accountHolderName = "";
+  String iban = "";
+  String bankName = "";
+  String nationalId = "";
+
+  PayoutMethodModel({
+    required this.accountHolderName,
+    required this.iban,
+    required this.bankName,
+    required this.nationalId,
+  });
+
+  PayoutMethodModel.fromJson(Map<String, dynamic> json) {
+    accountHolderName = json['account_holder_name'] ?? "";
+    iban = json['iban'] ?? "";
+    bankName = json['bank_name'] ?? "";
+    nationalId = json['national_id'] ?? "";
   }
 }

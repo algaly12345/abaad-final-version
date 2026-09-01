@@ -3,7 +3,7 @@ import 'package:abaad_flutter/shared/controllers/splash_controller.dart';
 import 'package:get/get.dart';
 
 class PriceConverter {
-  static String convertPrice(double price, { double discount = 0,  String discountType = ""}) {
+  static String convertPrice(double price, { double discount = 0,  String discountType = "", int? decimalDigits}) {
     if(discountType == 'amount') {
       price = price - discount;
     }else if(discountType == 'percent') {
@@ -11,7 +11,7 @@ class PriceConverter {
     }
       bool isRightSide = Get.find<SplashController>().configModel?.currencySymbolDirection == 'right';
     return '${isRightSide ? '' : '${Get.find<SplashController>().configModel?.currencySymbol} '}'
-        '${(price).toStringAsFixed(Get.find<SplashController>().configModel!.digitAfterDecimalPoint ?? 1)
+        '${(price).toStringAsFixed(decimalDigits ?? Get.find<SplashController>().configModel!.digitAfterDecimalPoint ?? 1)
         .replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]},')}'
         '${isRightSide ? ' ${Get.find<SplashController>().configModel?.currencySymbol}' : ''}';
   }

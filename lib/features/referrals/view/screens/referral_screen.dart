@@ -2,19 +2,16 @@ import 'package:abaad_flutter/features/auth/controller/auth_controller.dart';
 import 'package:abaad_flutter/features/profile/controller/user_controller.dart';
 import 'package:abaad_flutter/features/referrals/controller/referral_controller.dart';
 import 'package:abaad_flutter/features/referrals/data/models/referral_model.dart';
-import 'package:abaad_flutter/features/referrals/view/widgets/referral_withdrawal_sheet.dart';
+import 'package:abaad_flutter/features/referrals/view/screens/referral_payout_method_screen.dart';
+import 'package:abaad_flutter/features/referrals/view/screens/referral_withdrawal_screen.dart';
 import 'package:abaad_flutter/features/provider/view/screens/provider_upgrade_screen.dart';
 import 'package:abaad_flutter/shared/controllers/splash_controller.dart';
+import 'package:abaad_flutter/shared/helpers/date_converter.dart';
 import 'package:abaad_flutter/shared/helpers/price_converter.dart';
-import 'package:abaad_flutter/shared/helpers/responsive_helper.dart';
-import 'package:abaad_flutter/shared/utils/dimensions.dart';
+import 'package:abaad_flutter/shared/theme/design_system.dart';
 import 'package:abaad_flutter/shared/utils/styles.dart';
-import 'package:abaad_flutter/shared/widgets/custom_app_bar.dart';
-import 'package:abaad_flutter/shared/widgets/custom_button.dart';
 import 'package:abaad_flutter/shared/widgets/custom_image.dart';
-import 'package:abaad_flutter/shared/widgets/no_data_screen.dart';
 import 'package:abaad_flutter/shared/widgets/not_logged_in_screen.dart';
-import 'package:abaad_flutter/shared/widgets/title_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
@@ -27,9 +24,11 @@ class ReferralScreen extends StatefulWidget {
   State<ReferralScreen> createState() => _ReferralScreenState();
 }
 
-class _ReferralScreenState extends State<ReferralScreen> {
+class _ReferralScreenState extends State<ReferralScreen>
+    with SingleTickerProviderStateMixin {
   final bool _isLoggedIn = Get.find<AuthController>().isLoggedIn();
   bool _loadedForProvider = false;
+  late final TabController _tabController = TabController(length: 2, vsync: this);
 
   @override
   void initState() {
@@ -37,6 +36,12 @@ class _ReferralScreenState extends State<ReferralScreen> {
     if (_isLoggedIn && Get.find<UserController>().userInfoModel == null) {
       Get.find<UserController>().getUserInfo();
     }
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
   }
 
   /// برنامج الإحالة حصراً لمزوّدي الخدمة — نفس الشرط المستخدم لإظهار عنصر
@@ -56,26 +61,17 @@ class _ReferralScreenState extends State<ReferralScreen> {
   @override
   Widget build(BuildContext context) {
     if (!_isLoggedIn) {
-      return Scaffold(
-        appBar: CustomAppBar(title: 'referral_program'.tr, isBackButtonExist: true),
-        body: const NotLoggedInScreen(),
-      );
+      return _scaffold(context, const NotLoggedInScreen());
     }
 
     return GetBuilder<UserController>(
       builder: (userController) {
         if (userController.userInfoModel == null) {
-          return Scaffold(
-            appBar: CustomAppBar(title: 'referral_program'.tr, isBackButtonExist: true),
-            body: const Center(child: CircularProgressIndicator()),
-          );
+          return _scaffold(context, const Center(child: CircularProgressIndicator()));
         }
 
         if (!_isProvider(userController)) {
-          return Scaffold(
-            appBar: CustomAppBar(title: 'referral_program'.tr, isBackButtonExist: true),
-            body: _providerOnlyScreen(context),
-          );
+          return _scaffold(context, _providerOnlyScreen(context));
         }
 
         if (!_hasCompleteIdentity(userController)) {
@@ -84,10 +80,7 @@ class _ReferralScreenState extends State<ReferralScreen> {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             Get.off(() => const ProviderUpgradeScreen());
           });
-          return Scaffold(
-            appBar: CustomAppBar(title: 'referral_program'.tr, isBackButtonExist: true),
-            body: const Center(child: CircularProgressIndicator()),
-          );
+          return _scaffold(context, const Center(child: CircularProgressIndicator()));
         }
 
         if (!_loadedForProvider) {
@@ -95,39 +88,42 @@ class _ReferralScreenState extends State<ReferralScreen> {
           Get.find<ReferralController>().loadAll();
         }
 
-        return Scaffold(
-          backgroundColor: Theme.of(context).cardColor,
-          appBar: CustomAppBar(title: 'referral_program'.tr, isBackButtonExist: true),
-          body: GetBuilder<ReferralController>(
+        return _scaffold(
+          context,
+          GetBuilder<ReferralController>(
             builder: (controller) {
               if (controller.isLoading && controller.summary == null) {
                 return const Center(child: CircularProgressIndicator());
               }
 
-              return RefreshIndicator(
-                onRefresh: () => controller.loadAll(),
-                child: SingleChildScrollView(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  padding: EdgeInsets.all(Dimensions.PADDING_SIZE_DEFAULT),
-                  child: Center(
-                    child: SizedBox(
-                      width: Dimensions.WEB_MAX_WIDTH,
+              return NestedScrollView(
+                headerSliverBuilder: (context, _) => [
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          _referralCodeCard(context, controller),
-                          SizedBox(height: Dimensions.PADDING_SIZE_OVER_LARGE),
-                          _summaryRow(context, controller),
-                          SizedBox(height: Dimensions.PADDING_SIZE_LARGE),
-                          _availableBalanceCard(context, controller),
-                          SizedBox(height: Dimensions.PADDING_SIZE_OVER_LARGE),
-                          TitleWidget(title: 'referred_providers'.tr),
-                          SizedBox(height: Dimensions.PADDING_SIZE_SMALL),
-                          _referralsList(context, controller),
+                          _linkCard(context, controller),
+                          const SizedBox(height: Spacing.lg),
+                          _statsRow(context, controller),
+                          const SizedBox(height: Spacing.md),
+                          _balanceCard(context, controller),
                         ],
                       ),
                     ),
                   ),
+                  SliverPersistentHeader(
+                    pinned: true,
+                    delegate: _SliverTabBarDelegate(_tabBar(context)),
+                  ),
+                ],
+                body: TabBarView(
+                  controller: _tabController,
+                  children: [
+                    _referralsTab(context, controller),
+                    _withdrawalsTab(context, controller),
+                  ],
                 ),
               );
             },
@@ -137,25 +133,104 @@ class _ReferralScreenState extends State<ReferralScreen> {
     );
   }
 
+  // ─── هيكل الشاشة: نفس بنية لوحة تحكم المزوّد (my_services_screen) — خلفية
+  // scaffoldBackground، شريط علوي مسطّح بحدّ سفلي وزرّ رجوع دائري ───────────
+  Widget _scaffold(BuildContext context, Widget child) {
+    return Scaffold(
+      backgroundColor: AppColors.background(context),
+      body: SafeArea(
+        bottom: false,
+        child: Column(
+          children: [
+            _topBar(context),
+            Expanded(child: child),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _topBar(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: AppColors.surface(context),
+        border: Border(bottom: BorderSide(color: AppColors.divider(context))),
+      ),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),
+      child: Row(
+        children: [
+          InkWell(
+            onTap: () => Get.back(),
+            borderRadius: BorderRadius.circular(14),
+            child: Container(
+              width: 48,
+              height: 48,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(color: AppColors.divider(context)),
+              ),
+              child: Icon(Icons.arrow_back_ios_new_rounded,
+                  size: 18, color: AppColors.primary(context)),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              'referral_program'.tr,
+              style: robotoBold.copyWith(fontSize: 17, color: AppColors.textPrimary(context)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _tabBar(BuildContext context) {
+    final primary = AppColors.primary(context);
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: AppColors.surface(context),
+        border: Border(bottom: BorderSide(color: AppColors.divider(context))),
+      ),
+      child: TabBar(
+        controller: _tabController,
+        labelColor: primary,
+        unselectedLabelColor: Colors.grey.shade500,
+        labelStyle: robotoBold.copyWith(fontSize: 13),
+        unselectedLabelStyle: robotoRegular.copyWith(fontSize: 13),
+        indicatorColor: primary,
+        indicatorWeight: 3,
+        indicatorSize: TabBarIndicatorSize.label,
+        dividerColor: Colors.transparent,
+        tabs: [
+          Tab(text: 'tab_referrals'.tr),
+          Tab(text: 'tab_withdrawals'.tr),
+        ],
+      ),
+    );
+  }
+
   Widget _providerOnlyScreen(BuildContext context) {
-    final theme = Theme.of(context);
     return Center(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.storefront_outlined, size: 72, color: theme.disabledColor),
+            Icon(Icons.storefront_outlined, size: 72, color: AppColors.textSecondary(context)),
             const SizedBox(height: 20),
             Text(
               'referral_provider_only_title'.tr,
-              style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+              style: AppTypography.subtitle.copyWith(color: AppColors.textPrimary(context)),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 10),
             Text(
               'referral_provider_only_desc'.tr,
-              style: theme.textTheme.bodyMedium?.copyWith(color: theme.disabledColor),
+              style: AppTypography.small.copyWith(color: AppColors.textSecondary(context)),
               textAlign: TextAlign.center,
             ),
           ],
@@ -164,70 +239,66 @@ class _ReferralScreenState extends State<ReferralScreen> {
     );
   }
 
-  Widget _referralCodeCard(BuildContext context, ReferralController controller) {
+  // ─── بطاقة رابط الإحالة (Hero — مصمتة بلون التطبيق) ──────────────────────
+  Widget _linkCard(BuildContext context, ReferralController controller) {
     final String code = controller.link?.referralCode ?? '';
     final String link = controller.link?.referralLink ?? '';
+    final Color primary = AppColors.primary(context);
 
     return Container(
-      padding: EdgeInsets.all(Dimensions.PADDING_SIZE_OVER_LARGE),
+      padding: const EdgeInsets.all(Spacing.lg),
       decoration: BoxDecoration(
-        color: Theme.of(context).primaryColor,
-        borderRadius: BorderRadius.circular(Dimensions.RADIUS_DEFAULT),
+        color: primary,
+        borderRadius: BorderRadius.circular(AppRadius.large),
+        boxShadow: AppShadows.soft(blur: 16, opacity: 0.12),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'your_referral_link'.tr,
-            style: robotoRegular.copyWith(fontSize: Dimensions.fontSizeSmall, color: Theme.of(context).cardColor),
+          Row(
+            children: [
+              const Icon(Icons.link_rounded, color: Colors.white70, size: 16),
+              const SizedBox(width: 6),
+              Text(
+                'your_referral_link'.tr,
+                style: AppTypography.caption.copyWith(color: Colors.white.withValues(alpha: 0.9)),
+              ),
+            ],
           ),
-          SizedBox(height: Dimensions.PADDING_SIZE_SMALL),
+          const SizedBox(height: Spacing.sm),
           Row(
             children: [
               Expanded(
                 child: Text(
-                  link.isEmpty ? '...' : link,
+                  link.isEmpty ? '…' : link,
                   overflow: TextOverflow.ellipsis,
-                  style: robotoBold.copyWith(
-                    fontSize: Dimensions.fontSizeLarge,
-                    color: Theme.of(context).cardColor,
-                  ),
+                  style: AppTypography.bodyBold.copyWith(color: Colors.white),
                 ),
               ),
               if (link.isNotEmpty) ...[
-                IconButton(
-                  icon: Icon(Icons.copy, color: Theme.of(context).cardColor),
-                  onPressed: () {
-                    Clipboard.setData(ClipboardData(text: link));
-                    Get.snackbar('', 'copied'.tr);
-                  },
-                ),
-                IconButton(
-                  icon: Icon(Icons.share, color: Theme.of(context).cardColor),
-                  onPressed: () {
-                    // 🔹 sharePositionOrigin مطلوب على iOS — بدونه بيرمي PlatformException.
-                    final RenderBox? box = context.findRenderObject() as RenderBox?;
-
+                _linkIconButton(Icons.copy_rounded, () {
+                  Clipboard.setData(ClipboardData(text: link));
+                  Get.snackbar('', 'copied'.tr);
+                }),
+                Builder(
+                  builder: (buttonContext) => _linkIconButton(Icons.ios_share_rounded, () {
+                    final RenderBox? box = buttonContext.findRenderObject() as RenderBox?;
                     Share.share(
                       controller.link?.shareText ?? link,
                       subject: 'Abaad App',
-                      sharePositionOrigin: box != null
-                          ? box.localToGlobal(Offset.zero) & box.size
-                          : null,
+                      sharePositionOrigin:
+                          box != null ? box.localToGlobal(Offset.zero) & box.size : null,
                     );
-                  },
+                  }),
                 ),
               ],
             ],
           ),
           if (code.isNotEmpty) ...[
-            SizedBox(height: Dimensions.PADDING_SIZE_SMALL),
+            const SizedBox(height: 4),
             Text(
               '${'your_referral_code'.tr}: $code',
-              style: robotoRegular.copyWith(
-                fontSize: Dimensions.fontSizeSmall,
-                color: Theme.of(context).cardColor.withValues(alpha: 0.85),
-              ),
+              style: AppTypography.caption.copyWith(color: Colors.white.withValues(alpha: 0.8)),
             ),
           ],
         ],
@@ -235,79 +306,120 @@ class _ReferralScreenState extends State<ReferralScreen> {
     );
   }
 
-  Widget _summaryRow(BuildContext context, ReferralController controller) {
-    final ReferralSummaryModel? summary = controller.summary;
+  Widget _linkIconButton(IconData icon, VoidCallback onTap) {
+    return IconButton(
+      visualDensity: VisualDensity.compact,
+      icon: Icon(icon, color: Colors.white, size: 20),
+      onPressed: onTap,
+    );
+  }
 
+  // ─── صفّ إحصائيتين (قيد الانتظار / متاحة) ───────────────────────────────
+  Widget _statsRow(BuildContext context, ReferralController controller) {
+    final ReferralSummaryModel? s = controller.summary;
     return Row(
       children: [
         Expanded(
-          child: _summaryTile(context, 'pending_commissions'.tr, summary?.pendingTotal ?? 0, Colors.orange),
+          child: _statTile(context, 'pending_commissions'.tr, s?.pendingTotal ?? 0,
+              AppColors.warning, Icons.hourglass_bottom_rounded),
         ),
-        SizedBox(width: Dimensions.PADDING_SIZE_SMALL),
+        const SizedBox(width: Spacing.md),
         Expanded(
-          child: _summaryTile(context, 'available_commissions'.tr, summary?.availableTotal ?? 0, Colors.green),
+          child: _statTile(context, 'available_commissions'.tr, s?.availableTotal ?? 0,
+              AppColors.success, Icons.verified_rounded),
         ),
       ],
     );
   }
 
-  Widget _summaryTile(BuildContext context, String title, double amount, Color color) {
+  Widget _statTile(BuildContext context, String title, double amount, Color color, IconData icon) {
     return Container(
-      padding: EdgeInsets.all(Dimensions.PADDING_SIZE_DEFAULT),
+      padding: const EdgeInsets.all(Spacing.md),
       decoration: BoxDecoration(
-        border: Border.all(color: color.withValues(alpha: 0.4)),
-        borderRadius: BorderRadius.circular(Dimensions.RADIUS_DEFAULT),
+        color: AppColors.surface(context),
+        borderRadius: BorderRadius.circular(AppRadius.large),
+        boxShadow: AppShadows.card(context),
+        border: Border.all(color: AppColors.divider(context).withValues(alpha: 0.5)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: robotoRegular.copyWith(fontSize: Dimensions.fontSizeSmall)),
-          SizedBox(height: 6),
-          Text(
-            PriceConverter.convertPrice(amount),
-            style: robotoBold.copyWith(fontSize: Dimensions.fontSizeLarge, color: color),
+          Row(
+            children: [
+              Icon(icon, size: 14, color: color),
+              const SizedBox(width: 5),
+              Expanded(
+                child: Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTypography.caption.copyWith(color: AppColors.textSecondary(context)),
+                ),
+              ),
+            ],
           ),
+          const SizedBox(height: 6),
+          Text(_commissionText(amount), style: AppTypography.bodyBold.copyWith(color: color)),
         ],
       ),
     );
   }
 
-  Widget _availableBalanceCard(BuildContext context, ReferralController controller) {
+  // ─── بطاقة الرصيد المتاح + زرّ طلب السحب ────────────────────────────────
+  Widget _balanceCard(BuildContext context, ReferralController controller) {
     final double available = controller.summary?.availableBalance ?? 0;
+    final Color primary = AppColors.primary(context);
 
     return Container(
-      padding: EdgeInsets.all(Dimensions.PADDING_SIZE_DEFAULT),
+      padding: const EdgeInsets.all(Spacing.lg),
       decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
-        border: Border.all(color: Theme.of(context).disabledColor.withValues(alpha: 0.3)),
-        borderRadius: BorderRadius.circular(Dimensions.RADIUS_DEFAULT),
+        color: primary.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(AppRadius.large),
+        border: Border.all(color: primary.withValues(alpha: 0.22)),
       ),
       child: Row(
         children: [
+          Container(
+            width: 42,
+            height: 42,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: primary.withValues(alpha: 0.14),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(Icons.account_balance_wallet_outlined, color: primary, size: IconSpec.small),
+          ),
+          const SizedBox(width: Spacing.md),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('available_for_withdrawal'.tr, style: robotoRegular.copyWith(fontSize: Dimensions.fontSizeSmall)),
-                SizedBox(height: 6),
                 Text(
-                  PriceConverter.convertPrice(available),
-                  style: robotoBold.copyWith(fontSize: Dimensions.fontSizeLarge),
+                  'available_for_withdrawal'.tr,
+                  style: AppTypography.caption.copyWith(color: AppColors.textSecondary(context)),
                 ),
+                const SizedBox(height: 2),
+                Text(_commissionText(available), style: AppTypography.title.copyWith(color: primary)),
               ],
             ),
           ),
+          const SizedBox(width: Spacing.sm),
           SizedBox(
-            width: 140,
-            child: CustomButton(
-              buttonText: 'request_withdrawal'.tr,
+            height: 42,
+            child: ElevatedButton(
               onPressed: available > 0
-                  ? () {
-                ResponsiveHelper.isMobile(context)
-                    ? Get.bottomSheet(ReferralWithdrawalSheet(availableBalance: available))
-                    : Get.dialog(Dialog(child: ReferralWithdrawalSheet(availableBalance: available)));
-              }
+                  ? () => Get.to(() => ReferralWithdrawalScreen(availableBalance: available))
                   : null,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: primary,
+                foregroundColor: Colors.white,
+                disabledBackgroundColor: primary.withValues(alpha: 0.4),
+                elevation: 0,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(ButtonSpec.radius)),
+              ),
+              child: Text('request_withdrawal'.tr,
+                  style: AppTypography.smallBold.copyWith(color: Colors.white)),
             ),
           ),
         ],
@@ -315,63 +427,340 @@ class _ReferralScreenState extends State<ReferralScreen> {
     );
   }
 
-  Widget _referralsList(BuildContext context, ReferralController controller) {
+  /// عمولات الإحالة كثيراً ما تكون كسوراً صغيرة (10% من 49 ر.س = 4.9). التنسيق
+  /// العام يقرّب لعدد صحيح فتظهر "0"، لذا نثبّت خانتين عشريتين هنا.
+  String _commissionText(double amount) => PriceConverter.convertPrice(amount, decimalDigits: 2);
+
+  // ─── تبويب "المُحالون" ─────────────────────────────────────────────────
+  Widget _referralsTab(BuildContext context, ReferralController controller) {
     final List<ReferralItemModel>? items = controller.referrals;
 
-    if (items == null) {
-      return const Center(child: CircularProgressIndicator());
-    }
+    return RefreshIndicator(
+      onRefresh: () => controller.loadAll(),
+      child: items == null
+          ? _centeredLoader()
+          : items.isEmpty
+              ? _emptyList(context, Icons.people_outline_rounded, 'no_referrals_yet'.tr)
+              : ListView.builder(
+                  key: const PageStorageKey('referrals_tab'),
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.fromLTRB(16, 14, 16, 28),
+                  itemCount: items.length,
+                  itemBuilder: (context, index) => _referralCard(context, items[index]),
+                ),
+    );
+  }
 
-    if (items.isEmpty) {
-      return NoDataScreen(text: 'no_data_found'.tr);
-    }
+  Widget _referralCard(BuildContext context, ReferralItemModel item) {
+    final String imageUrl =
+        '${Get.find<SplashController>().configModel?.baseUrls?.customerImageUrl ?? ''}/${item.referredImage ?? ''}';
+    final String statusRaw = item.commissionStatus ?? item.referralStatus;
 
-    return ListView.separated(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      itemCount: items.length,
-      separatorBuilder: (_, __) => Divider(color: Theme.of(context).disabledColor),
-      itemBuilder: (context, index) {
-        final ReferralItemModel item = items[index];
-        final String imageUrl =
-            '${Get.find<SplashController>().configModel?.baseUrls?.customerImageUrl ?? ''}/${item.referredImage ?? ''}';
-
-        return Padding(
-          padding: EdgeInsets.symmetric(vertical: Dimensions.PADDING_SIZE_SMALL),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.surface(context),
+        borderRadius: BorderRadius.circular(AppRadius.extraLarge),
+        boxShadow: AppShadows.card(context),
+      ),
+      child: Row(
+        children: [
+          ClipOval(child: CustomImage(image: imageUrl, height: 44, width: 44, fit: BoxFit.cover)),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  item.referredName ?? '',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTypography.smallBold.copyWith(color: AppColors.textPrimary(context)),
+                ),
+                if (item.packageName != null) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    item.packageName!,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTypography.caption.copyWith(color: AppColors.textSecondary(context)),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              ClipOval(
-                child: CustomImage(image: imageUrl, height: 40, width: 40, fit: BoxFit.cover),
+              Text(
+                item.commissionAmount != null ? _commissionText(item.commissionAmount!) : '—',
+                style: AppTypography.smallBold.copyWith(color: AppColors.textPrimary(context)),
               ),
-              SizedBox(width: Dimensions.PADDING_SIZE_SMALL),
+              const SizedBox(height: 4),
+              _statusBadge(statusRaw.toLowerCase().tr, _referralStatusColor(statusRaw)),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ─── تبويب "السحوبات" ─────────────────────────────────────────────────
+  Widget _withdrawalsTab(BuildContext context, ReferralController controller) {
+    final List<WithdrawalRequestModel>? items = controller.withdrawals;
+
+    return RefreshIndicator(
+      onRefresh: () => controller.getWithdrawals(),
+      child: ListView(
+        key: const PageStorageKey('withdrawals_tab'),
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.fromLTRB(16, 14, 16, 28),
+        children: [
+          _payoutAccountCard(context, controller),
+          const SizedBox(height: 6),
+          if (items == null)
+            Padding(
+              padding: EdgeInsets.only(top: Get.height * 0.14),
+              child: const Center(child: CircularProgressIndicator()),
+            )
+          else if (items.isEmpty)
+            Padding(
+              padding: EdgeInsets.only(top: Get.height * 0.1),
+              child: _emptyState(context, Icons.receipt_long_outlined, 'no_withdrawals_yet'.tr),
+            )
+          else
+            ...items.map((w) => _withdrawalCard(context, w)),
+        ],
+      ),
+    );
+  }
+
+  // ─── بطاقة حساب الإيداع البنكي (تفتح شاشة تعديله المستقلة) ───────────────
+  Widget _payoutAccountCard(BuildContext context, ReferralController controller) {
+    final PayoutMethodModel? m = controller.payoutMethod;
+    final Color primary = AppColors.primary(context);
+
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.surface(context),
+        borderRadius: BorderRadius.circular(AppRadius.extraLarge),
+        boxShadow: AppShadows.card(context),
+        border: Border.all(color: AppColors.divider(context).withValues(alpha: 0.5)),
+      ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(AppRadius.extraLarge),
+        onTap: () => Get.to(() => const ReferralPayoutMethodScreen()),
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Row(
+            children: [
+              Container(
+                width: 42,
+                height: 42,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: primary.withValues(alpha: 0.12),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(Icons.account_balance_outlined, color: primary, size: IconSpec.small),
+              ),
+              const SizedBox(width: Spacing.md),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(item.referredName ?? '', style: robotoMedium.copyWith(fontSize: Dimensions.fontSizeDefault)),
-                    if (item.packageName != null)
-                      Text(item.packageName!, style: robotoRegular.copyWith(fontSize: Dimensions.fontSizeSmall, color: Theme.of(context).disabledColor)),
+                    Text(
+                      'payout_account'.tr,
+                      style: AppTypography.smallBold.copyWith(color: AppColors.textPrimary(context)),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      m == null ? 'payout_account_not_set'.tr : '${m.bankName} · ${_maskIban(m.iban)}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTypography.caption.copyWith(
+                        color: m == null ? AppColors.warning : AppColors.textSecondary(context),
+                      ),
+                    ),
                   ],
                 ),
               ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(
-                    item.commissionAmount != null ? PriceConverter.convertPrice(item.commissionAmount!) : '-',
-                    style: robotoBold.copyWith(fontSize: Dimensions.fontSizeDefault),
-                  ),
-                  Text(
-                    (item.commissionStatus ?? item.referralStatus).toLowerCase().tr,
-                    style: robotoRegular.copyWith(fontSize: Dimensions.fontSizeExtraSmall, color: Theme.of(context).disabledColor),
-                  ),
-                ],
-              ),
+              const SizedBox(width: Spacing.sm),
+              Icon(Icons.chevron_left_rounded, color: AppColors.textSecondary(context)),
             ],
           ),
-        );
-      },
+        ),
+      ),
     );
   }
+
+  Widget _withdrawalCard(BuildContext context, WithdrawalRequestModel w) {
+    final Color color = _withdrawalStatusColor(w.status);
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.surface(context),
+        borderRadius: BorderRadius.circular(AppRadius.extraLarge),
+        boxShadow: AppShadows.card(context),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  _commissionText(w.amount),
+                  style: AppTypography.bodyBold.copyWith(color: AppColors.textPrimary(context)),
+                ),
+              ),
+              _statusBadge(w.status.toLowerCase().tr, color),
+            ],
+          ),
+          if (w.iban != null && w.iban!.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            _cardMeta(context, Icons.account_balance_outlined,
+                '${w.bankName ?? ''} · ${_maskIban(w.iban!)}'.trim()),
+          ],
+          if (w.requestedAt != null) ...[
+            const SizedBox(height: 6),
+            _cardMeta(context, Icons.schedule_rounded,
+                '${'requested_on'.tr}: ${DateConverter.dateToDateAndTimeAm(w.requestedAt!)}'),
+          ],
+          if (w.processedAt != null) ...[
+            const SizedBox(height: 4),
+            _cardMeta(context, Icons.task_alt_rounded,
+                '${'processed_on'.tr}: ${DateConverter.dateToDateAndTimeAm(w.processedAt!)}'),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _cardMeta(BuildContext context, IconData icon, String text) {
+    return Row(
+      children: [
+        Icon(icon, size: 12, color: AppColors.textSecondary(context)),
+        const SizedBox(width: 5),
+        Expanded(
+          child: Text(text, style: AppTypography.caption.copyWith(color: AppColors.textSecondary(context))),
+        ),
+      ],
+    );
+  }
+
+  // ─── عناصر مشتركة ─────────────────────────────────────────────────────
+  Widget _statusBadge(String label, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
+      ),
+      child: Text(label, style: AppTypography.badge.copyWith(fontSize: 10, color: color)),
+    );
+  }
+
+  Widget _centeredLoader() => ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        children: [
+          SizedBox(height: Get.height * 0.22),
+          const Center(child: CircularProgressIndicator()),
+        ],
+      );
+
+  Widget _emptyList(BuildContext context, IconData icon, String message) {
+    return ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      children: [
+        SizedBox(height: Get.height * 0.16),
+        _emptyState(context, icon, message),
+      ],
+    );
+  }
+
+  Widget _emptyState(BuildContext context, IconData icon, String message) {
+    final primary = AppColors.primary(context);
+    return Center(
+      child: Column(
+        children: [
+          Container(
+            width: 96,
+            height: 96,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: LinearGradient(
+                colors: [primary.withValues(alpha: 0.1), primary.withValues(alpha: 0.03)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+            ),
+            child: Icon(icon, size: 40, color: primary.withValues(alpha: 0.55)),
+          ),
+          const SizedBox(height: 18),
+          Text(message, style: AppTypography.smallMedium.copyWith(color: AppColors.textSecondary(context))),
+        ],
+      ),
+    );
+  }
+
+  /// يُخفي وسط الآيبان: SA00 •••• 1234.
+  String _maskIban(String iban) {
+    if (iban.length <= 8) return iban;
+    return '${iban.substring(0, 4)} •••• ${iban.substring(iban.length - 4)}';
+  }
+
+  /// حالات طلب السحب: pending / approved / rejected / paid.
+  Color _withdrawalStatusColor(String status) {
+    switch (status.toLowerCase()) {
+      case 'paid':
+        return AppColors.success;
+      case 'approved':
+        return AppColors.info;
+      case 'rejected':
+        return AppColors.danger;
+      default:
+        return AppColors.warning;
+    }
+  }
+
+  /// حالة عمولة/إحالة المُحال.
+  Color _referralStatusColor(String status) {
+    switch (status.toLowerCase()) {
+      case 'available':
+      case 'approved':
+      case 'completed':
+      case 'withdrawn':
+        return AppColors.success;
+      case 'cancelled':
+      case 'rejected':
+      case 'expired':
+        return AppColors.danger;
+      default:
+        return AppColors.warning;
+    }
+  }
+}
+
+/// يثبّت شريط التبويبات أعلى المحتوى أثناء تمرير القوائم داخل NestedScrollView.
+class _SliverTabBarDelegate extends SliverPersistentHeaderDelegate {
+  final Widget child;
+  _SliverTabBarDelegate(this.child);
+
+  @override
+  double get minExtent => 48;
+
+  @override
+  double get maxExtent => 48;
+
+  @override
+  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) => child;
+
+  @override
+  bool shouldRebuild(covariant _SliverTabBarDelegate oldDelegate) => oldDelegate.child != child;
 }

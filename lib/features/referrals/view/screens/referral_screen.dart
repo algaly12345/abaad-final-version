@@ -205,9 +205,15 @@ class _ReferralScreenState extends State<ReferralScreen> {
                 IconButton(
                   icon: Icon(Icons.share, color: Theme.of(context).cardColor),
                   onPressed: () {
+                    // 🔹 sharePositionOrigin مطلوب على iOS — بدونه بيرمي PlatformException.
+                    final RenderBox? box = context.findRenderObject() as RenderBox?;
+
                     Share.share(
                       controller.link?.shareText ?? link,
                       subject: 'Abaad App',
+                      sharePositionOrigin: box != null
+                          ? box.localToGlobal(Offset.zero) & box.size
+                          : null,
                     );
                   },
                 ),

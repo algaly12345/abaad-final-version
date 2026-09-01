@@ -345,9 +345,20 @@ class _DrawerMenuState extends State<DrawerMenu> {
                         title: 'share_app'.tr,
                         color: Colors.deepOrangeAccent,
                         onTap: () {
+                          final String shareLink = GetPlatform.isIOS
+                              ? 'https://apps.apple.com/app/id6470352371'
+                              : 'https://play.google.com/store/apps/details?id=sa.pdm.abaad.abaad';
+
+                          // 🔹 sharePositionOrigin مطلوب على iOS (خصوصًا iPad) — بدونه بيرمي
+                          // PlatformException. بنحسبه من موقع وحجم الشاشة الحالية نفسها.
+                          final RenderBox? box = context.findRenderObject() as RenderBox?;
+
                           Share.share(
-                            'https://play.google.com/store/apps/details?id=sa.pdm.abaad.abaad',
+                            shareLink,
                             subject: 'Abaad App',
+                            sharePositionOrigin: box != null
+                                ? box.localToGlobal(Offset.zero) & box.size
+                                : null,
                           );
                         },
                       ),

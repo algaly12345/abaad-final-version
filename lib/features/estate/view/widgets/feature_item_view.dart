@@ -93,6 +93,20 @@ class _FeatureScreenState extends State<FeatureScreen> {
   }
 
 
+  /// يوقف ويحرّر كل كنترولرز الفيديو عند الخروج من الشاشة (رجوع/back) —
+  /// من غيرها، الفيديو (وصوته) كان بيفضل شغّال في الخلفية حتى بعد ما
+  /// المستخدم يسيب الشاشة تمامًا، لأن الكنترولر مكانش بيتقفل أبدًا.
+  @override
+  void dispose() {
+    _controller?.pause();
+    _controller?.dispose();
+    _controller1?.pause();
+    _controller1?.dispose();
+    _controllerSkyView?.pause();
+    _controllerSkyView?.dispose();
+    super.dispose();
+  }
+
   void _initData() async {
 
     if (Platform.isAndroid) {

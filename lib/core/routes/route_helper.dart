@@ -52,6 +52,7 @@ import 'package:abaad_flutter/features/wallet/view/screens/wallet_screen.dart';
 import 'package:abaad_flutter/features/referrals/view/screens/referral_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:abaad_flutter/shared/utils/referral_code_storage.dart';
 
 import 'package:abaad_flutter/features/map/controller/location_controller.dart';
 import 'package:abaad_flutter/shared/utils/app_constants.dart';
@@ -76,6 +77,7 @@ class RouteHelper {
   static const String notification = '/notification';
   static const String estate = '/estate';
   static const String detailsDeepLink = '/details/:id';
+  static const String referralDeepLink = '/ref/:code';
   static const String addEstate = '/add-estate';
   static const String addEstateTow = '/add-estate-tow';
   static const String agent = '/agent';
@@ -486,6 +488,23 @@ class RouteHelper {
       page: () {
         final int estateId = int.parse(Get.parameters['id']!);
         return _DetailsDeepLinkOpener(estateId: estateId);
+      },
+    ),
+    // رابط إحالة من App Links/Universal Links: /ref/{code}
+    // GetX أحيانًا يفتح هذا المسار تلقائيًا استجابة لتسليم نظام التشغيل
+    // لرابط Universal Link، بالتوازي مع المعالجة اليدوية في
+    // main.dart._handleReferralLink — فبدل ما يهبط على مسار غير مسجَّل
+    // لو "كسب" هذا التسابق، نسجّله هنا ليعرض نفس شاشة التسجيل مباشرة،
+    // ويحفظ كود الإحالة بنفسه أيضًا احتياطًا (تحسبًا لأن يسبق حفظ
+    // main.dart لنفس الكود).
+    GetPage(
+      name: referralDeepLink,
+      page: () {
+        final String? code = Get.parameters['code'];
+        if (code != null && code.isNotEmpty) {
+          ReferralCodeStorage.save(code);
+        }
+        return SignUpScreen();
       },
     ),
     GetPage(

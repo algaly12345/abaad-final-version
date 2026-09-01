@@ -41,32 +41,32 @@ PODS:
   - file_picker (0.0.1):
     - DKImagePickerController/PhotoGallery
     - Flutter
-  - Firebase/CoreOnly (12.15.0):
-    - FirebaseCore (~> 12.15.0)
-  - Firebase/Messaging (12.15.0):
+  - Firebase/CoreOnly (12.18.0):
+    - FirebaseCore (~> 12.18.0)
+  - Firebase/Messaging (12.18.0):
     - Firebase/CoreOnly
-    - FirebaseMessaging (~> 12.15.0)
-  - firebase_core (4.12.1):
-    - Firebase/CoreOnly (= 12.15.0)
+    - FirebaseMessaging (~> 12.18.0)
+  - firebase_core (4.14.0):
+    - Firebase/CoreOnly (= 12.18.0)
     - Flutter
-  - firebase_messaging (16.4.3):
-    - Firebase/Messaging (= 12.15.0)
+  - firebase_messaging (16.6.0):
+    - Firebase/Messaging (= 12.18.0)
     - firebase_core
     - Flutter
-  - FirebaseCore (12.15.0):
-    - FirebaseCoreInternal (~> 12.15.0)
+  - FirebaseCore (12.18.0):
+    - FirebaseCoreInternal (~> 12.18.0)
     - GoogleUtilities/Environment (~> 8.1)
     - GoogleUtilities/Logger (~> 8.1)
-  - FirebaseCoreInternal (12.15.0):
+  - FirebaseCoreInternal (12.18.0):
     - "GoogleUtilities/NSData+zlib (~> 8.1)"
-  - FirebaseInstallations (12.15.0):
-    - FirebaseCore (~> 12.15.0)
+  - FirebaseInstallations (12.18.0):
+    - FirebaseCore (~> 12.18.0)
     - GoogleUtilities/Environment (~> 8.1)
     - GoogleUtilities/UserDefaults (~> 8.1)
     - PromisesObjC (~> 2.4)
-  - FirebaseMessaging (12.15.0):
-    - FirebaseCore (~> 12.15.0)
-    - FirebaseInstallations (~> 12.15.0)
+  - FirebaseMessaging (12.18.0):
+    - FirebaseCore (~> 12.18.0)
+    - FirebaseInstallations (~> 12.18.0)
     - GoogleDataTransport (~> 10.1)
     - GoogleUtilities/AppDelegateSwizzler (~> 8.1)
     - GoogleUtilities/Environment (~> 8.1)
@@ -147,7 +147,7 @@ PODS:
   - pointer_interceptor_ios (0.0.1):
     - Flutter
   - PromisesObjC (2.4.1)
-  - rive_common (0.0.1):
+  - rive_native (0.0.1):
     - Flutter
   - SDWebImage (5.21.7):
     - SDWebImage/Core (= 5.21.7)
@@ -172,7 +172,7 @@ PODS:
 
 DEPENDENCIES:
   - app_links (from `.symlinks/plugins/app_links/ios`)
-  - camera_avfoundation (from `.symlinks/plugins/camera_avfoundation/ios`)
+  - camera_avfoundation (from `.symlinks/plugins/camera_avfoundation/darwin`)
   - clipboard (from `.symlinks/plugins/clipboard/ios`)
   - connectivity_plus (from `.symlinks/plugins/connectivity_plus/ios`)
   - file_picker (from `.symlinks/plugins/file_picker/ios`)
@@ -190,7 +190,7 @@ DEPENDENCIES:
   - permission_handler_apple (from `.symlinks/plugins/permission_handler_apple/ios`)
   - phone_number (from `.symlinks/plugins/phone_number/ios`)
   - pointer_interceptor_ios (from `.symlinks/plugins/pointer_interceptor_ios/ios`)
-  - rive_common (from `.symlinks/plugins/rive_common/ios`)
+  - rive_native (from `.symlinks/plugins/rive_native/ios`)
   - share_plus (from `.symlinks/plugins/share_plus/ios`)
   - shared_preferences_foundation (from `.symlinks/plugins/shared_preferences_foundation/darwin`)
   - sqflite_darwin (from `.symlinks/plugins/sqflite_darwin/darwin`)
@@ -222,7 +222,7 @@ EXTERNAL SOURCES:
   app_links:
     :path: ".symlinks/plugins/app_links/ios"
   camera_avfoundation:
-    :path: ".symlinks/plugins/camera_avfoundation/ios"
+    :path: ".symlinks/plugins/camera_avfoundation/darwin"
   clipboard:
     :path: ".symlinks/plugins/clipboard/ios"
   connectivity_plus:
@@ -257,8 +257,8 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/phone_number/ios"
   pointer_interceptor_ios:
     :path: ".symlinks/plugins/pointer_interceptor_ios/ios"
-  rive_common:
-    :path: ".symlinks/plugins/rive_common/ios"
+  rive_native:
+    :path: ".symlinks/plugins/rive_native/ios"
   share_plus:
     :path: ".symlinks/plugins/share_plus/ios"
   shared_preferences_foundation:
@@ -280,13 +280,13 @@ SPEC CHECKSUMS:
   DKImagePickerController: 946cec48c7873164274ecc4624d19e3da4c1ef3c
   DKPhotoGallery: b3834fecb755ee09a593d7c9e389d8b5d6deed60
   file_picker: a0560bc09d61de87f12d246fc47d2119e6ef37be
-  Firebase: a8539b633d474fbeb654c7043f9c1649e274045b
-  firebase_core: 1c1e250a77e2df9e80bb8bf0875c8b427044a697
-  firebase_messaging: 90cf2b62f5058120ab19f29ceff1503ba0f51ba7
-  FirebaseCore: 2e86a4ea1684d4381707069e4a6d89ac808e901e
-  FirebaseCoreInternal: 6ab6a02c94446c026d2cf35cf5383842ebaa4992
-  FirebaseInstallations: eb29ccbf64eaedf86fd5b2ccc7fabde567660b52
-  FirebaseMessaging: 40017d7bc8457ee295b0f41d480a80fdabc9994e
+  Firebase: 5523dd53ebe603451b4e1befcd99fa20a5c015cd
+  firebase_core: 22b31970001508f6e63945bedcb7b9de68819aa5
+  firebase_messaging: e0eae0e66bd04d3c1856ad08ad84ac75e0673a55
+  FirebaseCore: 96787d19ee32dc2242cc487b301bc616afeb398b
+  FirebaseCoreInternal: 93b2d5f9e184c6818a04433891c358b0720a6a38
+  FirebaseInstallations: 933b2747e8594084c9117b65e8358fce29d7ced7
+  FirebaseMessaging: 422bb80cbf8ff83e69e50bea4d4984fc4704f665
   Flutter: cabc95a1d2626b1b06e7179b784ebcf0c0cde467
   flutter_google_street_view: e0719b79f8ec84f022ef504c8448a724b44ff549
   flutter_inappwebview_ios: b89ba3482b96fb25e00c967aae065701b66e9b99
@@ -307,7 +307,7 @@ SPEC CHECKSUMS:
   PhoneNumberKit: 224cf8f99f903a6488ce8a30e05a8216021d80a4
   pointer_interceptor_ios: da06a662d5bfd329602b45b2ab41bc0fb5fdb0f0
   PromisesObjC: 752c3227f599e3467650e47ea36f433eeb10c273
-  rive_common: dd421daaf9ae69f0125aa761dd96abd278399952
+  rive_native: c8fbe631855835dc84f7d59befcdb43de3ac48d4
   SDWebImage: e9fc87c1aab89a8ab1bbd74eba378c6f53be8abf
   share_plus: de6030e33b4e106470e09322d87cf2a4258d2d1d
   shared_preferences_foundation: 7036424c3d8ec98dfe75ff1667cb0cd531ec82bb

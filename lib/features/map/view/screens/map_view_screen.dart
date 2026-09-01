@@ -39,7 +39,8 @@ class _MapViewScreenState extends State<MapViewScreen> {
 
   static const CameraPosition _initialCamera = CameraPosition(
     zoom: 5.0,
-    target: LatLng(25.338515, 44.264379),
+    target: LatLng(25.224141, 43.065535
+    ),
   );
 
   /// تنسيق خريطة مخصّص يوقف ظهور كل التسميات (Labels) — أسماء الدول

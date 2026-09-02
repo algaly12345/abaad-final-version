@@ -20,6 +20,18 @@ class ReferralSummaryModel {
   double withdrawnTotal = 0;
   double availableBalance = 0;
 
+  /// إجمالي ما استحقه المستخدم من عمولات إحالة عبر عمرها كله (بلا الملغاة).
+  /// يُبنى على الباكند ليطابق بالضبط:
+  /// [pendingTotal] + [withdrawalUnderReviewTotal] + [withdrawalTransferredTotal]
+  /// + [availableBalance] — فتتصالح كل الأرقام المعروضة في شاشة الإحالة.
+  double lifetimeEarned = 0;
+
+  /// مجموع طلبات السحب التي لم تُعتمد بعد (pending).
+  double withdrawalUnderReviewTotal = 0;
+
+  /// مجموع طلبات السحب المعتمدة أو المدفوعة (approved + paid).
+  double withdrawalTransferredTotal = 0;
+
   /// الحد الأدنى للسحب المضبوط من لوحة الإدارة. 0 = بلا حد أدنى (أي مبلغ موجب
   /// يكفي). يُستخدم لتفعيل زرّ الطلب وحساب امتلاء شريط التقدّم نحو الحد.
   double minPayoutLimit = 0;
@@ -31,6 +43,9 @@ class ReferralSummaryModel {
     required this.availableTotal,
     required this.withdrawnTotal,
     required this.availableBalance,
+    required this.lifetimeEarned,
+    required this.withdrawalUnderReviewTotal,
+    required this.withdrawalTransferredTotal,
     required this.minPayoutLimit,
   });
 
@@ -41,6 +56,16 @@ class ReferralSummaryModel {
     availableTotal = double.tryParse(json['available_total'].toString()) ?? 0;
     withdrawnTotal = double.tryParse(json['withdrawn_total'].toString()) ?? 0;
     availableBalance = double.tryParse(json['available_balance'].toString()) ?? 0;
+    // fallback يبقي الشاشة متسقة لو وصل رد من باكند قديم قبل نشر التفصيل.
+    lifetimeEarned = double.tryParse(json['lifetime_earned'].toString()) ??
+        (pendingTotal + availableTotal);
+    withdrawalUnderReviewTotal =
+        double.tryParse(json['withdrawal_under_review_total'].toString()) ?? 0;
+    withdrawalTransferredTotal =
+        double.tryParse(json['withdrawal_transferred_total'].toString()) ??
+            (availableTotal - availableBalance - withdrawalUnderReviewTotal)
+                .clamp(0, double.infinity)
+                .toDouble();
     minPayoutLimit = double.tryParse(json['min_payout_limit'].toString()) ?? 0;
   }
 }

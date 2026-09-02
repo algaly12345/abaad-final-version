@@ -47,6 +47,8 @@ class SubscriptionPricingSettingsModel {
   int includedCategories;
   double extraZonePrice;
   double extraCategoryPrice;
+  // نسبة ضريبة القيمة المضافة المطبَّقة فوق الإجمالي بعد الخصم (افتراضي 15%).
+  double vatPercent;
 
   SubscriptionPricingSettingsModel({
     this.basePrice = 99,
@@ -54,6 +56,7 @@ class SubscriptionPricingSettingsModel {
     this.includedCategories = 1,
     this.extraZonePrice = 49,
     this.extraCategoryPrice = 49,
+    this.vatPercent = 15,
   });
 
   SubscriptionPricingSettingsModel.fromJson(Map<String, dynamic> json)
@@ -64,7 +67,8 @@ class SubscriptionPricingSettingsModel {
         extraZonePrice =
             double.tryParse(json['extra_zone_price'].toString()) ?? 49,
         extraCategoryPrice =
-            double.tryParse(json['extra_category_price'].toString()) ?? 49;
+            double.tryParse(json['extra_category_price'].toString()) ?? 49,
+        vatPercent = double.tryParse(json['vat_percent'].toString()) ?? 15;
 }
 
 /// نسبة الخصم المطبَّقة على إجمالي قيمة الاشتراك الشهري حسب مدة الاشتراك
@@ -141,6 +145,10 @@ class PriceCalculationModel {
   double? subtotalBeforeDiscount;
   int? discountPercent;
   double? discountAmount;
+  double? totalBeforeVat;
+  double? vatPercent;
+  double? vatAmount;
+  // شامل ضريبة القيمة المضافة — هو المبلغ الذي يُدفَع فعليًا.
   double? totalPrice;
 
   PriceCalculationModel({
@@ -153,6 +161,9 @@ class PriceCalculationModel {
     this.subtotalBeforeDiscount,
     this.discountPercent,
     this.discountAmount,
+    this.totalBeforeVat,
+    this.vatPercent,
+    this.vatAmount,
     this.totalPrice,
   });
 
@@ -168,6 +179,10 @@ class PriceCalculationModel {
         double.tryParse(json['subtotal_before_discount'].toString()) ?? 0;
     discountPercent = int.tryParse(json['discount_percent'].toString()) ?? 0;
     discountAmount = double.tryParse(json['discount_amount'].toString()) ?? 0;
+    totalBeforeVat =
+        double.tryParse(json['total_before_vat'].toString()) ?? 0;
+    vatPercent = double.tryParse(json['vat_percent'].toString()) ?? 0;
+    vatAmount = double.tryParse(json['vat_amount'].toString()) ?? 0;
     totalPrice = double.tryParse(json['total_price'].toString()) ?? 0;
   }
 }
@@ -187,6 +202,9 @@ class StoreOfferResponseModel {
   double? subtotalBeforeDiscount;
   int? discountPercent;
   double? discountAmount;
+  double? totalBeforeVat;
+  double? vatPercent;
+  double? vatAmount;
   double? amountToPay;
   String? currency;
   String? paymentUrl;
@@ -208,6 +226,10 @@ class StoreOfferResponseModel {
         double.tryParse(json['subtotal_before_discount'].toString()) ?? 0;
     discountPercent = int.tryParse(json['discount_percent'].toString()) ?? 0;
     discountAmount = double.tryParse(json['discount_amount'].toString()) ?? 0;
+    totalBeforeVat =
+        double.tryParse(json['total_before_vat'].toString()) ?? 0;
+    vatPercent = double.tryParse(json['vat_percent'].toString()) ?? 0;
+    vatAmount = double.tryParse(json['vat_amount'].toString()) ?? 0;
     amountToPay = double.tryParse(json['amount_to_pay'].toString()) ?? 0;
     currency = json['currency'];
     paymentUrl = json['payment_url'];

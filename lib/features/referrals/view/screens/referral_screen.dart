@@ -107,7 +107,7 @@ class _ReferralScreenState extends State<ReferralScreen>
                         children: [
                           _linkCard(context, controller),
                           const SizedBox(height: Spacing.lg),
-                          _statsRow(context, controller),
+                          _earningsCard(context, controller),
                           const SizedBox(height: Spacing.md),
                           _balanceCard(context, controller),
                         ],
@@ -272,7 +272,12 @@ class _ReferralScreenState extends State<ReferralScreen>
               Expanded(
                 child: Text(
                   link.isEmpty ? '…' : link,
+                  maxLines: 1,
                   overflow: TextOverflow.ellipsis,
+                  // رابط لاتيني: نفرض اتجاه LTR ومحاذاة يسار حتى يُقتطع من نهايته
+                  // بثلاث نقاط طبيعية بدل ظهور "…" في بدايته داخل سياق RTL.
+                  textDirection: TextDirection.ltr,
+                  textAlign: TextAlign.left,
                   style: AppTypography.bodyBold.copyWith(color: Colors.white),
                 ),
               ),
@@ -315,27 +320,19 @@ class _ReferralScreenState extends State<ReferralScreen>
     );
   }
 
-  // ─── صفّ إحصائيتين (قيد الانتظار / متاحة) ───────────────────────────────
-  Widget _statsRow(BuildContext context, ReferralController controller) {
+  // ─── بطاقة الأرباح: إجمالي عمولات الإحالة + تفصيل يتصالح مع "متاح للسحب" ──
+  // إجمالي عمولات الإحالة = قيد الحجز + قيد المراجعة + تم تحويلها + متاح للسحب.
+  // هكذا لا يرى المستخدم رقمين متناقضين بلا رابط بينهما (5.00 متاحة / 0.00
+  // متاح للسحب) — كل جزء يظهر أين ذهب.
+  Widget _earningsCard(BuildContext context, ReferralController controller) {
     final ReferralSummaryModel? s = controller.summary;
-    return Row(
-      children: [
-        Expanded(
-          child: _statTile(context, 'pending_commissions'.tr, s?.pendingTotal ?? 0,
-              AppColors.warning, Icons.hourglass_bottom_rounded),
-        ),
-        const SizedBox(width: Spacing.md),
-        Expanded(
-          child: _statTile(context, 'available_commissions'.tr, s?.availableTotal ?? 0,
-              AppColors.success, Icons.verified_rounded),
-        ),
-      ],
-    );
-  }
+    final double lifetime = s?.lifetimeEarned ?? 0;
+    final double onHold = s?.pendingTotal ?? 0;
+    final double underReview = s?.withdrawalUnderReviewTotal ?? 0;
+    final double transferred = s?.withdrawalTransferredTotal ?? 0;
 
-  Widget _statTile(BuildContext context, String title, double amount, Color color, IconData icon) {
     return Container(
-      padding: const EdgeInsets.all(Spacing.md),
+      padding: const EdgeInsets.all(Spacing.lg),
       decoration: BoxDecoration(
         color: AppColors.surface(context),
         borderRadius: BorderRadius.circular(AppRadius.large),
@@ -343,28 +340,71 @@ class _ReferralScreenState extends State<ReferralScreen>
         border: Border.all(color: AppColors.divider(context).withValues(alpha: 0.5)),
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Row(
             children: [
-              Icon(icon, size: 14, color: color),
-              const SizedBox(width: 5),
+              Icon(Icons.workspace_premium_outlined,
+                  size: 16, color: AppColors.primary(context)),
+              const SizedBox(width: 6),
               Expanded(
                 child: Text(
-                  title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: AppTypography.caption.copyWith(color: AppColors.textSecondary(context)),
+                  'total_referral_earnings'.tr,
+                  style: AppTypography.caption
+                      .copyWith(color: AppColors.textSecondary(context)),
                 ),
+              ),
+              Text(
+                _commissionText(lifetime),
+                style: AppTypography.bodyBold
+                    .copyWith(color: AppColors.textPrimary(context)),
               ),
             ],
           ),
-          const SizedBox(height: 6),
-          Text(_commissionText(amount), style: AppTypography.bodyBold.copyWith(color: color)),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: Spacing.md),
+            child: Divider(height: 1, color: AppColors.divider(context)),
+          ),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _miniStat(context, 'commissions_on_hold'.tr, onHold, AppColors.warning),
+              _miniDivider(context),
+              _miniStat(context, 'withdrawal_under_review'.tr, underReview, AppColors.info),
+              _miniDivider(context),
+              _miniStat(context, 'withdrawal_transferred'.tr, transferred, AppColors.success),
+            ],
+          ),
         ],
       ),
     );
   }
+
+  Widget _miniStat(BuildContext context, String label, double amount, Color color) {
+    return Expanded(
+      child: Column(
+        children: [
+          Text(_commissionText(amount),
+              style: AppTypography.smallBold.copyWith(color: color)),
+          const SizedBox(height: 3),
+          Text(
+            label,
+            maxLines: 2,
+            textAlign: TextAlign.center,
+            style: AppTypography.badge
+                .copyWith(fontSize: 10, color: AppColors.textSecondary(context)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _miniDivider(BuildContext context) => Container(
+        width: 1,
+        height: 30,
+        margin: const EdgeInsets.symmetric(horizontal: Spacing.sm),
+        color: AppColors.divider(context),
+      );
 
   // ─── بطاقة الرصيد المتاح + شريط التقدّم نحو الحد الأدنى + زرّ طلب السحب ───
   Widget _balanceCard(BuildContext context, ReferralController controller) {
@@ -440,10 +480,13 @@ class _ReferralScreenState extends State<ReferralScreen>
               ),
             ],
           ),
-          if (minPayout > 0) ...[
-            const SizedBox(height: Spacing.md),
-            WithdrawalMinimumProgress(available: available, minimum: minPayout),
-          ],
+          const SizedBox(height: Spacing.md),
+          // showHeader:false — المبلغ معروض في الصفّ أعلاه، فلا نكرّره هنا.
+          WithdrawalMinimumProgress(
+            available: available,
+            minimum: minPayout,
+            showHeader: false,
+          ),
         ],
       ),
     );
@@ -507,6 +550,24 @@ class _ReferralScreenState extends State<ReferralScreen>
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: AppTypography.caption.copyWith(color: AppColors.textSecondary(context)),
+                  ),
+                ],
+                if (item.createdAt != null) ...[
+                  const SizedBox(height: 3),
+                  Row(
+                    children: [
+                      Icon(Icons.schedule_rounded,
+                          size: 11, color: AppColors.textSecondary(context)),
+                      const SizedBox(width: 4),
+                      Directionality(
+                        textDirection: TextDirection.ltr,
+                        child: Text(
+                          DateConverter.dateToDateAndTime(item.createdAt!),
+                          style: AppTypography.badge.copyWith(
+                              fontSize: 10, color: AppColors.textSecondary(context)),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ],
@@ -650,13 +711,11 @@ class _ReferralScreenState extends State<ReferralScreen>
           ],
           if (w.requestedAt != null) ...[
             const SizedBox(height: 6),
-            _cardMeta(context, Icons.schedule_rounded,
-                '${'requested_on'.tr}: ${DateConverter.dateToDateAndTimeAm(w.requestedAt!)}'),
+            _dateMeta(context, Icons.schedule_rounded, 'requested_on'.tr, w.requestedAt!),
           ],
           if (w.processedAt != null) ...[
             const SizedBox(height: 4),
-            _cardMeta(context, Icons.task_alt_rounded,
-                '${'processed_on'.tr}: ${DateConverter.dateToDateAndTimeAm(w.processedAt!)}'),
+            _dateMeta(context, Icons.task_alt_rounded, 'processed_on'.tr, w.processedAt!),
           ],
         ],
       ),
@@ -670,6 +729,23 @@ class _ReferralScreenState extends State<ReferralScreen>
         const SizedBox(width: 5),
         Expanded(
           child: Text(text, style: AppTypography.caption.copyWith(color: AppColors.textSecondary(context))),
+        ),
+      ],
+    );
+  }
+
+  /// سطر "تسمية: تاريخ" — التاريخ في صندوق LTR منفصل حتى لا تُعاد ترتيب مقاطعه
+  /// (YYYY-MM-DD hh:mm a) داخل الفقرة العربية فيظهر مبعثرًا.
+  Widget _dateMeta(BuildContext context, IconData icon, String label, DateTime dt) {
+    final style = AppTypography.caption.copyWith(color: AppColors.textSecondary(context));
+    return Row(
+      children: [
+        Icon(icon, size: 12, color: AppColors.textSecondary(context)),
+        const SizedBox(width: 5),
+        Text('$label: ', style: style),
+        Directionality(
+          textDirection: TextDirection.ltr,
+          child: Text(DateConverter.dateToDateAndTimeAm(dt), style: style),
         ),
       ],
     );

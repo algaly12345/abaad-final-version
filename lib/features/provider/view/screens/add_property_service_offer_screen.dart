@@ -10,7 +10,6 @@ import 'package:abaad_flutter/features/services/view/screens/services_catalog_sc
     show serviceCategoryIcon;
 import 'package:abaad_flutter/shared/theme/design_system.dart';
 import 'package:abaad_flutter/shared/utils/app_constants.dart';
-import 'package:abaad_flutter/shared/widgets/app_dropdown.dart';
 import 'package:flutter/material.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:get/get.dart';
@@ -542,6 +541,11 @@ class _WizardScreenState extends State<_WizardScreen> {
     Icons.rate_review_outlined,
   ];
 
+  // يصبح true فور محاولة تجاوز الخطوة الأولى ببيانات ناقصة — عندها فقط
+  // تُعرض تلميحات "مطلوب" الحمراء للحقول التي لم يلمسها المستخدم بعد، بدل
+  // إظهارها جميعاً على نموذج فارغ لم يبدأ تعبئته أصلاً.
+  bool _showStep1Errors = false;
+
   @override
   void initState() {
     super.initState();
@@ -595,7 +599,15 @@ class _WizardScreenState extends State<_WizardScreen> {
   }
 
   void _goNext(ServiceOfferController c) {
-    if (!_canGoNext(c)) return;
+    if (!_canGoNext(c)) {
+      // زرّ "التالي" في الخطوة الأولى مفعَّل دائماً (بخلاف بقيّة الخطوات)،
+      // فالضغط عليه ببيانات ناقصة هو ما يكشف تلميحات "مطلوب" للحقول التي لم
+      // تُلمس بعد — بدل عرضها كلها مسبقاً على نموذج فارغ.
+      if (_step == 0 && !_showStep1Errors) {
+        setState(() => _showStep1Errors = true);
+      }
+      return;
+    }
     // PageView يُبقي كل الخطوات مبنيّة (لا يُهدم Step1 عند الانتقال)، فحقل
     // نصي كان مركَّزاً عليه فيها (العنوان/السعر/الوصف...) يبقى محتفظاً
     // بالتركيز ويُبقي الكيبورد ظاهراً فوق الخطوة التالية رغم أنها لا تحوي أي
@@ -625,6 +637,20 @@ class _WizardScreenState extends State<_WizardScreen> {
     } else {
       Get.back();
     }
+  }
+
+  /// قفزة مباشرة لخطوة محددة — يستخدمها زرّ "تعديل" بجانب كل قسم في شاشة
+  /// المراجعة الأخيرة كي يرجع المستخدم لبيانات ذلك القسم تحديداً بدل التراجع
+  /// خطوة خطوة.
+  void _jumpToStep(int step) {
+    if (step == _step) return;
+    FocusScope.of(context).unfocus();
+    setState(() => _step = step.clamp(0, _totalSteps - 1));
+    _pageController.animateToPage(
+      _step,
+      duration: const Duration(milliseconds: 400),
+      curve: Curves.easeInOutCubic,
+    );
   }
 
   bool _canGoNext(ServiceOfferController c) {
@@ -735,6 +761,7 @@ class _WizardScreenState extends State<_WizardScreen> {
                         phoneCtrl: _phoneCtrl,
                         controller: c,
                         primary: primary,
+                        showErrors: _showStep1Errors,
                       ),
                       _Step2Plan(controller: c, primary: primary),
                       _Step3ZoneCategory(controller: c, primary: primary),
@@ -751,6 +778,7 @@ class _WizardScreenState extends State<_WizardScreen> {
                         phoneCtrl: _phoneCtrl,
                         controller: c,
                         primary: primary,
+                        onEditStep: _jumpToStep,
                       ),
                     ],
                   ),
@@ -853,13 +881,15 @@ class _WizardScreenState extends State<_WizardScreen> {
   ) {
     final isLast = _step == _totalSteps - 1;
     final canNext = _canGoNext(c);
-    final total = c.priceCalculation?.totalPrice ?? c.pricingSettings.basePrice;
-    // يظهر الشريط فقط في خطوتي المناطق والموقع (لا مقابل رقم آخر معروض في
-    // نفس الصفحة هناك): يُخفى في خطوة بيانات الخدمة الأولى (السعر ليس القرار
-    // الحالي بعد)، وفي خطوة الباقة لأن _LiveTotalCard يعرض نفس الإجمالي
-    // بالفعل ضمن محتوى الصفحة (نفس الرقم كان يظهر مرتين على الشاشة معًا)،
-    // وفي خطوة المراجعة الأخيرة لأن السعر معروض هناك أصلاً ضمن صفّ "المنتج"
-    // فلا داعي لتكراره.
+    // زرّ "التالي" في الخطوة الأولى مفعَّل دائماً كي يكشف الضغط عليه تلميحات
+    // التحقّق؛ بقيّة الخطوات تعطّله حتى تكتمل شروطها (اختيار على الخارطة/شبكة).
+    final nextEnabled = _step == 0 ? true : canNext;
+    final total = c.priceCalculation?.totalPrice ??
+        c.pricingSettings.basePrice *
+            (1 + c.pricingSettings.vatPercent / 100);
+    // يظهر شريط الإجمالي في خطوتَي المناطق (2) والموقع (3): يُخفى في خطوة
+    // بيانات الخدمة (0) والاشتراك (1) وخطوة المراجعة (4) لأن _LiveTotalCard
+    // يعرض نفس الإجمالي ضمن محتوى الصفحة هناك (تفادي عرض الرقم مرتين معاً).
     final showTotal = total > 0 && _step > 1 && !isLast;
 
     return Container(
@@ -886,6 +916,28 @@ class _WizardScreenState extends State<_WizardScreen> {
               if (showTotal) ...[
                 _StickyTotalBar(controller: c, total: total, primary: primary),
                 const SizedBox(height: Spacing.md),
+              ],
+              // تلميح موجز فوق الأزرار عند محاولة تجاوز الخطوة الأولى ناقصة —
+              // مكمّل لتلميحات "مطلوب" الحمراء أسفل كل حقل، لا بديل عنها.
+              if (_step == 0 && _showStep1Errors && !canNext) ...[
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(
+                      Icons.error_outline,
+                      size: 15,
+                      color: AppColors.danger,
+                    ),
+                    const SizedBox(width: Spacing.xs),
+                    Text(
+                      'complete_required_fields'.tr,
+                      style: AppTypography.caption.copyWith(
+                        color: AppColors.danger,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: Spacing.sm),
               ],
               Row(
                 children: [
@@ -931,7 +983,7 @@ class _WizardScreenState extends State<_WizardScreen> {
                           ? Icons.payments_outlined
                           : Icons.arrow_forward_rounded,
                       loading: c.isSubmitting,
-                      onPressed: canNext ? () => _goNext(c) : null,
+                      onPressed: nextEnabled ? () => _goNext(c) : null,
                     ),
                   ),
                 ],
@@ -944,9 +996,9 @@ class _WizardScreenState extends State<_WizardScreen> {
   }
 }
 
-/// شريط الإجمالي الثابت أعلى أزرار التنقّل — أيقونة + "الإجمالي" ومدة
-/// الاشتراك المختارة على اليمين، والسعر الفعلي القادم من السيرفر (بما فيه
-/// رسوم تجاوز حدّ المناطق) بخط بارز بلون التطبيق على اليسار.
+/// شريط الإجمالي الثابت أعلى أزرار التنقّل — أيقونة + "الإجمالي شامل
+/// الضريبة" وسطر يوضّح أن الرقم لكامل مدة الاشتراك المختارة (لا شهرياً) على
+/// اليمين، والسعر الفعلي القادم من السيرفر بخط بارز بلون التطبيق على اليسار.
 class _StickyTotalBar extends StatelessWidget {
   final ServiceOfferController controller;
   final double total;
@@ -998,13 +1050,13 @@ class _StickyTotalBar extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  'total'.tr,
+                  'total_incl_vat'.tr,
                   style: AppTypography.captionMedium.copyWith(
                     color: AppColors.textSecondary(context),
                   ),
                 ),
                 Text(
-                  durationLabel,
+                  'for_duration'.trParams({'duration': durationLabel}),
                   style: AppTypography.caption.copyWith(
                     color: AppColors.textSecondary(context),
                   ),
@@ -1019,7 +1071,7 @@ class _StickyTotalBar extends StatelessWidget {
                   child: CircularProgressIndicator(strokeWidth: 2),
                 )
               : Text(
-                  '${total.toStringAsFixed(0)} ريال',
+                  _riyal(total),
                   style: AppTypography.subtitle.copyWith(
                     color: primary,
                     fontWeight: FontWeight.w800,
@@ -1035,7 +1087,7 @@ class _StickyTotalBar extends StatelessWidget {
 // STEP 1: Service Info
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _Step1ServiceInfo extends StatelessWidget {
+class _Step1ServiceInfo extends StatefulWidget {
   final TextEditingController titleCtrl;
   final TextEditingController valueCtrl;
   final TextEditingController descCtrl;
@@ -1043,6 +1095,9 @@ class _Step1ServiceInfo extends StatelessWidget {
   final TextEditingController phoneCtrl;
   final ServiceOfferController controller;
   final Color primary;
+  // يصبح true فور الضغط على "التالي" ببيانات ناقصة (راجع _WizardScreenState.
+  // _goNext) — عندها تُعرض كل تلميحات "مطلوب" ولو لم تُلمس حقولها بعد.
+  final bool showErrors;
 
   const _Step1ServiceInfo({
     required this.titleCtrl,
@@ -1052,10 +1107,56 @@ class _Step1ServiceInfo extends StatelessWidget {
     required this.phoneCtrl,
     required this.controller,
     required this.primary,
+    required this.showErrors,
   });
 
   @override
+  State<_Step1ServiceInfo> createState() => _Step1ServiceInfoState();
+}
+
+class _Step1ServiceInfoState extends State<_Step1ServiceInfo> {
+  // مفاتيح الحقول التي غادرها المستخدم مرّة على الأقل — التلميح الأحمر لأيّ
+  // حقل لا يظهر إلا بعد لمسه ثم مغادرته، أو بعد الضغط على "التالي"
+  // (widget.showErrors). هكذا لا يُستقبَل المستخدم بجدار أخطاء على نموذج
+  // فارغ لم يبدأ تعبئته بعد.
+  final Set<String> _touched = {};
+
+  late final Map<String, FocusNode> _nodes = {
+    for (final key in const ['title', 'phone', 'value', 'desc'])
+      key: FocusNode(),
+  };
+
+  @override
+  void initState() {
+    super.initState();
+    _nodes.forEach((key, node) {
+      node.addListener(() {
+        if (!node.hasFocus && !_touched.contains(key) && mounted) {
+          setState(() => _touched.add(key));
+        }
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    for (final node in _nodes.values) {
+      node.dispose();
+    }
+    super.dispose();
+  }
+
+  bool _showHint(String key) => widget.showErrors || _touched.contains(key);
+
+  @override
   Widget build(BuildContext context) {
+    final controller = widget.controller;
+    final primary = widget.primary;
+    final titleCtrl = widget.titleCtrl;
+    final valueCtrl = widget.valueCtrl;
+    final descCtrl = widget.descCtrl;
+    final phoneCtrl = widget.phoneCtrl;
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(Spacing.pagePadding),
       child: Column(
@@ -1079,7 +1180,7 @@ class _Step1ServiceInfo extends StatelessWidget {
                 GestureDetector(
                   onTap: controller.pickImage,
                   child: Container(
-                    height: 150,
+                    height: 128,
                     width: double.infinity,
                     decoration: BoxDecoration(
                       color: AppColors.background(context),
@@ -1101,7 +1202,7 @@ class _Step1ServiceInfo extends StatelessWidget {
                             children: [
                               Icon(
                                 Icons.add_photo_alternate_outlined,
-                                size: 40,
+                                size: 32,
                                 color: primary.withValues(alpha: 0.5),
                               ),
                               const SizedBox(height: Spacing.sm),
@@ -1142,24 +1243,21 @@ class _Step1ServiceInfo extends StatelessWidget {
               children: [
                 _FieldLabel('نوع الخدمة', icon: Icons.category_outlined),
                 const SizedBox(height: Spacing.sm),
-                AppDropdown<int>(
-                  value: controller.selectedServiceTypeIndex >= 0
-                      ? controller.selectedServiceTypeIndex
-                      : null,
-                  hintText: 'select_service_type'.tr,
-                  leadingIcon: Icons.category_outlined,
-                  items: List.generate(
-                    controller.serviceTypes.length,
-                    (i) => DropdownMenuItem(
-                      value: i,
-                      child: Text(controller.serviceTypes[i].name ?? ''),
-                    ),
-                  ),
-                  onChanged: (v) {
-                    if (v != null) controller.selectServiceType(v);
+                _ModernPickerField(
+                  icon: Icons.category_outlined,
+                  hint: 'select_service_type'.tr,
+                  sheetTitle: 'نوع الخدمة',
+                  options: [
+                    for (final t in controller.serviceTypes) t.name ?? '',
+                  ],
+                  selectedIndex: controller.selectedServiceTypeIndex,
+                  onSelected: (i) {
+                    controller.selectServiceType(i);
+                    setState(() => _touched.add('type'));
                   },
                 ),
-                if (controller.selectedServiceTypeIndex < 0)
+                if (_showHint('type') &&
+                    controller.selectedServiceTypeIndex < 0)
                   const _RequiredHint('يرجى اختيار نوع الخدمة'),
               ],
             ),
@@ -1177,8 +1275,9 @@ class _Step1ServiceInfo extends StatelessWidget {
                   context,
                   hintText: 'اكتب عنواناً واضحاً للعرض',
                   controller: titleCtrl,
+                  focusNode: _nodes['title'],
                 ),
-                if (titleCtrl.text.trim().isEmpty)
+                if (_showHint('title') && titleCtrl.text.trim().isEmpty)
                   const _RequiredHint('يرجى إدخال عنوان العرض'),
               ],
             ),
@@ -1199,8 +1298,9 @@ class _Step1ServiceInfo extends StatelessWidget {
                   hintText: '05XXXXXXXX',
                   controller: phoneCtrl,
                   keyboardType: TextInputType.phone,
+                  focusNode: _nodes['phone'],
                 ),
-                if (phoneCtrl.text.trim().isEmpty)
+                if (_showHint('phone') && phoneCtrl.text.trim().isEmpty)
                   const _RequiredHint('يرجى إدخال رقم التواصل'),
                 const SizedBox(height: Spacing.md),
                 _FieldLabel(
@@ -1208,7 +1308,10 @@ class _Step1ServiceInfo extends StatelessWidget {
                   icon: Icons.forum_outlined,
                 ),
                 const SizedBox(height: Spacing.sm),
-                _ContactTypeSelector(controller: controller, primary: primary),
+                _ContactTypeSelector(
+                  controller: controller,
+                  primary: primary,
+                ),
               ],
             ),
           ),
@@ -1233,8 +1336,12 @@ class _Step1ServiceInfo extends StatelessWidget {
                       primary: primary,
                       // يُفرَّغ الحقل عند التبديل كي لا يبقى رقم من النوع
                       // السابق (مثلاً "20" نسبة خصم) ظاهرًا بمعنى مختلف كليًا
-                      // تحت تسمية "السعر (ريال)" الجديدة.
-                      onSelected: valueCtrl.clear,
+                      // تحت تسمية "السعر (ريال)" الجديدة — ويُصفَّر "لمسه" كي
+                      // لا يقفز تلميح "مطلوب" فور التبديل قبل أن يكتب قيمة جديدة.
+                      onSelected: () {
+                        valueCtrl.clear();
+                        setState(() => _touched.remove('value'));
+                      },
                     ),
                     const SizedBox(width: Spacing.sm),
                     _OfferTypeCard(
@@ -1244,7 +1351,10 @@ class _Step1ServiceInfo extends StatelessWidget {
                       title: 'خصم %',
                       sub: 'نسبة خصم على السعر',
                       primary: primary,
-                      onSelected: valueCtrl.clear,
+                      onSelected: () {
+                        valueCtrl.clear();
+                        setState(() => _touched.remove('value'));
+                      },
                     ),
                   ],
                 ),
@@ -1280,8 +1390,9 @@ class _Step1ServiceInfo extends StatelessWidget {
                             : 'مثال: 500',
                         controller: valueCtrl,
                         keyboardType: TextInputType.number,
+                        focusNode: _nodes['value'],
                       ),
-                      if (valueCtrl.text.trim().isEmpty)
+                      if (_showHint('value') && valueCtrl.text.trim().isEmpty)
                         _RequiredHint(
                           controller.offerType == 'discount'
                               ? 'يرجى إدخال نسبة الخصم'
@@ -1307,7 +1418,10 @@ class _Step1ServiceInfo extends StatelessWidget {
                   hintText: 'اكتب وصفاً احترافياً وتفصيلياً للخدمة...',
                   controller: descCtrl,
                   maxLines: 4,
+                  focusNode: _nodes['desc'],
                 ),
+                if (_showHint('desc') && descCtrl.text.trim().isEmpty)
+                  const _RequiredHint('يرجى إدخال وصف الخدمة'),
               ],
             ),
           ),
@@ -1350,7 +1464,7 @@ class _Step2Plan extends StatelessWidget {
           _DurationSelector(controller: controller, primary: primary),
           const SizedBox(height: Spacing.md),
           _LiveTotalCard(controller: controller, primary: primary),
-          const SizedBox(height: Spacing.xxxl),
+          const SizedBox(height: Spacing.xxl),
         ],
       ),
     );
@@ -1377,7 +1491,7 @@ class _PricingFormulaCard extends StatelessWidget {
             children: [
               Expanded(
                 child: Text(
-                  '${settings.basePrice.toStringAsFixed(0)} ${'sar_per_month'.tr} — الاشتراك الأساسي',
+                  '${_num(settings.basePrice)} ${'sar_per_month'.tr} — الاشتراك الأساسي',
                   style: AppTypography.smallBold.copyWith(color: primary),
                 ),
               ),
@@ -1391,8 +1505,16 @@ class _PricingFormulaCard extends StatelessWidget {
           const SizedBox(height: Spacing.sm),
           Text(
             'يشمل منطقة إدارية واحدة ونوع منتج عقاري واحد. كل منطقة أو نوع '
-            'إضافي بـ ${settings.extraZonePrice.toStringAsFixed(0)} ${'sar_per_month'.tr} '
+            'إضافي بـ ${_num(settings.extraZonePrice)} ${'sar_per_month'.tr} '
             '(تُختار في الخطوة التالية).',
+            style: AppTypography.caption.copyWith(
+              color: AppColors.textSecondary(context),
+            ),
+          ),
+          const SizedBox(height: Spacing.xs),
+          Text(
+            'الأسعار غير شاملة ضريبة القيمة المضافة (${_num(settings.vatPercent)}%)، '
+            'وتُضاف على الإجمالي عند الدفع.',
             style: AppTypography.caption.copyWith(
               color: AppColors.textSecondary(context),
             ),
@@ -1436,7 +1558,7 @@ void _showPricingInfoSheet(
               ),
               const SizedBox(height: Spacing.xs),
               Text(
-                'ابدأ بـ ${settings.basePrice.toStringAsFixed(0)} ريال فقط شهريًا',
+                'ابدأ بـ ${_riyal(settings.basePrice)} فقط شهريًا',
                 style: AppTypography.smallBold,
               ),
               const SizedBox(height: Spacing.md),
@@ -1454,7 +1576,7 @@ void _showPricingInfoSheet(
               const SizedBox(height: Spacing.xs),
               Text(
                 'كل منطقة إضافية أو نوع منتج إضافي: '
-                '${settings.extraZonePrice.toStringAsFixed(0)} ريال شهريًا لكل واحد.',
+                '${_riyal(settings.extraZonePrice)} شهريًا لكل واحد.',
                 style: AppTypography.body,
               ),
               const SizedBox(height: Spacing.md),
@@ -1559,26 +1681,35 @@ class _DurationSelector extends StatelessWidget {
                                       : AppColors.textSecondary(context),
                                 ),
                       ),
-                      if (discountPercent > 0) ...[
-                        const SizedBox(height: 2),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: Spacing.xs,
-                            vertical: 1,
-                          ),
-                          decoration: BoxDecoration(
-                            color: AppColors.success.withValues(alpha: 0.14),
-                            borderRadius: BorderRadius.circular(AppRadius.small),
-                          ),
-                          child: Text(
-                            'خصم $discountPercent%',
-                            style: AppTypography.caption.copyWith(
-                              color: AppColors.success,
-                              fontWeight: FontWeight.w700,
-                            ),
+                      // كل بطاقة مدة تحمل سطراً ثانياً كي تتوازن الأربع
+                      // بصريّاً: شارة خصم خضراء للمُدد المخفَّضة، وشارة
+                      // "بدون خصم" رمادية باهتة لمدة الشهر بدل فراغ.
+                      const SizedBox(height: 2),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: Spacing.xs,
+                          vertical: 1,
+                        ),
+                        decoration: BoxDecoration(
+                          color: discountPercent > 0
+                              ? AppColors.success.withValues(alpha: 0.14)
+                              : AppColors.textSecondary(
+                                  context,
+                                ).withValues(alpha: 0.10),
+                          borderRadius: BorderRadius.circular(AppRadius.small),
+                        ),
+                        child: Text(
+                          discountPercent > 0
+                              ? 'خصم $discountPercent%'
+                              : 'no_discount'.tr,
+                          style: AppTypography.caption.copyWith(
+                            color: discountPercent > 0
+                                ? AppColors.success
+                                : AppColors.textSecondary(context),
+                            fontWeight: FontWeight.w700,
                           ),
                         ),
-                      ],
+                      ),
                     ],
                   ),
                 ),
@@ -1632,8 +1763,9 @@ class _LiveTotalCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final total =
-        controller.priceCalculation?.totalPrice ?? controller.pricingSettings.basePrice;
+    final total = controller.priceCalculation?.totalPrice ??
+        controller.pricingSettings.basePrice *
+            (1 + controller.pricingSettings.vatPercent / 100);
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(CardSpec.padding),
@@ -1668,7 +1800,7 @@ class _LiveTotalCard extends StatelessWidget {
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
                   : Text(
-                      '${total.toStringAsFixed(0)} ريال',
+                      _riyal(total),
                       style: AppTypography.title.copyWith(
                         color: primary,
                         fontWeight: FontWeight.w800,
@@ -1725,30 +1857,32 @@ class _PriceBreakdownCard extends StatelessWidget {
     final settings = controller.pricingSettings;
     final duration = controller.selectedDuration;
 
+    // كل السطور تمرّ عبر _riyal (تقريب موحّد لأقرب ريال) والشروط تختبر القيمة
+    // بعد التقريب، فلا يظهر سطر بقيمة "0 ريال" (مثل ضريبة 0.15 على بيئة
+    // اختبار سعرها الأساسي 1 ريال).
+    final discountAmount = (calc.discountAmount ?? 0);
+    final vatAmount = (calc.vatAmount ?? 0);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _line(
-          context,
-          'الاشتراك الأساسي',
-          '${settings.basePrice.toStringAsFixed(0)} ريال',
-        ),
+        _line(context, 'الاشتراك الأساسي', _riyal(settings.basePrice)),
         if ((calc.extraZones ?? 0) > 0)
           _line(
             context,
             '${calc.extraZones} منطقة إضافية',
-            '${calc.extraZonesCost!.toStringAsFixed(0)} ريال',
+            _riyal(calc.extraZonesCost),
           ),
         if ((calc.extraCategories ?? 0) > 0)
           _line(
             context,
             '${calc.extraCategories} نوع منتج إضافي',
-            '${calc.extraCategoriesCost!.toStringAsFixed(0)} ريال',
+            _riyal(calc.extraCategoriesCost),
           ),
         _line(
           context,
           'الإجمالي الشهري',
-          '${calc.monthlyTotal?.toStringAsFixed(0) ?? 0} ريال',
+          _riyal(calc.monthlyTotal),
           bold: true,
           color: AppColors.textPrimary(context),
         ),
@@ -1756,20 +1890,32 @@ class _PriceBreakdownCard extends StatelessWidget {
           _line(
             context,
             'المدة ($duration أشهر)',
-            '${calc.subtotalBeforeDiscount?.toStringAsFixed(0) ?? 0} ريال',
+            _riyal(calc.subtotalBeforeDiscount),
           ),
-        if ((calc.discountPercent ?? 0) > 0)
+        if ((calc.discountPercent ?? 0) > 0 && discountAmount.round() > 0)
           _line(
             context,
             'خصم ${calc.discountPercent}%',
-            '- ${calc.discountAmount?.toStringAsFixed(0) ?? 0} ريال',
+            '- ${_riyal(discountAmount)}',
             color: AppColors.success,
           ),
+        if (vatAmount.round() > 0) ...[
+          _line(
+            context,
+            'الإجمالي قبل الضريبة',
+            _riyal(calc.totalBeforeVat),
+          ),
+          _line(
+            context,
+            'ضريبة القيمة المضافة (${_num(calc.vatPercent ?? settings.vatPercent)}%)',
+            '+ ${_riyal(vatAmount)}',
+          ),
+        ],
         const SizedBox(height: Spacing.xs),
         _line(
           context,
-          'الإجمالي النهائي',
-          '${calc.totalPrice?.toStringAsFixed(0) ?? 0} ريال',
+          'total_incl_vat'.tr,
+          _riyal(calc.totalPrice),
           bold: true,
           color: primary,
         ),
@@ -1893,8 +2039,8 @@ class _TargetingSection extends StatelessWidget {
   Widget build(BuildContext context) {
     final extraCount = (selectedCount - included).clamp(0, selectedCount);
     final hint = extraCount > 0
-        ? 'الأول ضمن الاشتراك الأساسي، و$extraCount إضافي × ${extraPrice.toStringAsFixed(0)} ريال'
-        : 'الأول ضمن الاشتراك الأساسي — كل إضافي بـ ${extraPrice.toStringAsFixed(0)} ريال';
+        ? 'الأول ضمن الاشتراك الأساسي، و$extraCount إضافي × ${_riyal(extraPrice)}'
+        : 'الأول ضمن الاشتراك الأساسي — كل إضافي بـ ${_riyal(extraPrice)}';
 
     return _Card(
       child: Column(
@@ -2419,6 +2565,9 @@ class _Step4Review extends StatelessWidget {
   final TextEditingController phoneCtrl;
   final ServiceOfferController controller;
   final Color primary;
+  // قفزة مباشرة لخطوة محددة — يمرّرها المعالج، ويستدعيها زرّ "تعديل" بجانب
+  // كل قسم كي يرجع المستخدم لبيانات ذلك القسم تحديداً.
+  final void Function(int step) onEditStep;
 
   const _Step4Review({
     required this.titleCtrl,
@@ -2428,13 +2577,14 @@ class _Step4Review extends StatelessWidget {
     required this.phoneCtrl,
     required this.controller,
     required this.primary,
+    required this.onEditStep,
   });
 
   @override
   Widget build(BuildContext context) {
-    // مدة الاشتراك والسعر أصبحا يُختاران فعلياً في خطوة الباقة (_Step2Plan) —
-    // هذه الخطوة الآن مراجعة نهائية فقط قبل الدفع، بلا حقول قابلة للتعديل،
-    // فلا داعٍ لتكرار شبكة اختيار المدة هنا.
+    // مدة الاشتراك والسعر يُختاران في خطوة الاشتراك — هذه الخطوة مراجعة
+    // نهائية فقط، منظّمة في أقسام يقابل كلٌّ منها خطوة واحدة يعيدها زرّ
+    // "تعديل" مباشرة.
     final durationLabel = _DurationSelector._options
         .firstWhere(
           (o) => o.$1 == controller.selectedDuration,
@@ -2442,6 +2592,12 @@ class _Step4Review extends StatelessWidget {
         )
         .$2
         .tr;
+
+    final locationText = controller.selectedAddress ??
+        (controller.selectedLatitude != null
+            ? '${controller.selectedLatitude!.toStringAsFixed(5)}, '
+                  '${controller.selectedLongitude!.toStringAsFixed(5)}'
+            : 'not_selected'.tr);
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(Spacing.pagePadding),
@@ -2456,59 +2612,154 @@ class _Step4Review extends StatelessWidget {
           ),
           const SizedBox(height: Spacing.xl),
 
-          // Summary card
-          _Card(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _FieldLabel('offer_summary'.tr, icon: Icons.summarize_outlined),
-                const SizedBox(height: Spacing.md),
-                _ReviewRow('العنوان', titleCtrl.text.trim()),
-                _ReviewRow(
-                  'نوع العرض',
-                  controller.offerType == 'discount'
-                      ? 'خصم ${valueCtrl.text}%'
-                      : 'سعر ${valueCtrl.text} ريال',
-                ),
-                _ReviewRow('subscription_duration'.tr, durationLabel),
-                _ReviewRow(
-                  'المناطق',
-                  controller.selectedZoneIds.isEmpty
-                      ? 'not_selected'.tr
-                      : '${controller.selectedZoneIds.length} منطقة',
-                ),
-                if (addressCtrl.text.trim().isNotEmpty)
-                  _ReviewRow('العنوان التفصيلي', addressCtrl.text.trim()),
-                _ReviewRow('contact_phone'.tr, phoneCtrl.text.trim()),
-                _ReviewRow(
-                  'contact_type_label'.tr,
-                  'contact_type_${controller.contactType}'.tr,
-                ),
-                _ReviewRow(
-                  'أنواع العقار',
-                  controller.selectedCategoryIds.isEmpty
-                      ? 'not_selected'.tr
-                      : '${controller.selectedCategoryIds.length} نوع',
-                ),
-                _ReviewRow(
-                  'location'.tr,
-                  controller.selectedAddress ??
-                      (controller.selectedLatitude != null
-                          ? '${controller.selectedLatitude!.toStringAsFixed(5)}, ${controller.selectedLongitude!.toStringAsFixed(5)}'
-                          : 'not_selected'.tr),
-                ),
-                if (controller.expiryDateText.isNotEmpty)
-                  _ReviewRow(
-                    'subscription_expires'.tr,
-                    controller.expiryDateText,
+          // ─── القسم 1: بيانات الخدمة ───────────────────────────────────
+          _ReviewSection(
+            title: 'service_data'.tr,
+            icon: Icons.miscellaneous_services_outlined,
+            primary: primary,
+            onEdit: () => onEditStep(0),
+            children: [
+              if (controller.pickedImage != null)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: Spacing.sm),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(AppRadius.medium),
+                    child: Image.file(
+                      File(controller.pickedImage!.path),
+                      height: 120,
+                      width: double.infinity,
+                      fit: BoxFit.cover,
+                    ),
                   ),
-              ],
-            ),
+                ),
+              _ReviewRow('العنوان', titleCtrl.text.trim()),
+              _ReviewRow(
+                'نوع العرض',
+                controller.offerType == 'discount'
+                    ? 'خصم ${valueCtrl.text}%'
+                    : 'سعر ${_riyal(num.tryParse(valueCtrl.text.trim()))}',
+              ),
+              _ReviewRow(
+                'contact_type_label'.tr,
+                'contact_type_${controller.contactType}'.tr,
+              ),
+              _ReviewRow('contact_phone'.tr, phoneCtrl.text.trim()),
+            ],
+          ),
+          const SizedBox(height: Spacing.md),
+
+          // ─── القسم 2: الاشتراك والمدة ────────────────────────────────
+          _ReviewSection(
+            title: 'package'.tr,
+            icon: Icons.workspace_premium_outlined,
+            primary: primary,
+            onEdit: () => onEditStep(1),
+            children: [
+              _ReviewRow('subscription_duration'.tr, durationLabel),
+              if (controller.expiryDateText.isNotEmpty)
+                _ReviewRow(
+                  'subscription_expires'.tr,
+                  controller.expiryDateText,
+                ),
+            ],
+          ),
+          const SizedBox(height: Spacing.md),
+
+          // ─── القسم 3: النطاق والاستهداف ───────────────────────────────
+          _ReviewSection(
+            title: 'offer_scope'.tr,
+            icon: Icons.map_outlined,
+            primary: primary,
+            onEdit: () => onEditStep(2),
+            children: [
+              _ReviewRow(
+                'المناطق',
+                controller.selectedZoneIds.isEmpty
+                    ? 'not_selected'.tr
+                    : '${controller.selectedZoneIds.length} منطقة',
+              ),
+              _ReviewRow(
+                'أنواع العقار',
+                controller.selectedCategoryIds.isEmpty
+                    ? 'not_selected'.tr
+                    : '${controller.selectedCategoryIds.length} نوع',
+              ),
+            ],
+          ),
+          const SizedBox(height: Spacing.md),
+
+          // ─── القسم 4: الموقع ─────────────────────────────────────────
+          _ReviewSection(
+            title: 'location'.tr,
+            icon: Icons.pin_drop_outlined,
+            primary: primary,
+            onEdit: () => onEditStep(3),
+            children: [_ReviewRow('العنوان', locationText)],
           ),
           const SizedBox(height: Spacing.md),
 
           _LiveTotalCard(controller: controller, primary: primary),
           const SizedBox(height: Spacing.xxl),
+        ],
+      ),
+    );
+  }
+}
+
+/// قسم واحد في شاشة المراجعة — عنوان بأيقونة وزرّ "تعديل" يقفز لخطوته، ثم
+/// صفوف القيم. يحل محل البطاقة الواحدة الطويلة التي كانت تخلط صفوف كل
+/// الخطوات بترتيب متداخل بلا تجميع.
+class _ReviewSection extends StatelessWidget {
+  final String title;
+  final IconData icon;
+  final Color primary;
+  final VoidCallback onEdit;
+  final List<Widget> children;
+
+  const _ReviewSection({
+    required this.title,
+    required this.icon,
+    required this.primary,
+    required this.onEdit,
+    required this.children,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return _Card(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, size: IconSpec.small, color: primary),
+              const SizedBox(width: Spacing.xs),
+              Expanded(
+                child: Text(
+                  title,
+                  style: AppTypography.small.copyWith(
+                    color: AppColors.textPrimary(context),
+                  ),
+                ),
+              ),
+              TextButton.icon(
+                onPressed: onEdit,
+                icon: const Icon(Icons.edit_outlined, size: 15),
+                label: Text('edit'.tr, style: AppTypography.caption),
+                style: TextButton.styleFrom(
+                  foregroundColor: primary,
+                  padding: const EdgeInsets.symmetric(horizontal: Spacing.sm),
+                  minimumSize: const Size(0, 32),
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+              ),
+            ],
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: Spacing.sm),
+            child: Divider(height: 1, color: AppColors.border(context)),
+          ),
+          ...children,
         ],
       ),
     );
@@ -2527,18 +2778,21 @@ class _ReviewRow extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            '$label:',
-            style: AppTypography.captionMedium.copyWith(
-              color: Colors.grey.shade600,
+          SizedBox(
+            width: 104,
+            child: Text(
+              label,
+              style: AppTypography.captionMedium.copyWith(
+                color: AppColors.textSecondary(context),
+              ),
             ),
           ),
           const SizedBox(width: Spacing.sm),
           Expanded(
             child: Text(
-              value,
+              value.isEmpty ? '—' : value,
               style: AppTypography.captionMedium.copyWith(
-                color: const Color(0xFF1A2340),
+                color: AppColors.textPrimary(context),
               ),
             ),
           ),
@@ -2552,6 +2806,243 @@ class _ReviewRow extends StatelessWidget {
 // SHARED WIDGETS
 // ─────────────────────────────────────────────────────────────────────────────
 
+/// رقم مقرَّب لأقرب صحيح مع فاصل آلاف — أساس تنسيق كل المبالغ في المعالج،
+/// كي تتّسق سطور التفصيل مع الإجمالي بصريّاً بدل تقريب كل سطر على حدة.
+String _num(num? value) {
+  final rounded = (value ?? 0).round();
+  final digits = rounded.abs().toString();
+  final buffer = StringBuffer();
+  for (var i = 0; i < digits.length; i++) {
+    if (i > 0 && (digits.length - i) % 3 == 0) buffer.write(',');
+    buffer.write(digits[i]);
+  }
+  return '${rounded < 0 ? '-' : ''}$buffer';
+}
+
+/// مبلغ بالريال بالتنسيق الموحّد — يقرّب لأقرب ريال صحيح فلا تظهر كسور
+/// مربكة مثل "0 ريال" لضريبة 0.15. استُبدل به كل نداءات `toStringAsFixed(0)`
+/// المتفرّقة.
+String _riyal(num? value) => '${_num(value)} ريال';
+
+/// حقل اختيار حديث — يظهر كحقل بمقاييس النظام (ارتفاع 56 / نصف قطر 12)، وعند
+/// الضغط يفتح لوحة سفلية (bottom sheet) بمقبض سحب وعنوان وقائمة خيارات، مع
+/// علامة تحقّق دائرية على الخيار المختار — بدل قائمة `DropdownButton`
+/// الكلاسيكية التي تنسدل فوق الحقل. محصور بهذه الشاشة فلا يمسّ AppDropdown
+/// المشترك في بقيّة التطبيق.
+class _ModernPickerField extends StatelessWidget {
+  final IconData icon;
+  final String hint;
+  final String sheetTitle;
+  final List<String> options;
+  final int selectedIndex; // -1 إن لم يُختَر شيء
+  final ValueChanged<int> onSelected;
+
+  const _ModernPickerField({
+    required this.icon,
+    required this.hint,
+    required this.sheetTitle,
+    required this.options,
+    required this.selectedIndex,
+    required this.onSelected,
+  });
+
+  Future<void> _openSheet(BuildContext context) async {
+    FocusScope.of(context).unfocus();
+    final primary = Theme.of(context).primaryColor;
+
+    final picked = await showModalBottomSheet<int>(
+      context: context,
+      // الحاوية الداخلية ترسم الخلفية والزوايا المدوّرة، فالخلفية هنا شفّافة
+      // كي لا يظهر مستطيل أبيض خلف الزوايا.
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (sheetContext) {
+        // سقف ارتفاع صريح (~72% من الشاشة) — بدونه كانت اللوحة تتمدّد لكامل
+        // الشاشة وتلتصق بشريط الحالة عند طول القائمة.
+        final maxHeight = MediaQuery.of(sheetContext).size.height * 0.72;
+        final bottomInset = MediaQuery.of(sheetContext).padding.bottom;
+
+        return Container(
+          constraints: BoxConstraints(maxHeight: maxHeight),
+          clipBehavior: Clip.antiAlias,
+          decoration: BoxDecoration(
+            color: AppColors.surface(sheetContext),
+            borderRadius: const BorderRadius.vertical(
+              top: Radius.circular(AppRadius.bottomSheet),
+            ),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: Spacing.sm),
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: AppColors.border(sheetContext),
+                    borderRadius: BorderRadius.circular(99),
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  Spacing.pagePadding,
+                  Spacing.md,
+                  Spacing.pagePadding,
+                  Spacing.md,
+                ),
+                child: Row(
+                  children: [
+                    Icon(icon, size: IconSpec.small, color: primary),
+                    const SizedBox(width: Spacing.sm),
+                    Expanded(
+                      child: Text(
+                        sheetTitle,
+                        style: AppTypography.subtitle.copyWith(
+                          color: AppColors.textPrimary(sheetContext),
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () => Navigator.of(sheetContext).pop(),
+                      icon: Icon(
+                        Icons.close_rounded,
+                        size: 20,
+                        color: AppColors.textSecondary(sheetContext),
+                      ),
+                      visualDensity: VisualDensity.compact,
+                    ),
+                  ],
+                ),
+              ),
+              Divider(height: 1, color: AppColors.border(sheetContext)),
+              Flexible(
+                child: ListView.separated(
+                  shrinkWrap: true,
+                  padding: EdgeInsets.only(
+                    top: Spacing.xs,
+                    bottom: bottomInset + Spacing.sm,
+                  ),
+                  itemCount: options.length,
+                  separatorBuilder: (_, __) => Divider(
+                    height: 1,
+                    indent: Spacing.pagePadding,
+                    endIndent: Spacing.pagePadding,
+                    color: AppColors.border(sheetContext),
+                  ),
+                  itemBuilder: (_, i) {
+                    final selected = i == selectedIndex;
+                    return InkWell(
+                      onTap: () => Navigator.of(sheetContext).pop(i),
+                      child: Container(
+                        color: selected
+                            ? primary.withValues(alpha: 0.06)
+                            : Colors.transparent,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: Spacing.pagePadding,
+                          vertical: 14,
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                options[i],
+                                style:
+                                    (selected
+                                            ? AppTypography.bodyBold
+                                            : AppTypography.body)
+                                        .copyWith(
+                                          color: selected
+                                              ? primary
+                                              : AppColors.textPrimary(
+                                                  sheetContext,
+                                                ),
+                                        ),
+                              ),
+                            ),
+                            Icon(
+                              selected
+                                  ? Icons.check_circle_rounded
+                                  : Icons.circle_outlined,
+                              color: selected
+                                  ? primary
+                                  : AppColors.border(sheetContext),
+                              size: 20,
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+
+    if (picked != null) onSelected(picked);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final primary = Theme.of(context).primaryColor;
+    final hasValue = selectedIndex >= 0 && selectedIndex < options.length;
+    final label = hasValue ? options[selectedIndex] : hint;
+
+    return Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(AppRadius.medium),
+      child: InkWell(
+        onTap: () => _openSheet(context),
+        borderRadius: BorderRadius.circular(AppRadius.medium),
+        child: Container(
+          height: FieldSpec.height,
+          padding: const EdgeInsets.symmetric(horizontal: Spacing.md),
+          decoration: BoxDecoration(
+            color: AppColors.background(context),
+            borderRadius: BorderRadius.circular(AppRadius.medium),
+            border: Border.all(
+              color: hasValue
+                  ? primary.withValues(alpha: 0.35)
+                  : AppColors.border(context),
+              width: hasValue ? 1.2 : 1,
+            ),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                icon,
+                size: IconSpec.small,
+                color: hasValue ? primary : AppColors.textSecondary(context),
+              ),
+              const SizedBox(width: Spacing.sm),
+              Expanded(
+                child: Text(
+                  label,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTypography.body.copyWith(
+                    color: hasValue
+                        ? AppColors.textPrimary(context)
+                        : AppColors.textSecondary(context),
+                  ),
+                ),
+              ),
+              Icon(
+                Icons.keyboard_arrow_down_rounded,
+                color: hasValue ? primary : AppColors.textSecondary(context),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 /// حقل نصي محلي بمقاييس النظام (Height 56 / Radius 12) بدل MyTextField
 /// المشترك (Radius 8) — استبدال محصور بهذه الشاشة فقط.
 Widget _dsTextField(
@@ -2561,9 +3052,11 @@ Widget _dsTextField(
   TextInputType keyboardType = TextInputType.text,
   int maxLines = 1,
   bool readOnly = false,
+  FocusNode? focusNode,
 }) {
   return TextFormField(
     controller: controller,
+    focusNode: focusNode,
     keyboardType: keyboardType,
     maxLines: maxLines,
     readOnly: readOnly,

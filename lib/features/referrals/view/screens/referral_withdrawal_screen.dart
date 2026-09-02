@@ -15,7 +15,16 @@ import 'package:get/get.dart';
 /// وزرّ تعديله، ونمنع الإرسال إن لم يكن هناك حساب محفوظ بعد.
 class ReferralWithdrawalScreen extends StatefulWidget {
   final double availableBalance;
-  const ReferralWithdrawalScreen({super.key, required this.availableBalance});
+
+  /// الحد الأدنى للسحب المضبوط من لوحة الإدارة (0 = بلا حد). يُمرَّر من شاشة
+  /// الإحالة ليُعطَّل زرّ الإرسال ويظهر شريط التقدّم حتى بلوغه.
+  final double minPayoutLimit;
+
+  const ReferralWithdrawalScreen({
+    super.key,
+    required this.availableBalance,
+    this.minPayoutLimit = 0,
+  });
 
   @override
   State<ReferralWithdrawalScreen> createState() => _ReferralWithdrawalScreenState();
@@ -38,8 +47,19 @@ class _ReferralWithdrawalScreenState extends State<ReferralWithdrawalScreen> {
 
   // ─── حالة حقل المبلغ لحظياً (لتلميح الصيغة والتحقق قبل الإرسال) ────────────
   double? get _amount => double.tryParse(_amountController.text.trim());
-  bool get _amountValid => _amount != null && _amount! > 0 && _amount! <= widget.availableBalance;
+  bool get _hasMin => widget.minPayoutLimit > 0;
   bool get _amountExceeds => _amount != null && _amount! > widget.availableBalance;
+  bool get _amountBelowMin =>
+      _amount != null && _hasMin && _amount! < widget.minPayoutLimit;
+  bool get _amountValid =>
+      _amount != null &&
+      _amount! > 0 &&
+      _amount! <= widget.availableBalance &&
+      (!_hasMin || _amount! >= widget.minPayoutLimit);
+
+  String get _minAmountError => 'withdrawal_minimum_amount_error'.trParams({
+        'min': PriceConverter.convertPrice(widget.minPayoutLimit, decimalDigits: 2),
+      });
 
   Future<void> _submit() async {
     final ReferralController controller = Get.find<ReferralController>();
@@ -50,6 +70,10 @@ class _ReferralWithdrawalScreenState extends State<ReferralWithdrawalScreen> {
     }
     if (_amountExceeds) {
       showCustomSnackBar('amount_exceeds_available_balance'.tr);
+      return;
+    }
+    if (_amountBelowMin) {
+      showCustomSnackBar(_minAmountError);
       return;
     }
 
@@ -84,7 +108,7 @@ class _ReferralWithdrawalScreenState extends State<ReferralWithdrawalScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    _balanceStrip(context),
+                    _balanceProgress(context),
                     const SizedBox(height: Spacing.lg),
 
                     _fieldLabel(context, 'withdrawal_amount'.tr),
@@ -101,8 +125,10 @@ class _ReferralWithdrawalScreenState extends State<ReferralWithdrawalScreen> {
                     PayoutLiveHint(
                       isEmpty: _amountController.text.trim().isEmpty,
                       isValid: _amountValid,
-                      neutralText: 'withdrawal_amount_hint'.tr,
-                      errorText: 'amount_exceeds_available_balance'.tr,
+                      neutralText: _hasMin ? _minAmountError : 'withdrawal_amount_hint'.tr,
+                      errorText: _amountBelowMin
+                          ? _minAmountError
+                          : 'amount_exceeds_available_balance'.tr,
                       validText: 'valid_format'.tr,
                     ),
                     const SizedBox(height: Spacing.xl),
@@ -164,31 +190,19 @@ class _ReferralWithdrawalScreenState extends State<ReferralWithdrawalScreen> {
     );
   }
 
-  // ─── شريط الرصيد المتاح (سطر واحد مضغوط) ─────────────────────────────────
-  Widget _balanceStrip(BuildContext context) {
+  // ─── الرصيد المتاح + شريط التقدّم نحو الحد الأدنى (يمتلئ بالأخضر) ─────────
+  Widget _balanceProgress(BuildContext context) {
     final primary = AppColors.primary(context);
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: Spacing.md, vertical: Spacing.sm + 2),
+      padding: const EdgeInsets.symmetric(horizontal: Spacing.md, vertical: Spacing.md),
       decoration: BoxDecoration(
         color: primary.withValues(alpha: 0.06),
         borderRadius: BorderRadius.circular(AppRadius.medium),
         border: Border.all(color: primary.withValues(alpha: 0.2)),
       ),
-      child: Row(
-        children: [
-          Icon(Icons.account_balance_wallet_outlined, color: primary, size: IconSpec.small),
-          const SizedBox(width: Spacing.sm),
-          Expanded(
-            child: Text(
-              'available_for_withdrawal'.tr,
-              style: AppTypography.small.copyWith(color: AppColors.textSecondary(context)),
-            ),
-          ),
-          Text(
-            PriceConverter.convertPrice(widget.availableBalance, decimalDigits: 2),
-            style: AppTypography.bodyBold.copyWith(color: primary),
-          ),
-        ],
+      child: WithdrawalMinimumProgress(
+        available: widget.availableBalance,
+        minimum: widget.minPayoutLimit,
       ),
     );
   }
@@ -338,7 +352,9 @@ class _ReferralWithdrawalScreenState extends State<ReferralWithdrawalScreen> {
             builder: (controller) => DSPrimaryButton(
               label: 'request_withdrawal'.tr,
               loading: controller.isRequestingWithdrawal,
-              onPressed: _submit,
+              // يبقى معطّلاً حتى يُدخِل المستخدم مبلغاً صحيحاً لا يقلّ عن الحد
+              // الأدنى ولا يتجاوز الرصيد المتاح.
+              onPressed: _amountValid ? _submit : null,
             ),
           ),
         ),

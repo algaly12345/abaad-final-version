@@ -4,6 +4,7 @@ import 'package:abaad_flutter/features/referrals/controller/referral_controller.
 import 'package:abaad_flutter/features/referrals/data/models/referral_model.dart';
 import 'package:abaad_flutter/features/referrals/view/screens/referral_payout_method_screen.dart';
 import 'package:abaad_flutter/features/referrals/view/screens/referral_withdrawal_screen.dart';
+import 'package:abaad_flutter/features/referrals/view/widgets/payout_form_widgets.dart';
 import 'package:abaad_flutter/features/provider/view/screens/provider_upgrade_screen.dart';
 import 'package:abaad_flutter/shared/controllers/splash_controller.dart';
 import 'package:abaad_flutter/shared/helpers/date_converter.dart';
@@ -365,10 +366,15 @@ class _ReferralScreenState extends State<ReferralScreen>
     );
   }
 
-  // ─── بطاقة الرصيد المتاح + زرّ طلب السحب ────────────────────────────────
+  // ─── بطاقة الرصيد المتاح + شريط التقدّم نحو الحد الأدنى + زرّ طلب السحب ───
   Widget _balanceCard(BuildContext context, ReferralController controller) {
     final double available = controller.summary?.availableBalance ?? 0;
+    final double minPayout = controller.summary?.minPayoutLimit ?? 0;
     final Color primary = AppColors.primary(context);
+
+    // زرّ الطلب يُفعَّل فقط عند بلوغ الحد الأدنى (أو أي رصيد موجب إن لم يكن
+    // هناك حد أدنى). قبل ذلك يبقى الزرّ معطّلاً ويوضّح الشريط كم بقي.
+    final bool canWithdraw = available > 0 && (minPayout <= 0 || available >= minPayout);
 
     return Container(
       padding: const EdgeInsets.all(Spacing.lg),
@@ -377,51 +383,67 @@ class _ReferralScreenState extends State<ReferralScreen>
         borderRadius: BorderRadius.circular(AppRadius.large),
         border: Border.all(color: primary.withValues(alpha: 0.22)),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Container(
-            width: 42,
-            height: 42,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: primary.withValues(alpha: 0.14),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(Icons.account_balance_wallet_outlined, color: primary, size: IconSpec.small),
-          ),
-          const SizedBox(width: Spacing.md),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'available_for_withdrawal'.tr,
-                  style: AppTypography.caption.copyWith(color: AppColors.textSecondary(context)),
+          Row(
+            children: [
+              Container(
+                width: 42,
+                height: 42,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: primary.withValues(alpha: 0.14),
+                  shape: BoxShape.circle,
                 ),
-                const SizedBox(height: 2),
-                Text(_commissionText(available), style: AppTypography.title.copyWith(color: primary)),
-              ],
-            ),
-          ),
-          const SizedBox(width: Spacing.sm),
-          SizedBox(
-            height: 42,
-            child: ElevatedButton(
-              onPressed: available > 0
-                  ? () => Get.to(() => ReferralWithdrawalScreen(availableBalance: available))
-                  : null,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: primary,
-                foregroundColor: Colors.white,
-                disabledBackgroundColor: primary.withValues(alpha: 0.4),
-                elevation: 0,
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(ButtonSpec.radius)),
+                child: Icon(Icons.account_balance_wallet_outlined,
+                    color: primary, size: IconSpec.small),
               ),
-              child: Text('request_withdrawal'.tr,
-                  style: AppTypography.smallBold.copyWith(color: Colors.white)),
-            ),
+              const SizedBox(width: Spacing.md),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'available_for_withdrawal'.tr,
+                      style: AppTypography.caption
+                          .copyWith(color: AppColors.textSecondary(context)),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(_commissionText(available),
+                        style: AppTypography.title.copyWith(color: primary)),
+                  ],
+                ),
+              ),
+              const SizedBox(width: Spacing.sm),
+              SizedBox(
+                height: 42,
+                child: ElevatedButton(
+                  onPressed: canWithdraw
+                      ? () => Get.to(() => ReferralWithdrawalScreen(
+                            availableBalance: available,
+                            minPayoutLimit: minPayout,
+                          ))
+                      : null,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: primary,
+                    foregroundColor: Colors.white,
+                    disabledBackgroundColor: primary.withValues(alpha: 0.4),
+                    elevation: 0,
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(ButtonSpec.radius)),
+                  ),
+                  child: Text('request_withdrawal'.tr,
+                      style: AppTypography.smallBold.copyWith(color: Colors.white)),
+                ),
+              ),
+            ],
           ),
+          if (minPayout > 0) ...[
+            const SizedBox(height: Spacing.md),
+            WithdrawalMinimumProgress(available: available, minimum: minPayout),
+          ],
         ],
       ),
     );

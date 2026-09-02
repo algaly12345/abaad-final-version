@@ -20,6 +20,10 @@ class ReferralSummaryModel {
   double withdrawnTotal = 0;
   double availableBalance = 0;
 
+  /// الحد الأدنى للسحب المضبوط من لوحة الإدارة. 0 = بلا حد أدنى (أي مبلغ موجب
+  /// يكفي). يُستخدم لتفعيل زرّ الطلب وحساب امتلاء شريط التقدّم نحو الحد.
+  double minPayoutLimit = 0;
+
   ReferralSummaryModel({
     required this.referredCount,
     required this.pendingTotal,
@@ -27,6 +31,7 @@ class ReferralSummaryModel {
     required this.availableTotal,
     required this.withdrawnTotal,
     required this.availableBalance,
+    required this.minPayoutLimit,
   });
 
   ReferralSummaryModel.fromJson(Map<String, dynamic> json) {
@@ -36,6 +41,7 @@ class ReferralSummaryModel {
     availableTotal = double.tryParse(json['available_total'].toString()) ?? 0;
     withdrawnTotal = double.tryParse(json['withdrawn_total'].toString()) ?? 0;
     availableBalance = double.tryParse(json['available_balance'].toString()) ?? 0;
+    minPayoutLimit = double.tryParse(json['min_payout_limit'].toString()) ?? 0;
   }
 }
 

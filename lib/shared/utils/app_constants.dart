@@ -13,7 +13,7 @@ class AppConstants {
   static const String BASE_URL = 'https://app.abaadapp.sa';
 
   // فعّل هذا للاختبار المحلي
-  ///static const String BASE_URL = 'http://10.108.21.177';
+  ///static const String BASE_URL = 'http://10.108.21.135';
 
   // static const String BASE_URL = 'https://baad.arabengksa.com';
   static const String LAND_SERVICE_URL =

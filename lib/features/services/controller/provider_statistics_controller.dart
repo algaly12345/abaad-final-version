@@ -75,6 +75,10 @@ class ProviderStatisticsController extends GetxController implements GetxService
   String _formatDate(DateTime d) =>
       '${d.year.toString().padLeft(4, '0')}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
 
+  // دقة السلسلة الزمنية للمشاهدات: يومية للفترات القصيرة، شهرية عند "الكل".
+  // للمدى المخصّص نُرسل 'day' ويُرقّيه الباكند تلقائيًا إلى 'month' إن تجاوز 92 يومًا.
+  String get _granularityParam => selectedPeriod == 'all' ? 'month' : 'day';
+
   Future<void> loadDashboard() async {
     _isLoading = true;
     update();
@@ -84,12 +88,15 @@ class ProviderStatisticsController extends GetxController implements GetxService
         period: selectedPeriod,
         from: _fromDateParam,
         to: _toDateParam,
+        granularity: _granularityParam,
       );
 
       if (response.statusCode == 200 &&
           response.body is Map &&
-          response.body['data'] != null) {
-        _data = ProviderStatisticsModel.fromJson(response.body['data']);
+          response.body['data'] is Map) {
+        _data = ProviderStatisticsModel.fromJson(
+          Map<String, dynamic>.from(response.body['data'] as Map),
+        );
       } else {
         ApiChecker.checkApi(response, showToaster: true);
       }

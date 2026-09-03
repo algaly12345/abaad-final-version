@@ -1,8 +1,12 @@
 ﻿import 'package:abaad_flutter/core/api/api_checker.dart';
 import 'package:abaad_flutter/core/api/api_client.dart';
 import 'package:abaad_flutter/shared/data/models/config_model.dart';
+import 'package:abaad_flutter/shared/utils/app_constants.dart';
 import 'package:abaad_flutter/features/onboarding/data/repositories/splash_repo.dart';
+import 'package:chottu_link/chottu_link.dart';
+import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class SplashController extends GetxController implements GetxService {
   final SplashRepo splashRepo;
@@ -58,8 +62,41 @@ class SplashController extends GetxController implements GetxService {
       }
     }
 
+    _applyChottuLinkConfig();
+
     update();
     return isSuccess;
+  }
+
+  /// يخزّن مفتاح ChottuLink للجوال ونطاقه (الواصلَين ضمن /api/v1/config من
+  /// جدول business_settings) في SharedPreferences ليقرأهما main() مبكرًا في
+  /// الفتح البارد التالي، ويُهيّئ الـ SDK الآن إن لم يكن مُهيّأً بعد (أول
+  /// تشغيل، أو تدوير المفتاح). مجرّد تحسين — لا يعطّل شيئًا عند غياب القيم.
+  void _applyChottuLinkConfig() {
+    if (!GetPlatform.isMobile) return;
+
+    final String key = _configModel?.chottulinkSdkKey ?? '';
+    final String domain = _configModel?.chottulinkDomain ?? '';
+    final SharedPreferences prefs = Get.find<SharedPreferences>();
+
+    if (domain.isNotEmpty) {
+      prefs.setString(AppConstants.CHOTTULINK_DOMAIN_PREF, domain);
+      AppConstants.chottulinkDomain = domain;
+    }
+    if (key.isNotEmpty) {
+      prefs.setString(AppConstants.CHOTTULINK_SDK_KEY_PREF, key);
+      if (!ChottuLink.isInitialized()) {
+        _initChottuLink(key);
+      }
+    }
+  }
+
+  Future<void> _initChottuLink(String key) async {
+    try {
+      await ChottuLink.init(apiKey: key);
+    } catch (e) {
+      debugPrint('ChottuLink init error: $e');
+    }
   }
 
   Future<bool> initSharedData() {

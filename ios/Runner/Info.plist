@@ -50,12 +50,6 @@
 		<key>NSAllowsArbitraryLoads</key>
 		<true/>
 	</dict>
-	<key>NSCameraUsageDescription</key>
-	<string>يريد تطبيق أبعاد الوصول الكاميرا الخاص بك حتى تتمكن من مشاركة صورة العقار الخاص بك</string>
-	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-	<string>يريد تطبيق أبعاد الوصول الى موقعك ليساعدك على الوصول لأقرب العقارات إليك</string>
-	<key>NSLocationAlwaysUsageDescription</key>
-	<string>يريد تطبيق أبعاد الوصول الى موقعك ليساعدك على الوصول لأقرب العقارات إليك</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>يريد تطبيق أبعاد الوصول الى موقعك ليساعدك على الوصول لأقرب العقارات إليك</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
@@ -89,7 +83,5 @@
 	<array>
 		<string>whatsapp</string>
 	</array>
-	<key>NSMicrophoneUsageDescription</key>
-	<string>يستخدم التطبيق الميكروفون لتشغيل الفيديوهات التي تحتوي على صوت.</string>
 </dict>
 </plist>

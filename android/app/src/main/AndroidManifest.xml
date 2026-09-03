@@ -1,14 +1,29 @@
 
 
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
 <uses-permission android:name="android.permission.INTERNET"/>
 <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
 <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
 <uses-permission android:name="android.permission.READ_MEDIA_IMAGES"/>
 <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32"/>
-<uses-permission android:name="android.permission.CAMERA"/>
 <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+
+<!-- حزمة camera (مُستورَدة فقط في lib/shared/widgets/qr_code.dart — شاشة
+     ماسح QR غير مُستخدَمة إطلاقاً، كل كود المسح فيها معلَّق) تحقن تلقائياً
+     CAMERA + RECORD_AUDIO + WRITE_EXTERNAL_STORAGE + ميزات الكاميرا في
+     الـ manifest المدموج. التطبيق لا يلتقط بالكاميرا ولا يسجّل صوتاً (كل
+     اختيار الصور من المعرض عبر image_picker الذي لا يحتاج أي إذن)، فتُزال
+     من النسخة المنشورة لتفادي رفض المتاجر على أذونات بلا ميزة مقابلة.
+     عند إضافة ميزة كاميرا حقيقية مستقبلاً: احذف أسطر tools:node أدناه
+     وأعد إعلان CAMERA صراحةً. -->
+<uses-permission android:name="android.permission.CAMERA" tools:node="remove"/>
+<uses-permission android:name="android.permission.RECORD_AUDIO" tools:node="remove"/>
+<uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" tools:node="remove"/>
+<uses-feature android:name="android.hardware.camera" tools:node="remove"/>
+<uses-feature android:name="android.hardware.camera.any" tools:node="remove"/>
+<uses-feature android:name="android.hardware.camera.autofocus" tools:node="remove"/>
 
 
 <application
@@ -17,7 +32,6 @@
     android:name="${applicationName}"
     android:icon="@mipmap/ic_launcher"
     android:networkSecurityConfig="@xml/network_security_config"
-    android:usesCleartextTraffic="true"
     >
 
     <!-- Google Maps Key -->
@@ -29,10 +43,18 @@
         android:name=".MainActivity"
         android:exported="true"
         android:launchMode="singleTop"
+        android:taskAffinity=""
         android:theme="@style/LaunchTheme"
         android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
         android:hardwareAccelerated="true"
         android:windowSoftInputMode="adjustResize">
+
+        <!-- ChottuLink يعالج نيّة رابط abaadapp.chottu.link بنفسه؛ نعطّل توجيه
+             Flutter المدمج (الافتراضي أصلًا false، التطبيق يستخدم app_links
+             + GetX) حسب توصية ChottuLink. -->
+        <meta-data
+            android:name="flutter_deeplinking_enabled"
+            android:value="false"/>
 
         <intent-filter>
             <action android:name="android.intent.action.MAIN"/>
@@ -56,6 +78,17 @@
             <category android:name="android.intent.category.DEFAULT"/>
             <category android:name="android.intent.category.BROWSABLE"/>
             <data android:scheme="https" android:host="app.abaadapp.sa" android:pathPrefix="/details"/>
+        </intent-filter>
+        <!-- رابط الإحالة القصير من ChottuLink (abaadapp.chottu.link/xxxxx).
+             ملفّا assetlinks.json و apple-app-site-association لهذا النطاق
+             يستضيفهما ChottuLink تلقائيًا، ويجب أن يحملا اسم الحزمة
+             sa.pdm.abaad.abaad وبصمات SHA-256 المسجَّلة في لوحة ChottuLink
+             (Settings → Platforms → Android). -->
+        <intent-filter android:autoVerify="true">
+            <action android:name="android.intent.action.VIEW"/>
+            <category android:name="android.intent.category.DEFAULT"/>
+            <category android:name="android.intent.category.BROWSABLE"/>
+            <data android:scheme="https" android:host="abaadapp.chottu.link"/>
         </intent-filter>
 
         <meta-data

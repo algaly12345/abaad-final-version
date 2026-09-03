@@ -571,7 +571,6 @@ class _DashboardScreenState extends State<DashboardScreen> with RouteAware {
 
       await [
         Permission.locationWhenInUse,
-        Permission.camera,
         Permission.photos,
         Permission.notification,
       ].request();

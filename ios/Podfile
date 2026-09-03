@@ -42,7 +42,6 @@ post_install do |installer|
       # وأي Permission.xxx مستخدَم في الكود) — لا تُفعِّل ما لا تحتاجه.
       config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] ||= ['$(inherited)', 'COCOAPODS=1']
       config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] += [
-        'PERMISSION_CAMERA=1',
         'PERMISSION_PHOTOS=1',
         'PERMISSION_LOCATION=1',
         'PERMISSION_NOTIFICATIONS=1',

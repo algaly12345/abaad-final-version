@@ -92,44 +92,63 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   void _navigateToApp() async {
-    app_main.MyApp.splashHasRouted = true;
-
-    // رابط تفاصيل عقار معلَّق: نتخطى فتح الرئيسية/تسجيل الدخول بالكامل هنا،
-    // ونترك GetX ينتقل مباشرة لصفحة /details عبر GetPage المسجَّلة، لتفادي
-    // ظهور الرئيسية للحظة قبل شاشة التفاصيل (الرمشة).
-    // نُصفّر القيمة فور قراءتها حتى لا تُستهلَك خطأً في أي فتح تالٍ للتطبيق.
-    if (app_main.MyApp.pendingDetailsEstateId != null) {
-      app_main.MyApp.pendingDetailsEstateId = null;
-      return;
-    }
-
-    if (Get.find<AuthController>().isLoggedIn()) {
-      await Get.find<WishListController>().getWishList();
-
-      if (Get.find<LocationController>().getUserAddress() != null) {
-        Get.offNamed(RouteHelper.getInitialRoute());
-      } else {
-        Get.offNamed(RouteHelper.getAccessLocationRoute('splash'));
+    // فُتح التطبيق عبر رابط إحالة وزائر غير مسجَّل: حلّ الرابط غير متزامن (نداء
+    // ChottuLink SDK ثم نداء باكند احتياطي) وقد يتأخّر عن وصول إعدادات
+    // السيرفر. ننتظره هنا (حتى ~8s) قبل تقرير الوجهة، حتى لا تُفتح الرئيسية
+    // للحظة ثم يُعاد التوجيه للتسجيل. مهم: splashHasRouted لا يُضبط إلا بعد
+    // هذا الانتظار (في finally)، فيبقى _applyReferralCode في وضع "الفتح
+    // البارد" ولا ينقّل بنفسه — السبلاش وحدها تملك القرار هنا.
+    try {
+      if (app_main.MyApp.referralLinkDetected &&
+          !Get.find<AuthController>().isLoggedIn()) {
+        int tries = 0;
+        while (!app_main.MyApp.pendingReferralSignUp && tries < 40) {
+          await Future.delayed(const Duration(milliseconds: 200));
+          tries++;
+        }
+        app_main.MyApp.referralLinkDetected = false;
+        if (!mounted) return;
       }
-    } else {
-      // إحالة معلَّقة (رابط abaadapp.sa/ref/CODE): اذهب لصفحة التسجيل مباشرة
-      // بدل الرئيسية/الإعداد الأولي — هذا هو القرار الحاسم الوحيد الذي يمنع
-      // تسابق مع main.dart._handleReferralLink (انظر MyApp.pendingReferralSignUp).
-      if (app_main.MyApp.pendingReferralSignUp) {
-        app_main.MyApp.pendingReferralSignUp = false;
-        Get.offNamed(RouteHelper.getSignUpRoute());
+
+      // رابط تفاصيل عقار معلَّق: نتخطى فتح الرئيسية/تسجيل الدخول بالكامل هنا،
+      // ونترك GetX ينتقل مباشرة لصفحة /details عبر GetPage المسجَّلة، لتفادي
+      // ظهور الرئيسية للحظة قبل شاشة التفاصيل (الرمشة).
+      // نُصفّر القيمة فور قراءتها حتى لا تُستهلَك خطأً في أي فتح تالٍ للتطبيق.
+      if (app_main.MyApp.pendingDetailsEstateId != null) {
+        app_main.MyApp.pendingDetailsEstateId = null;
         return;
       }
 
-      if (Get.find<SplashController>().showIntro() ?? false) {
-        if (AppConstants.languages.length > 1) {
-          Get.offNamed(RouteHelper.getLanguageRoute('splash'));
+      if (Get.find<AuthController>().isLoggedIn()) {
+        await Get.find<WishListController>().getWishList();
+
+        if (Get.find<LocationController>().getUserAddress() != null) {
+          Get.offNamed(RouteHelper.getInitialRoute());
         } else {
-          Get.offNamed(RouteHelper.getOnBoardingRoute());
+          Get.offNamed(RouteHelper.getAccessLocationRoute('splash'));
         }
       } else {
-        Get.offNamed(RouteHelper.getInitialRoute());
+        // إحالة معلَّقة: اذهب لصفحة التسجيل مباشرة بدل الرئيسية/الإعداد الأولي —
+        // هذا هو القرار الحاسم الوحيد الذي يمنع تسابق مع
+        // main.dart._handleReferralLink (انظر MyApp.pendingReferralSignUp).
+        if (app_main.MyApp.pendingReferralSignUp) {
+          app_main.MyApp.pendingReferralSignUp = false;
+          Get.offNamed(RouteHelper.getSignUpRoute());
+          return;
+        }
+
+        if (Get.find<SplashController>().showIntro() ?? false) {
+          if (AppConstants.languages.length > 1) {
+            Get.offNamed(RouteHelper.getLanguageRoute('splash'));
+          } else {
+            Get.offNamed(RouteHelper.getOnBoardingRoute());
+          }
+        } else {
+          Get.offNamed(RouteHelper.getInitialRoute());
+        }
       }
+    } finally {
+      app_main.MyApp.splashHasRouted = true;
     }
   }
 

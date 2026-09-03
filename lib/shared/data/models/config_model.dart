@@ -42,6 +42,13 @@ class ConfigModel {
   String? featureAr = "";
   String? feature = "";
 
+  // ChottuLink (بديل Firebase Dynamic Links) — من جدول business_settings عبر
+  // /api/v1/config. SplashController يخزّنهما في SharedPreferences ليقرأهما
+  // main() مبكرًا. لا يُضافان لمُنشئ ConfigModel المطلوب (fromJson هو
+  // المستخدم فعليًا في كل مكان).
+  String? chottulinkSdkKey = "";
+  String? chottulinkDomain = "";
+
 
 
   ConfigModel({
@@ -126,6 +133,8 @@ class ConfigModel {
     featureAr= json['feature_ar'];
     privacyPolicyAr= json['privacy_policy_ar'];
     googleMapKey=json['google_map_key'];
+    chottulinkSdkKey = json['chottulink_sdk_key'];
+    chottulinkDomain = json['chottulink_domain'];
 
   }
 
@@ -166,6 +175,8 @@ class ConfigModel {
     data['feature_ar']=featureAr;
     data['privacy_policy_ar']=privacyPolicyAr;
     data['google_map_key']=googleMapKey;
+    data['chottulink_sdk_key']=chottulinkSdkKey;
+    data['chottulink_domain']=chottulinkDomain;
 
 
 

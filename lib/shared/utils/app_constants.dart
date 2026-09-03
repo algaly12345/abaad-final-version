@@ -9,11 +9,10 @@ class AppConstants {
   static const double APP_VERSION = 11.0;
   static const String LOGIN_URI = '/api/v1/auth/login';
 
-  // عطّل السطر الإنتاجي مؤقتًا
   static const String BASE_URL = 'https://app.abaadapp.sa';
 
-  // فعّل هذا للاختبار المحلي
-  ///static const String BASE_URL = 'http://10.108.21.135';
+  // فعّل هذا للاختبار المحلي (مع إضافة العنوان لـ network_security_config.xml)
+  // static const String BASE_URL = 'http://10.108.21.107';
 
   // static const String BASE_URL = 'https://baad.arabengksa.com';
   static const String LAND_SERVICE_URL =
@@ -115,6 +114,17 @@ class AppConstants {
       '/api/v1/referrals/withdrawals';
   static const String REFERRAL_PAYOUT_METHOD_URL =
       '/api/v1/referrals/payout-method';
+
+  // ChottuLink (بديل Firebase Dynamic Links): مفتاح SDK للجوال + النطاق
+  // يصلان من الباكند ضمن /api/v1/config (جدول business_settings:
+  // chottulink_mobile_sdk_key / chottulink_domain)، ويُخزَّنان في
+  // SharedPreferences ليُقرآ مبكرًا في main() عند الفتح البارد. لا مفتاح
+  // مُضمَّن في التطبيق. النطاق الافتراضي أدناه احتياط فقط لحين أول مزامنة
+  // إعدادات — يجب أن يطابق مضيف intent-filter في AndroidManifest.xml
+  // وapplinks في Runner.entitlements (كلاهما لا يمكن ضبطه وقت التشغيل).
+  static const String CHOTTULINK_SDK_KEY_PREF = 'chottulink_sdk_key';
+  static const String CHOTTULINK_DOMAIN_PREF = 'chottulink_domain';
+  static String chottulinkDomain = 'abaadapp.chottu.link';
   static const String LOYALTY_TRANSACTION_URL =
       '/api/v1/loyalty-point/transactions';
   static const String LOYALTY_POINT_TRANSFER_URL =

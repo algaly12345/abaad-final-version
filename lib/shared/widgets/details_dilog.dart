@@ -430,6 +430,147 @@ class _DettailsDilogState extends State<DettailsDilog> {
               ),
             ),
 
+            // 🔹 بطاقة مستقلة للموظف المسؤول عن الإعلان — تظهر فقط لو
+            // موجودة بيانات فعلية (اسم أو جوال) من السيرفر.
+            if (widget.estate?.estate_type == "2" &&
+                ((widget.estate?.responsibleEmployeeName ?? '').isNotEmpty ||
+                    (widget.estate?.responsibleEmployeePhoneNumber ?? '')
+                        .isNotEmpty)) ...[
+              const SizedBox(height: 10),
+              _card(
+                context,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _sectionBanner(
+                        "الموظف المسؤول", Icons.support_agent_rounded),
+                    const SizedBox(height: 14),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Container(
+                          width: 52,
+                          height: 52,
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [
+                                kSectionColor,
+                                kSectionColor.withOpacity(0.7),
+                              ],
+                            ),
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: kSectionColor.withOpacity(0.3),
+                                blurRadius: 8,
+                                offset: const Offset(0, 3),
+                              ),
+                            ],
+                          ),
+                          child: const Icon(Icons.support_agent_rounded,
+                              color: Colors.white, size: 26),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              if ((widget.estate?.responsibleEmployeeName ??
+                                      '')
+                                  .isNotEmpty)
+                                Text(
+                                  widget.estate!.responsibleEmployeeName!,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: robotoBold.copyWith(
+                                    fontSize: 16,
+                                    color: Colors.black87,
+                                  ),
+                                ),
+                              const SizedBox(height: 3),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 3),
+                                decoration: BoxDecoration(
+                                  color: kSectionColor.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: Text(
+                                  "مسؤول التواصل بخصوص هذا العقار",
+                                  style: robotoMedium.copyWith(
+                                    fontSize: 10.5,
+                                    color: kSectionColor,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    if ((widget.estate?.responsibleEmployeePhoneNumber ?? '')
+                        .isNotEmpty) ...[
+                      const SizedBox(height: 14),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _responsiblePersonActionButton(
+                              icon: Icons.call_rounded,
+                              label: "اتصال",
+                              bg: const Color(0xFFEFF6FF),
+                              border: const Color(0xFFBFDBFE),
+                              iconColor: const Color(0xFF1D4ED8),
+                              textColor: const Color(0xFF1E3A8A),
+                              onTap: () async {
+                                final uri = Uri.parse(
+                                    "tel:${widget.estate!.responsibleEmployeePhoneNumber}");
+                                if (await canLaunchUrl(uri)) {
+                                  await launchUrl(uri);
+                                }
+                              },
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: _responsiblePersonActionButton(
+                              icon: Icons.chat_bubble_outline_rounded,
+                              label: "واتساب",
+                              bg: const Color(0xFFECFDF5),
+                              border: const Color(0xFFA7F3D0),
+                              iconColor: const Color(0xFF059669),
+                              textColor: const Color(0xFF065F46),
+                              onTap: () async {
+                                final String cleaned =
+                                    widget.estate!.responsibleEmployeePhoneNumber!
+                                        .replaceAll(' ', '')
+                                        .replaceAll('+', '')
+                                        .replaceAll('-', '');
+                                final Uri whatsappAppUri = Uri.parse(
+                                    "whatsapp://send?phone=$cleaned");
+                                final Uri whatsappWebUri = Uri.parse(
+                                    "https://wa.me/$cleaned");
+                                if (await canLaunchUrl(whatsappAppUri)) {
+                                  await launchUrl(whatsappAppUri,
+                                      mode: LaunchMode.externalApplication);
+                                } else if (await canLaunchUrl(
+                                    whatsappWebUri)) {
+                                  await launchUrl(whatsappWebUri,
+                                      mode: LaunchMode.externalApplication);
+                                }
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ],
+
             const SizedBox(height: 10),
 
             adLicenseQr(context),
@@ -744,7 +885,13 @@ class _DettailsDilogState extends State<DettailsDilog> {
             _card(
               context,
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // 🔹 عنوان واضح يوضّح إن الكارت ده بيانات ناشر
+                  // الإعلان (بنفس أسلوب عناوين باقي البطاقات في الشاشة).
+                  _sectionBanner("ناشر الإعلان", Icons.storefront_rounded),
+                  const SizedBox(height: 14),
+
                   GestureDetector(
                     onTap: () async {
                       Get.toNamed(RouteHelper.getProfileAgentRoute(
@@ -762,19 +909,25 @@ class _DettailsDilogState extends State<DettailsDilog> {
                       ),
                       child: Row(children: [
                         Container(
+                          padding: const EdgeInsets.all(2),
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            border: Border.all(
-                                color: kSectionColor.withOpacity(0.25),
-                                width: 2),
+                            gradient: LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [
+                                kSectionColor,
+                                kSectionColor.withOpacity(0.5),
+                              ],
+                            ),
                           ),
                           child: ClipOval(
                             child: CustomImage(
                               image:
                               '${Get.find<SplashController>().configModel!.baseUrls!.customerImageUrl}'
                                   '/${widget.estate?.users?.image ?? ''}',
-                              height: 90,
-                              width: 90,
+                              height: 86,
+                              width: 86,
                               fit: BoxFit.cover,
                             ),
                           ),
@@ -790,37 +943,54 @@ class _DettailsDilogState extends State<DettailsDilog> {
                             children: [
                               Text(
                                 widget.estate?.users?.name ?? "",
-                                style: robotoMedium.copyWith(
-                                    fontSize: Dimensions.fontSizeDefault),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: robotoBold.copyWith(
+                                    fontSize:
+                                    Dimensions.fontSizeLarge),
                               ),
                               const SizedBox(
                                   height: Dimensions
                                       .PADDING_SIZE_EXTRA_SMALL),
-                              Row(children: [
+
+                              if ((widget.estate?.users?.falLicenseNumber ?? '')
+                                  .isNotEmpty)
                                 Container(
-                                  height: 25,
-                                  alignment: Alignment.center,
                                   padding: const EdgeInsets.symmetric(
-                                      horizontal: 8),
+                                      horizontal: 10, vertical: 5),
                                   decoration: BoxDecoration(
-                                    color: kSectionColor,
-                                    borderRadius:
-                                    BorderRadius.circular(30),
-                                  ),
-                                  child: Center(
-                                    child: Text(
-                                      widget.estate?.users
-                                          ?.membershipType ??
-                                          '',
-                                      style: robotoBold.copyWith(
-                                        color: Colors.white,
-                                        fontSize:
-                                        Dimensions.fontSizeDefault,
-                                      ),
+                                    gradient: LinearGradient(
+                                      colors: [
+                                        kSectionColor,
+                                        kSectionColor.withOpacity(0.75),
+                                      ],
                                     ),
+                                    borderRadius: BorderRadius.circular(20),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: kSectionColor.withOpacity(0.3),
+                                        blurRadius: 5,
+                                        offset: const Offset(0, 2),
+                                      ),
+                                    ],
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Icon(Icons.verified_rounded,
+                                          size: 13, color: Colors.white),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        "رخصة فال: ${widget.estate!.users!.falLicenseNumber}",
+                                        style: robotoBold.copyWith(
+                                          fontSize: 11,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
-                              ]),
+
                               const SizedBox(height: 6),
                               Row(
                                 children: [
@@ -860,9 +1030,131 @@ class _DettailsDilogState extends State<DettailsDilog> {
                             ],
                           ),
                         ),
+                        // 🔹 سهم صغير يوضّح إن الكارت قابل للضغط (يفتح
+                        // الملف الشخصي لناشر الإعلان).
+                        Icon(Icons.chevron_left_rounded,
+                            color: kSectionColor.withOpacity(0.6),
+                            size: 22),
                       ]),
                     ),
                   ),
+
+                  Builder(builder: (context) {
+                    // 🔹 كل منصة بلونها المميز الحقيقي (Brand Color) —
+                    // دوائر بارزة بظل ملوّن بدل صناديق رمادية مسطّحة.
+                    final List<_SocialLinkStyle> socialLinks = [
+                      _SocialLinkStyle(
+                        icon: Images.instgram,
+                        url: widget.estate?.users?.instagram,
+                        gradient: const [Color(0xFFF58529), Color(0xFFDD2A7B), Color(0xFF8134AF)],
+                      ),
+                      _SocialLinkStyle(
+                        icon: Images.twiter,
+                        url: widget.estate?.users?.twitter,
+                        gradient: const [Color(0xFF1DA1F2), Color(0xFF1DA1F2)],
+                      ),
+                      _SocialLinkStyle(
+                        icon: Images.website,
+                        url: widget.estate?.users?.website,
+                        gradient: [kSectionColor, kSectionColor.withOpacity(0.75)],
+                      ),
+                      _SocialLinkStyle(
+                        icon: Images.snap,
+                        url: widget.estate?.users?.snapchat,
+                        gradient: const [Color(0xFFFFFC00), Color(0xFFFFE600)],
+                      ),
+                      _SocialLinkStyle(
+                        icon: Images.tiktok,
+                        url: widget.estate?.users?.tiktok,
+                        gradient: const [Color(0xFF010101), Color(0xFF3A3A3A)],
+                      ),
+                      _SocialLinkStyle(
+                        icon: Images.youtube,
+                        url: widget.estate?.users?.youtube,
+                        gradient: const [Color(0xFFFF0000), Color(0xFFCC0000)],
+                      ),
+                    ];
+                    final available = socialLinks
+                        .where((e) => (e.url ?? '').trim().isNotEmpty)
+                        .toList();
+                    if (available.isEmpty) return const SizedBox();
+                    return Padding(
+                      padding: const EdgeInsets.only(top: 14),
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF7F9FC),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                              color: kSectionColor.withOpacity(0.08)),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Icon(Icons.public_rounded,
+                                    color: kSectionColor, size: 17),
+                                const SizedBox(width: 7),
+                                Text(
+                                  "تواصل عبر",
+                                  style: robotoBold.copyWith(
+                                    fontSize: 13.5,
+                                    color: Colors.black87,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            Wrap(
+                              spacing: 12,
+                              runSpacing: 12,
+                              children: available.map((e) {
+                                return InkWell(
+                                  borderRadius: BorderRadius.circular(24),
+                                  onTap: () async {
+                                    final uri = Uri.parse(e.url!);
+                                    if (await canLaunchUrl(uri)) {
+                                      await launchUrl(uri,
+                                          mode:
+                                          LaunchMode.externalApplication);
+                                    }
+                                  },
+                                  child: Container(
+                                    width: 44,
+                                    height: 44,
+                                    decoration: BoxDecoration(
+                                      gradient: LinearGradient(
+                                        begin: Alignment.topLeft,
+                                        end: Alignment.bottomRight,
+                                        colors: e.gradient,
+                                      ),
+                                      shape: BoxShape.circle,
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: e.gradient.last
+                                              .withOpacity(0.35),
+                                          blurRadius: 8,
+                                          offset: const Offset(0, 3),
+                                        ),
+                                      ],
+                                    ),
+                                    child: Center(
+                                      child: Image.asset(e.icon,
+                                          height: 19,
+                                          width: 19,
+                                          color: Colors.white),
+                                    ),
+                                  ),
+                                );
+                              }).toList(),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  }),
                   const SizedBox(height: 12),
                   SizedBox(
                     width: double.infinity,
@@ -1009,6 +1301,42 @@ class _DettailsDilogState extends State<DettailsDilog> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  /// زر إجراء (اتصال/واتساب) لبطاقة الموظف المسؤول — كبسولة ملوّنة بأيقونة
+  /// ونص، بنفس أسلوب أزرار التواصل المستخدمة في أماكن أخرى من التطبيق.
+  Widget _responsiblePersonActionButton({
+    required IconData icon,
+    required String label,
+    required Color bg,
+    required Color border,
+    required Color iconColor,
+    required Color textColor,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(14),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+        decoration: BoxDecoration(
+          color: bg,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: border),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 18, color: iconColor),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: robotoBold.copyWith(fontSize: 12, color: textColor),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -1548,12 +1876,20 @@ class _DettailsDilogState extends State<DettailsDilog> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
+              // 🔹 كان بيفتح واتساب بالغلط رغم إن نصه وأيقونته "نسخ الرابط"
+              // — دلوقتي بينسخ الرابط فعليًا للحافظة (Clipboard) ويظهر
+              // تأكيد بسيط (Snackbar) بعد النسخ.
               TextButton.icon(
-                onPressed: () {
-                  final message = "شاهد هذا العقار:\n$url";
-                  final whatsappUrl =
-                      "https://wa.me/?text=${Uri.encodeComponent(message)}";
-                  launchUrl(Uri.parse(whatsappUrl));
+                onPressed: () async {
+                  await Clipboard.setData(ClipboardData(text: url));
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('تم نسخ الرابط'),
+                        duration: Duration(seconds: 2),
+                      ),
+                    );
+                  }
                 },
                 icon: const Icon(Icons.copy_outlined, size: 18),
                 label: const Text('نسخ الرابط'),
@@ -1698,6 +2034,8 @@ class _DettailsDilogState extends State<DettailsDilog> {
         ),
       );
     }
+
+
 
     return AlertDialog(
       contentPadding: const EdgeInsets.fromLTRB(20, 20, 20, 8),
@@ -2017,7 +2355,7 @@ Widget buildPhoneRow(BuildContext context, {required String phoneNumber}) {
     ),
     child: Row(
       children: [
-        const Icon(Icons.phone, color: Colors.green),
+        const Icon(Icons.phone, color: Colors .green),
         const SizedBox(width: 10),
         Expanded(
           child: Text(
@@ -2111,4 +2449,17 @@ openDialPad(String phoneNumber) async {
   if (await canLaunchUrl(url)) {
     await launchUrl(url);
   }
+}
+/// عنصر بيانات بسيط يربط أيقونة برابط ولون تدرّجي مميّز (Brand Color)،
+/// يُستخدم لعرض أيقونات وسائل التواصل في كارت "ناشر الإعلان".
+class _SocialLinkStyle {
+  final String icon;
+  final String? url;
+  final List<Color> gradient;
+
+  const _SocialLinkStyle({
+    required this.icon,
+    required this.url,
+    required this.gradient,
+  });
 }

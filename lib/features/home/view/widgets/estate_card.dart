@@ -9,6 +9,14 @@ import 'package:abaad_flutter/shared/widgets/details_dilog.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+/// ملاحظة: نفس اسم الكلاس (PropertyCard) وكل الدوال الأصلية بدون أي تغيير
+/// في المنطق الجوهري. التعديلات في هذه النسخة (تصميم أكثر إحكامًا):
+/// - أُصلح خطأ كان موجودًا أصلًا: صف "الموقع" كان بيعرض estate.title
+///   مرة ثانية (نفس العنوان) بدل الموقع الفعلي — دلوقتي بيعرض الحي/المدينة
+///   الحقيقيين، ويختفي تمامًا لو مفيش بيانات موقع فعلية.
+/// - صف ناشر الإعلان (أفتار + اسم) بقى **مدمج في نفس صف رقم الإعلان**
+///   بدل صف مستقل تاني — يوفّر مسافة رأسية ويخلي الكارت أقصر وأكتر اتساقًا.
+/// - المساحة لسه ظاهرة بجانب عداد المشاهدات زي قبل.
 class PropertyCard extends StatelessWidget {
   final Estate estate;
 
@@ -39,7 +47,7 @@ class PropertyCard extends StatelessWidget {
             _buildPropertyDetails(context),
             if (estate.category != "5" && estate.property != null)
               _buildPropertyFeatures(context),
-            const SizedBox(height: 4),
+            const SizedBox(height: 6),
           ],
         ),
       ),
@@ -210,8 +218,19 @@ class PropertyCard extends StatelessWidget {
   }
 
   Widget _buildPropertyDetails(BuildContext context) {
+    // 🔹 موقع فعلي (حي ثم مدينة كاحتياطي) بدل تكرار العنوان بالغلط.
+    final String location = [
+      if ((estate.districts ?? '').isNotEmpty) estate.districts,
+      if ((estate.city ?? '').isNotEmpty) estate.city,
+    ].whereType<String>().join(" - ");
+
+    final String publisherName = (estate.users?.name ?? '').trim();
+    final String? avatarBaseUrl =
+        Get.find<SplashController>().configModel?.baseUrls?.customerImageUrl;
+    final String? avatarImage = estate.users?.image;
+
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 14, 16, 4),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -246,9 +265,23 @@ class PropertyCard extends StatelessWidget {
                   ),
                 ],
               ),
-              // Views count
+              // المساحة + عداد المشاهدات جنب بعض
               Row(
                 children: [
+                  if ((estate.space ?? '').isNotEmpty) ...[
+                    Icon(Icons.square_foot_rounded,
+                        size: 14, color: Colors.grey[400]),
+                    const SizedBox(width: 4),
+                    Text(
+                      "${estate.space} م²",
+                      style: TextStyle(
+                        fontFamily: 'IBMPlexSansArabic',
+                        fontSize: 12,
+                        color: Colors.grey[500],
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                  ],
                   Icon(Icons.remove_red_eye_outlined,
                       size: 14, color: Colors.grey[400]),
                   const SizedBox(width: 4),
@@ -264,7 +297,7 @@ class PropertyCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 5),
           // Title
           Text(
             estate.title ?? "",
@@ -277,56 +310,29 @@ class PropertyCard extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
-          const SizedBox(height: 6),
-          // Location row
-          Row(
-            children: [
-              Icon(Icons.location_on_rounded,
-                  size: 14, color: Theme.of(context).primaryColor),
-              const SizedBox(width: 4),
-              Expanded(
-                child: Text(
-                  estate.title ?? "",
-                  style: TextStyle(
-                    fontFamily: 'IBMPlexSansArabic',
-                    fontSize: 12,
-                    color: Colors.grey[500],
+          // صف الموقع — يظهر فقط لو فيه بيانات موقع فعلية
+          if (location.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Row(
+              children: [
+                Icon(Icons.location_on_rounded,
+                    size: 14, color: Theme.of(context).primaryColor),
+                const SizedBox(width: 4),
+                Expanded(
+                  child: Text(
+                    location,
+                    style: TextStyle(
+                      fontFamily: 'IBMPlexSansArabic',
+                      fontSize: 12,
+                      color: Colors.grey[500],
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          // Divider
-          Divider(height: 1, color: Colors.grey[100]),
-          const SizedBox(height: 8),
-          // License number
-          Row(
-            children: [
-              Icon(Icons.verified_outlined,
-                  size: 13, color: Colors.grey[400]),
-              const SizedBox(width: 4),
-              Text(
-                "رقم الإعلان: ",
-                style: TextStyle(
-                  fontFamily: 'IBMPlexSansArabic',
-                  fontSize: 11,
-                  color: Colors.grey[500],
-                ),
-              ),
-              Text(
-                estate.adLicenseNumber ?? "",
-                style: TextStyle(
-                  fontFamily: 'IBMPlexSansArabic',
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  color: Theme.of(context).primaryColor,
-                ),
-              ),
-            ],
-          ),
+              ],
+            ),
+          ],
           // Short description for category 5
           if (estate.category == "5" &&
               estate.shortDescription != null &&
@@ -344,6 +350,61 @@ class PropertyCard extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
               ),
             ),
+          const SizedBox(height: 8),
+          Divider(height: 1, color: Colors.grey[100]),
+          const SizedBox(height: 8),
+          // 🔹 صف واحد مدمج: ناشر الإعلان (أفتار + اسم) على البداية،
+          // ورقم الإعلان على النهاية — بدل صفّين منفصلين، يوفّر مساحة
+          // رأسية ويخلي الكارت أقصر وأكتر اتساقًا.
+          Row(
+            children: [
+              if (publisherName.isNotEmpty) ...[
+                ClipOval(
+                  child: CustomImage(
+                    image: (avatarBaseUrl != null &&
+                        avatarImage != null &&
+                        avatarImage.isNotEmpty)
+                        ? "$avatarBaseUrl/$avatarImage"
+                        : null,
+                    height: 20,
+                    width: 20,
+                    fit: BoxFit.cover,
+                    placeholder: "assets/image/logo.png",
+                  ),
+                ),
+                const SizedBox(width: 5),
+                Flexible(
+                  child: Text(
+                    publisherName,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontFamily: 'IBMPlexSansArabic',
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                ),
+              ] else
+                const Spacer(),
+              if ((estate.adLicenseNumber ?? '').isNotEmpty) ...[
+                const SizedBox(width: 8),
+                Icon(Icons.verified_outlined,
+                    size: 12, color: Colors.grey[400]),
+                const SizedBox(width: 3),
+                Text(
+                  estate.adLicenseNumber!,
+                  style: TextStyle(
+                    fontFamily: 'IBMPlexSansArabic',
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: Theme.of(context).primaryColor,
+                  ),
+                ),
+              ],
+            ],
+          ),
         ],
       ),
     );

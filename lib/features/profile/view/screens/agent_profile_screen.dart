@@ -18,9 +18,9 @@ import 'package:abaad_flutter/shared/widgets/details_dilog.dart';
 
 /// ملاحظة: نفس أسماء الكلاسات الأصلية (AgentProfileScreen،
 /// _AgentProfileScreenState، SocialIcon) بلا أي تغيير، ونفس كل الدوال
-/// والمنطق. التحسينات كلها بصرية: نظام ألوان/خطوط موحّد عبر الصفحة كلها
-/// (بدل الألوان المتفرقة زي Colors.blue/Colors.orange في أماكن مختلفة)،
-/// عناوين أقسام متسقة، وتنسيق أوضح للمسافات والبطاقات.
+/// والمنطق. التعديل الجديد: ملء الفجوة الفاضية اللي كانت موجودة بين
+/// الترويسة وأزرار الاتصال بعداد إعلانات المعلن (كان مكانها فاضي — دالة
+/// _statCard كانت معرّفة أصلًا بس مش مستخدمة خالص).
 const Color kAgentColor = Color(0xff0F4C81);
 const Color kAgentColorLight = Color(0xff3A7BD5);
 
@@ -79,6 +79,8 @@ class _AgentProfileScreenState extends State<AgentProfileScreen> {
 
               final agent = userController.agentInfoModel;
               final estates = restController.estateModel?.estates ?? [];
+              final int totalAdsCount =
+                  restController.estateModel?.totalSize ?? estates.length;
 
               return CustomScrollView(
                 slivers: [
@@ -87,7 +89,19 @@ class _AgentProfileScreenState extends State<AgentProfileScreen> {
                       children: [
                         _buildHeader(context, userController, restController),
                         const SizedBox(height: 14),
-                        _buildStatsSection(restController, agent),
+
+                        // 🔹 عداد إعلانات المعلن — يملأ الفجوة الفاضية
+                        // اللي كانت هنا قبل كده.
+                        Padding(
+                          padding:
+                          const EdgeInsets.symmetric(horizontal: 16),
+                          child: _statCard(
+                            "عدد الإعلانات",
+                            totalAdsCount.toString(),
+                            Icons.real_estate_agent_rounded,
+                          ),
+                        ),
+
                         const SizedBox(height: 14),
                         _buildActionButtons(agent),
                         const SizedBox(height: 14),
@@ -226,6 +240,13 @@ class _AgentProfileScreenState extends State<AgentProfileScreen> {
                     decoration: BoxDecoration(
                       color: Colors.white.withOpacity(0.25),
                       shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.15),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
                     ),
                     child: ClipOval(
                       child: CustomImage(
@@ -328,30 +349,7 @@ class _AgentProfileScreenState extends State<AgentProfileScreen> {
     );
   }
 
-  Widget _buildStatsSection(UserController restController, dynamic agent) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Row(
-        children: [
-          Expanded(
-            child: _statCard(
-              "عدد الإعلانات",
-              "${restController.estateModel?.totalSize ?? 0}",
-              Icons.campaign_outlined,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: _statCard(
-              "نوع المعلن",
-              agent?.membershipType ?? "--",
-              Icons.badge_outlined,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+
 
   Widget _buildActionButtons(dynamic agent) {
     return Padding(
@@ -399,9 +397,6 @@ class _AgentProfileScreenState extends State<AgentProfileScreen> {
   }
 
   Widget _buildSocialSection(dynamic agent) {
-    // كل رابط تواصل مرتبط بأيقونته — نمرّر القيمة الراجعة من السيرفر
-    // كرابط كامل مباشرة (بدون بناء رابط من اسم مستخدم/يوزر كما كان سابقًا
-    // مع تيك توك)، ونستبعد أي عنصر قيمته فارغة أو null تمامًا قبل العرض.
     final List<_SocialLink> allLinks = [
       _SocialLink(icon: Images.instgram, url: agent?.instagram),
       _SocialLink(icon: Images.twiter, url: agent?.twitter),
@@ -415,8 +410,6 @@ class _AgentProfileScreenState extends State<AgentProfileScreen> {
         .where((e) => (e.url ?? '').trim().isNotEmpty)
         .toList();
 
-    // لو مفيش أي رابط تواصل فعلي عند المعلن، نخفي القسم بالكامل بدل
-    // عرض بطاقة فارغة أو أيقونات بلا فائدة.
     if (availableLinks.isEmpty) {
       return const SizedBox.shrink();
     }
@@ -468,9 +461,11 @@ class _AgentProfileScreenState extends State<AgentProfileScreen> {
     );
   }
 
+  /// بطاقة إحصائية أفقية (أيقونة + عنوان + قيمة) — تُستخدم حاليًا لعرض
+  /// عدد إعلانات المعلن، وقابلة لإعادة الاستخدام لأي إحصائية مستقبلية.
   Widget _statCard(String title, String value, IconData icon) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 12),
+      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(18),
@@ -483,30 +478,27 @@ class _AgentProfileScreenState extends State<AgentProfileScreen> {
           )
         ],
       ),
-      child: Column(
+      child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(9),
+            padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
               color: kAgentColor.withOpacity(0.08),
               shape: BoxShape.circle,
             ),
             child: Icon(icon, color: kAgentColor, size: 20),
           ),
-          const SizedBox(height: 10),
-          Text(
-            title,
-            style:
-            robotoRegular.copyWith(fontSize: 12.5, color: Colors.grey[600]),
-            textAlign: TextAlign.center,
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              title,
+              style: robotoRegular.copyWith(
+                  fontSize: 13, color: Colors.grey[600]),
+            ),
           ),
-          const SizedBox(height: 5),
           Text(
             value,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: robotoBold.copyWith(fontSize: 15, color: Colors.black87),
-            textAlign: TextAlign.center,
+            style: robotoBold.copyWith(fontSize: 20, color: kAgentColor),
           ),
         ],
       ),

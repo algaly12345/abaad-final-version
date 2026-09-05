@@ -1026,13 +1026,13 @@ class _MapViewScreenState extends State<MapScreen> {
                     Text(
                       formatPrice(
                         currentCoordinate.categoryName == "ارض"
-                            ? currentCoordinate.totalPrice!
-                            : currentCoordinate.price!,
+                            ? (currentCoordinate.totalPrice ?? "0")
+                            : (currentCoordinate.price ?? "0"),
                       ),
                       style: robotoBlack.copyWith(fontSize: 9),
                     ),
                     Image.asset(
-                      currentCoordinate.serviceOffers!.isEmpty
+                      (currentCoordinate.serviceOffers ?? []).isEmpty
                           ? Images.image
                           : Images.vt_offer,
                       height: 8,

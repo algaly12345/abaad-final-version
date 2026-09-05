@@ -170,85 +170,90 @@ class Estate {
   String? identityUnified = "";
   // identityـorـunified
 
+  // 🔹 بيانات الموظف المسؤول عن الإعلان — تُعرض فقط عند توفرها فعليًا
+  // من السيرفر (قد تصل null في كثير من الإعلانات).
+  String? responsibleEmployeeName;
+  String? responsibleEmployeePhoneNumber;
+
 
 
 
   Estate({
-     this.id,
-     this.address,
-     this.property,
-     this.space,
-     this.categoryId,
-     this.price,
-     this.ownershipType,
-     this.planned,
-     this.view,
-     this.status,
-     this.districts,
-     this.networkType,
-     this.height,
-     this.width,
-     this.serviceOffers,
-     this.qr,
-     this.images,
-     this.arPath,
-     this.latitude,
-     this.longitude,
-     this.zoneId,
-     this.type_add,
-     this.territoryId,
-     this.ageEstate,
-     this.shortDescription,
-     this.longDescription,
-     this.floors,
-     this.near,
-     this.priceNegotiation,
-     this.adNumber,
-     this.advertiserNo,
-     this.nationalAddress,
-     this.userId,
-     this.createdAt,
-     this.updatedAt,
-     this.estate_id,
-     this.city,
-     this.title,
-     this.category,
-     this.otherAdvantages,
-     this.interface,
-     this.streetSpace,
-     this.buildSpace,
-     this.documentNumber,
-     this.videoUrl,
-     this.users,
-     this.categoryName,
-     this.categoryNameAr,
-     this.zoneName,
-     this.zoneNameAr,
-     this.property_type,
-     this.skyView,
-     this.estate_type,
-     this.authorization_number,
-     this.creationDate,
-     this.endDate,
-     this.adLicenseNumber,
-     this.deedNumber,
-     this.brokerageAndMarketingLicenseNumber,
-     this.titleDeedTypeName,
-     this.northLimit,
-     this.eastLimit,
-     this.westLimit,
-     this.southLimit,
-     this.streetWidth,
-     this.propertyFace,
-     this.advertisementType,
-     this.licenseNumber,
-     this.planNumber,
-     this.obligationsOnTheProperty,
-     this.guaranteesAndTheirDuration,
-     this.locationDescriptionOnMOJDeed,
-     this.numberOfRooms,
-     this.mainLandUseTypeName,
-     this.propertyUtilities,
+    this.id,
+    this.address,
+    this.property,
+    this.space,
+    this.categoryId,
+    this.price,
+    this.ownershipType,
+    this.planned,
+    this.view,
+    this.status,
+    this.districts,
+    this.networkType,
+    this.height,
+    this.width,
+    this.serviceOffers,
+    this.qr,
+    this.images,
+    this.arPath,
+    this.latitude,
+    this.longitude,
+    this.zoneId,
+    this.type_add,
+    this.territoryId,
+    this.ageEstate,
+    this.shortDescription,
+    this.longDescription,
+    this.floors,
+    this.near,
+    this.priceNegotiation,
+    this.adNumber,
+    this.advertiserNo,
+    this.nationalAddress,
+    this.userId,
+    this.createdAt,
+    this.updatedAt,
+    this.estate_id,
+    this.city,
+    this.title,
+    this.category,
+    this.otherAdvantages,
+    this.interface,
+    this.streetSpace,
+    this.buildSpace,
+    this.documentNumber,
+    this.videoUrl,
+    this.users,
+    this.categoryName,
+    this.categoryNameAr,
+    this.zoneName,
+    this.zoneNameAr,
+    this.property_type,
+    this.skyView,
+    this.estate_type,
+    this.authorization_number,
+    this.creationDate,
+    this.endDate,
+    this.adLicenseNumber,
+    this.deedNumber,
+    this.brokerageAndMarketingLicenseNumber,
+    this.titleDeedTypeName,
+    this.northLimit,
+    this.eastLimit,
+    this.westLimit,
+    this.southLimit,
+    this.streetWidth,
+    this.propertyFace,
+    this.advertisementType,
+    this.licenseNumber,
+    this.planNumber,
+    this.obligationsOnTheProperty,
+    this.guaranteesAndTheirDuration,
+    this.locationDescriptionOnMOJDeed,
+    this.numberOfRooms,
+    this.mainLandUseTypeName,
+    this.propertyUtilities,
     this.landNumber,
     this.propertyUsages,
     this.agent_identity,
@@ -259,7 +264,9 @@ class Estate {
     this.phoneNumber,
     this.isValid,
     this.adLicenseUrl,
-    this.identityUnified
+    this.identityUnified,
+    this.responsibleEmployeeName,
+    this.responsibleEmployeePhoneNumber,
   });
 
   Estate.fromJson(Map<String, dynamic> json) {
@@ -380,6 +387,10 @@ class Estate {
 
     identityUnified=json["identityـorـunified"];
 
+    responsibleEmployeeName = json['responsible_employee_name']?.toString();
+    responsibleEmployeePhoneNumber =
+        json['responsible_employee_phone_number']?.toString();
+
 
 
 
@@ -390,7 +401,7 @@ class Estate {
     data['id'] = id;
     data['address'] = address;
     data['property'] = property?.map((v) => v.toJson()).toList();
-      data['space'] = space;
+    data['space'] = space;
     data['category_id'] = categoryId;
     data['price'] = price;
     data['price_negotiation'] = priceNegotiation;
@@ -405,7 +416,7 @@ class Estate {
     data['width'] = width;
     data['service_offers'] =
         serviceOffers?.map((v) => v.toJson()).toList();
-      data['qr'] = qr;
+    data['qr'] = qr;
     data['images'] = images;
     data['ar_path'] = arPath;
     data['latitude'] = latitude;
@@ -483,6 +494,9 @@ class Estate {
 
 
     data['identityـorـunified'] = identityUnified;
+
+    data['responsible_employee_name'] = responsibleEmployeeName;
+    data['responsible_employee_phone_number'] = responsibleEmployeePhoneNumber;
 
     return data;
   }
@@ -722,8 +736,15 @@ class Users {
   String? identity = "";
   String? falLicenseNumber = "";
 
-  Users({ this.id , this.name,  this.email,  this.phone,  this.image, this.membershipType, this.advertiserNo, this.identity, this.falLicenseNumber});
+  // 🔹 روابط وسائل التواصل الاجتماعي لناشر الإعلان
+  String? instagram;
+  String? twitter;
+  String? website;
+  String? snapchat;
+  String? tiktok;
+  String? youtube;
 
+  Users({ this.id , this.name,  this.email,  this.phone,  this.image, this.membershipType, this.advertiserNo, this.identity, this.falLicenseNumber, this.instagram, this.twitter, this.website, this.snapchat, this.tiktok, this.youtube});
   Users.fromJson(Map<String, dynamic> json) {
     id = json['id'];
     name = json['name'];
@@ -734,9 +755,13 @@ class Users {
     advertiserNo=json['advertiser_no'];
     identity=json['identity'];
     falLicenseNumber=json['fal_license_number'];
-
+    instagram = json['instagram']?.toString();
+    twitter = json['twitter']?.toString();
+    website = json['website']?.toString();
+    snapchat = json['snapchat']?.toString();
+    tiktok = json['tiktok']?.toString();
+    youtube = json['youtube']?.toString();
   }
-
   Map<String, dynamic> toJson() {
     final Map<String, dynamic> data = <String, dynamic>{};
     data['id'] = id;
@@ -748,6 +773,12 @@ class Users {
     data['advertiser_no']=advertiserNo;
     data['identity']=identity;
     data['fal_license_number']=falLicenseNumber;
+    data['instagram'] = instagram;
+    data['twitter'] = twitter;
+    data['website'] = website;
+    data['snapchat'] = snapchat;
+    data['tiktok'] = tiktok;
+    data['youtube'] = youtube;
     return data;
   }
 }

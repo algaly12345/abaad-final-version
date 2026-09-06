@@ -1,6 +1,4 @@
-﻿import 'dart:async';
-import 'package:abaad_flutter/shared/widgets/details_dilog.dart';
-import 'dart:ui';
+import 'dart:async';
 import 'package:abaad_flutter/features/auth/controller/auth_controller.dart';
 import 'package:abaad_flutter/features/estate/controller/estate_controller.dart';
 import 'package:abaad_flutter/features/map/controller/location_controller.dart';
@@ -15,10 +13,10 @@ import 'package:abaad_flutter/shared/utils/styles.dart';
 import 'package:abaad_flutter/shared/widgets/no_internet_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 import 'package:abaad_flutter/features/favourite/controller/wishlist_controller.dart';
 
-import '../../../category/controller/category_controller.dart';
 import '../widgets/splash_background.dart';
 
 /// ملاحظة: نفس اسم الكلاس وكل الدوال (initState، _route، openApp،
@@ -39,10 +37,15 @@ class SplashScreen extends StatefulWidget {
 class _SplashScreenState extends State<SplashScreen> {
   final GlobalKey<ScaffoldState> _globalKey = GlobalKey();
 
+  // إصدار المتجر الحقيقي (من pubspec عبر package_info_plus) — يُعرض أسفل شاشة
+  // الترحيب. فارغ حتى يصل، فلا يومض رقم مؤقت.
+  String _appVersion = '';
+
   @override
   void initState() {
     super.initState();
 
+    _loadAppVersion();
     Get.find<SplashController>().initSharedData();
 
     if (Get.find<LocationController>().getUserAddress()?.zoneData == null) {
@@ -50,6 +53,16 @@ class _SplashScreenState extends State<SplashScreen> {
     }
 
     _route();
+  }
+
+  Future<void> _loadAppVersion() async {
+    try {
+      final info = await PackageInfo.fromPlatform();
+      if (!mounted) return;
+      setState(() => _appVersion = info.version);
+    } catch (_) {
+      // منصّة لا تدعم package_info (نادر) — نتركه فارغًا فلا يظهر شيء.
+    }
   }
 
   // الانتقال للتطبيق يحصل بمجرد ما بيانات السيرفر تجهز فقط — بدون أي
@@ -64,21 +77,16 @@ class _SplashScreenState extends State<SplashScreen> {
       int minimumVersion = 0;
 
       if (GetPlatform.isAndroid) {
-        minimumVersion =
-            splashCtrl.configModel?.appMinimumVersionAndroid ?? 0;
+        minimumVersion = splashCtrl.configModel?.appMinimumVersionAndroid ?? 0;
       } else if (GetPlatform.isIOS) {
-        minimumVersion =
-            splashCtrl.configModel?.appMinimumVersionIos ?? 0;
+        minimumVersion = splashCtrl.configModel?.appMinimumVersionIos ?? 0;
       }
 
-      final maintenanceMode =
-          splashCtrl.configModel?.maintenanceMode ?? false;
+      final maintenanceMode = splashCtrl.configModel?.maintenanceMode ?? false;
 
       if (AppConstants.APP_VERSION < minimumVersion || maintenanceMode) {
         Get.offNamed(
-          RouteHelper.getUpdateRoute(
-            AppConstants.APP_VERSION < minimumVersion,
-          ),
+          RouteHelper.getUpdateRoute(AppConstants.APP_VERSION < minimumVersion),
         );
         return;
       }
@@ -173,16 +181,12 @@ class _SplashScreenState extends State<SplashScreen> {
       body: GetBuilder<SplashController>(
         builder: (splashController) {
           if (!splashController.hasConnection) {
-            return NoInternetScreen(
-              child: SplashScreen(body: widget.body),
-            );
+            return NoInternetScreen(child: SplashScreen(body: widget.body));
           }
 
           return Stack(
             children: [
-              const Positioned.fill(
-                child: SplashBackground(),
-              ),
+              const Positioned.fill(child: SplashBackground()),
 
               Positioned.fill(
                 child: Container(
@@ -277,12 +281,27 @@ class _SplashScreenState extends State<SplashScreen> {
                 left: 0,
                 right: 0,
                 child: Center(
-                  child: Text(
-                    "Powered by Abaad",
-                    style: robotoRegular.copyWith(
-                      fontSize: 12,
-                      color: Colors.white.withValues(alpha: 0.75),
-                    ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        "Powered by Abaad",
+                        style: robotoRegular.copyWith(
+                          fontSize: 12,
+                          color: Colors.white.withValues(alpha: 0.75),
+                        ),
+                      ),
+                      if (_appVersion.isNotEmpty) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          "${'version'.tr} $_appVersion",
+                          style: robotoRegular.copyWith(
+                            fontSize: 11,
+                            color: Colors.white.withValues(alpha: 0.6),
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
                 ),
               ),
@@ -297,8 +316,9 @@ class _SplashScreenState extends State<SplashScreen> {
     List<String> separatedLink = [];
     separatedLink.addAll(url.path.split('/'));
 
-    Get.find<EstateController>()
-        .getEstateDetails(Estate(id: int.parse(separatedLink[1])));
+    Get.find<EstateController>().getEstateDetails(
+      Estate(id: int.parse(separatedLink[1])),
+    );
     Get.toNamed(RouteHelper.getDetailsRoute(int.parse(separatedLink[1])));
   }
 }

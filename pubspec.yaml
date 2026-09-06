@@ -19,7 +19,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 #
 #version: 2.0.33+2
 
-version: 1.0.7+87
+version: 1.0.8+88
 
 
 environment:
@@ -58,6 +58,9 @@ dependencies:
   intl: any
   http_parser: any
   path: any
+  # promoted from transitive → direct so the native plugin registrant wires it
+  # up (see the NOTE below); used to show the real store version on the splash.
+  package_info_plus: ^9.0.1
 
   # NOTE: the packages below were previously declared only under
   # dependency_overrides. Flutter's native plugin registrant generator

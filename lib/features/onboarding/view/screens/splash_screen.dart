@@ -1,5 +1,4 @@
 ﻿import 'dart:async';
-import 'package:abaad_flutter/main.dart' as app_main;
 import 'package:abaad_flutter/shared/widgets/details_dilog.dart';
 import 'dart:ui';
 import 'package:abaad_flutter/features/auth/controller/auth_controller.dart';
@@ -10,6 +9,7 @@ import 'package:abaad_flutter/features/notification/data/models/notification_bod
 import 'package:abaad_flutter/shared/data/models/estate_model.dart';
 import 'package:abaad_flutter/core/routes/route_helper.dart';
 import 'package:abaad_flutter/shared/utils/app_constants.dart';
+import 'package:abaad_flutter/shared/services/referral_link_manager.dart';
 import 'package:abaad_flutter/shared/utils/images.dart';
 import 'package:abaad_flutter/shared/utils/styles.dart';
 import 'package:abaad_flutter/shared/widgets/no_internet_screen.dart';
@@ -92,34 +92,47 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   void _navigateToApp() async {
-    // فُتح التطبيق عبر رابط إحالة وزائر غير مسجَّل: حلّ الرابط غير متزامن (نداء
-    // ChottuLink SDK ثم نداء باكند احتياطي) وقد يتأخّر عن وصول إعدادات
-    // السيرفر. ننتظره هنا (حتى ~8s) قبل تقرير الوجهة، حتى لا تُفتح الرئيسية
-    // للحظة ثم يُعاد التوجيه للتسجيل. مهم: splashHasRouted لا يُضبط إلا بعد
-    // هذا الانتظار (في finally)، فيبقى _applyReferralCode في وضع "الفتح
-    // البارد" ولا ينقّل بنفسه — السبلاش وحدها تملك القرار هنا.
+    final ReferralLinkManager rlm = ReferralLinkManager.instance;
+    // splashHasRouted يُضبط في finally فقط — يبقى false أثناء الانتظار أدناه
+    // فيظل ReferralLinkManager في وضع "فتح بارد" ولا يوجّه بنفسه، والسبلاش
+    // وحدها تملك قرار الوجهة هنا (لا ازدواج/رمشة رئيسية→تسجيل).
     try {
-      if (app_main.MyApp.referralLinkDetected &&
-          !Get.find<AuthController>().isLoggedIn()) {
-        int tries = 0;
-        while (!app_main.MyApp.pendingReferralSignUp && tries < 40) {
-          await Future.delayed(const Duration(milliseconds: 200));
-          tries++;
+      if (!Get.find<AuthController>().isLoggedIn()) {
+        // زائر غير مسجَّل — قد يكون فتح عبر رابط إحالة (مباشر أو مؤجَّل).
+        //  (أ) referralLinkDetected: رُصد رابط في هذا التشغيل → انتظر اكتمال
+        //      حلّه (ChottuLink SDK + احتياط الباكند).
+        //  (ب) أول تشغيل بعد التثبيت: اصبر مهلة قصيرة لاحتمال وصول رابط
+        //      ChottuLink مؤجَّل (deferred) — يصل خلال ثوانٍ على شبكة سريعة.
+        //      لو تجاوز المهلة نُكمل، والفتح التالي يلتقط الكود المحفوظ.
+        final bool firstLaunch = await rlm.isFirstLaunchThenMark();
+        if (rlm.referralLinkDetected || firstLaunch) {
+          // رابط رُصد فعلاً → مهلة أطول لاكتمال حلّه (~8s). أول تشغيل بلا رابط
+          // مرصود بعد → مهلة قصيرة (~3s) لاحتمال deferred، حتى لا نُبطئ فتح
+          // كل مستخدم جديد. الحلقة تنكسر فور توفّر كود. لو تجاوزت المهلة يظل
+          // الكود محفوظًا ويُلتقَط في الفتح التالي.
+          final int maxTries = rlm.referralLinkDetected ? 40 : 15;
+          int tries = 0;
+          while (!(await rlm.hasPendingReferral()) && tries < maxTries) {
+            await Future.delayed(const Duration(milliseconds: 200));
+            tries++;
+          }
+          rlm.referralLinkDetected = false;
+          if (!mounted) return;
         }
-        app_main.MyApp.referralLinkDetected = false;
-        if (!mounted) return;
       }
 
       // رابط تفاصيل عقار معلَّق: نتخطى فتح الرئيسية/تسجيل الدخول بالكامل هنا،
       // ونترك GetX ينتقل مباشرة لصفحة /details عبر GetPage المسجَّلة، لتفادي
       // ظهور الرئيسية للحظة قبل شاشة التفاصيل (الرمشة).
-      // نُصفّر القيمة فور قراءتها حتى لا تُستهلَك خطأً في أي فتح تالٍ للتطبيق.
-      if (app_main.MyApp.pendingDetailsEstateId != null) {
-        app_main.MyApp.pendingDetailsEstateId = null;
+      if (rlm.pendingDetailsEstateId != null) {
+        rlm.pendingDetailsEstateId = null;
         return;
       }
 
       if (Get.find<AuthController>().isLoggedIn()) {
+        // مستخدم لديه حساب بالفعل — أي كود إحالة معلَّق لا معنى له (لا تسجيل
+        // جديد ممكن). نمسحه حتى لا يُعاد التوجيه للتسجيل لو خرج ثم عاد.
+        unawaited(rlm.clearAfterRegistration());
         await Get.find<WishListController>().getWishList();
 
         if (Get.find<LocationController>().getUserAddress() != null) {
@@ -128,12 +141,13 @@ class _SplashScreenState extends State<SplashScreen> {
           Get.offNamed(RouteHelper.getAccessLocationRoute('splash'));
         }
       } else {
-        // إحالة معلَّقة: اذهب لصفحة التسجيل مباشرة بدل الرئيسية/الإعداد الأولي —
-        // هذا هو القرار الحاسم الوحيد الذي يمنع تسابق مع
-        // main.dart._handleReferralLink (انظر MyApp.pendingReferralSignUp).
-        if (app_main.MyApp.pendingReferralSignUp) {
-          app_main.MyApp.pendingReferralSignUp = false;
-          Get.offNamed(RouteHelper.getSignUpRoute());
+        // إحالة معلَّقة → شاشة التسجيل مباشرة بدل الرئيسية/الإعداد الأولي.
+        // hasPendingReferral(): علم الذاكرة أو كود محفوظ من تشغيل سابق (رابط
+        // مؤجَّل وصل متأخرًا). الكود يبقى في التخزين ولا يُمسح إلا بعد نجاح
+        // التسجيل — فأي فتح لاحق وأنت غير مسجَّل يعيد التوجيه للتسجيل.
+        if (await rlm.hasPendingReferral()) {
+          rlm.pendingReferralSignUp = false;
+          Get.offAllNamed(RouteHelper.getSignUpRoute());
           return;
         }
 
@@ -148,7 +162,7 @@ class _SplashScreenState extends State<SplashScreen> {
         }
       }
     } finally {
-      app_main.MyApp.splashHasRouted = true;
+      rlm.splashHasRouted = true;
     }
   }
 

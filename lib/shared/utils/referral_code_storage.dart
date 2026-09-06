@@ -3,16 +3,16 @@ import 'package:get/get.dart';
 import 'package:play_install_referrer/play_install_referrer.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// يخزّن كود إحالة وصل عبر:
-///  - رابط ChottuLink القصير go.abaadapp.sa/xxxxx (المصدر الأساسي للروابط
-///    الجديدة — فتح مباشر لو التطبيق مثبَّت، أو deferred deep link بعد تثبيت
-///    جديد؛ يُلتقط في main.dart عبر ChottuLink SDK).
-///  - رابط abaadapp.sa/ref/CODE الخام (روابط منتشرة قبل اعتماد ChottuLink —
-///    فتح مباشر عبر App Links، أو Play Install Referrer بعد تثبيت جديد على
-///    أندرويد).
+/// التخزين المحلي لكود الإحالة (مصدر الحقيقة الوحيد). يُدير حياته
+/// [ReferralLinkManager]:
+///  • يُكتَب فور استلام الكود من أي مصدر (ChottuLink SDK — مثبَّت/مؤجَّل،
+///    الرابط الخام abaadapp.sa/ref/CODE، Play Install Referrer).
+///  • يُقرأ عبر [peek] دون مسح (شاشة السبلاش للتوجيه، وشاشة التسجيل للتعبئة).
+///  • **لا يُحذَف إلا عبر [clear]** بعد نجاح التسجيل وإرسال ref_code للباكند
+///    (أو نجاح تسجيل دخول مستخدم قديم).
 ///
-/// تقرأه شاشة التسجيل وتُعبّيه تلقائيًا. مصدر مستقل عن StorageService لتفادي
-/// أي اعتماد على توقيت تهيئة DI عند القراءة المبكرة جدًا (أول تشغيل للتطبيق).
+/// مستقل عن StorageService لتفادي أي اعتماد على توقيت تهيئة DI عند القراءة
+/// المبكرة جدًا (أول تشغيل للتطبيق، قبل بناء GetMaterialApp).
 class ReferralCodeStorage {
   static const String _key = 'pending_referral_code';
 
@@ -22,24 +22,37 @@ class ReferralCodeStorage {
     await prefs.setString(_key, code);
   }
 
-  /// يقرأ الكود المحفوظ (إن وُجد) ثم يمسحه فورًا، حتى لا يُعاد استخدامه في
-  /// عمليات تسجيل لاحقة غير مرتبطة بنفس الإحالة.
-  static Future<String?> consume() async {
+  /// يقرأ الكود المحفوظ دون مسحه. المسح الفعلي في [clear] فقط بعد نجاح التسجيل.
+  static Future<String?> peek() async {
     final prefs = await SharedPreferences.getInstance();
     final String? code = prefs.getString(_key);
-    if (code != null) {
-      await prefs.remove(_key);
-    }
-    return code;
+    return (code != null && code.isNotEmpty) ? code : null;
   }
 
-  /// يُستدعى مرة واحدة عند أول تشغيل للتطبيق (أندرويد فقط): يقرأ Play
-  /// Install Referrer (القيمة اللي مرّرها ReferralLinkController على الباكند
-  /// ضمن رابط متجر بلاي عند التحويل من abaadapp.sa/ref/CODE)، ويحفظ الكود
-  /// إن وُجد ليُستهلَك لاحقًا في شاشة التسجيل. احتياط لأندرويد للروابط
-  /// الخام؛ الروابط الجديدة عبر ChottuLink تُغطّى بواسطة SDK مباشرة. لا يفعل
-  /// شيئًا على غير أندرويد، ويتجاهل أي خطأ بصمت (تثبيت جانبي/عدم توفر خدمات
-  /// Google Play/... إلخ) — هذا مجرد تحسين، لا يعطّل التسجيل اليدوي بالكود.
+  /// يمسح الكود — يُستدعى **فقط** بعد نجاح التسجيل (وإرساله للباكند) أو نجاح
+  /// تسجيل دخول مستخدم قديم. انظر ReferralLinkManager.clearAfterRegistration.
+  static Future<void> clear() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_key);
+  }
+
+  /// قراءة/كتابة سلسلة عامة في SharedPreferences — يستخدمها ReferralLinkManager
+  /// لمفتاح/نطاق ChottuLink (من /api/v1/config) وعلم أول تشغيل، دون اعتماد
+  /// على تهيئة DI (قراءة مبكرة جدًا في main()).
+  static Future<String?> readString(String key) async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(key);
+  }
+
+  static Future<void> writeString(String key, String value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(key, value);
+  }
+
+  /// أندرويد فقط: يقرأ Play Install Referrer (القيمة التي مرّرها
+  /// ReferralLinkController ضمن رابط متجر بلاي عند التحويل من
+  /// abaadapp.sa/ref/CODE) ويحفظ الكود إن وُجد. احتياط للروابط الخام القديمة؛
+  /// الروابط عبر ChottuLink يغطّيها الـ SDK. يتجاهل أي خطأ بصمت.
   static Future<void> captureFromPlayInstallReferrer() async {
     if (!GetPlatform.isAndroid) return;
 

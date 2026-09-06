@@ -12,7 +12,7 @@ import 'package:abaad_flutter/shared/helpers/responsive_helper.dart';
 import 'package:abaad_flutter/core/routes/route_helper.dart';
 import 'package:abaad_flutter/shared/theme/design_system.dart';
 import 'package:abaad_flutter/shared/utils/images.dart';
-import 'package:abaad_flutter/shared/utils/referral_code_storage.dart';
+import 'package:abaad_flutter/shared/services/referral_link_manager.dart';
 import 'package:abaad_flutter/shared/widgets/app_dropdown.dart';
 import 'package:abaad_flutter/shared/widgets/custom_snackbar.dart';
 import 'package:abaad_flutter/shared/widgets/root_fallback_scope.dart';
@@ -59,11 +59,13 @@ class _SignUpScreenState extends State<SignUpScreen> {
     _prefillReferralCode();
   }
 
-  /// يعبّي كود الإحالة تلقائيًا لو وصل عبر رابط abaadapp.sa/ref/CODE (فتح
-  /// مباشر أو ترحيل بعد تثبيت جديد عبر Play Install Referrer) — انظر
-  /// ReferralCodeStorage و main.dart.
+  /// يعبّي كود الإحالة تلقائيًا من التخزين المحلي (وصل عبر ChottuLink —
+  /// مثبَّت/مؤجَّل — أو الرابط الخام أو Play Install Referrer). **peek وليس
+  /// حذف**: الكود يبقى محفوظًا حتى نجاح التسجيل (clearAfterRegistration في
+  /// _register)، فلا يضيع لو خرج المستخدم أو تنقّل Login↔Register قبل الإكمال.
   Future<void> _prefillReferralCode() async {
-    final String? code = await ReferralCodeStorage.consume();
+    final String? code =
+        await ReferralLinkManager.instance.pendingReferralCode();
     if (code != null && code.isNotEmpty && mounted) {
       setState(() {
         _referCodeController.text = code;
@@ -637,6 +639,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
     authController.registration(signUpBody).then((status) async {
       if (status.isSuccess) {
+        // نجح التسجيل → ref_code وصل للباكند وأُنشئ صف Referral (سواء تلا ذلك
+        // تحقق OTP أم لا). الآن فقط يُمسح الكود من التخزين المحلي.
+        await ReferralLinkManager.instance.clearAfterRegistration();
+
         if (Get.find<SplashController>().configModel?.customerVerification ?? false) {
           final List<int> encoded = utf8.encode('1234567');
           final String data = base64Encode(encoded);

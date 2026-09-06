@@ -29,8 +29,9 @@ class _ProviderIdentityFormState extends State<ProviderIdentityForm> {
     _offerController = Get.find<ServiceOfferController>();
     // "FL-" ثابتة دومًا في الحقل من أول ظهور له — لا تنتظر أول كتابة من
     // المستخدم كي لا يبدأ من حقل فارغ فينسى الصيغة المطلوبة.
-    if (!_offerController.freelanceMembershipController.text
-        .startsWith(_freelancePrefix)) {
+    if (!_offerController.freelanceMembershipController.text.startsWith(
+      _freelancePrefix,
+    )) {
       _offerController.freelanceMembershipController.text = _freelancePrefix;
     }
   }
@@ -54,33 +55,39 @@ class _ProviderIdentityFormState extends State<ProviderIdentityForm> {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                Expanded(
-                  child: _EntityTypeCard(
-                    label: 'individual'.tr,
-                    icon: Icons.person_outline,
-                    selected: controller.entityType == 'individual',
-                    onTap: () => _selectEntityType('individual'),
+            // IntrinsicHeight + stretch: both cards take the height of the
+            // taller one, so a localized label that wraps to two lines on one
+            // card doesn't leave the other card short and vertically centered.
+            IntrinsicHeight(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Expanded(
+                    child: _EntityTypeCard(
+                      label: 'individual'.tr,
+                      icon: Icons.person_outline,
+                      selected: controller.entityType == 'individual',
+                      onTap: () => _selectEntityType('individual'),
+                    ),
                   ),
-                ),
-                const SizedBox(width: Spacing.md),
-                Expanded(
-                  child: _EntityTypeCard(
-                    label: 'organization'.tr,
-                    icon: Icons.apartment_outlined,
-                    selected: controller.entityType == 'organization',
-                    onTap: () => _selectEntityType('organization'),
+                  const SizedBox(width: Spacing.md),
+                  Expanded(
+                    child: _EntityTypeCard(
+                      label: 'organization'.tr,
+                      icon: Icons.apartment_outlined,
+                      selected: controller.entityType == 'organization',
+                      onTap: () => _selectEntityType('organization'),
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
             const SizedBox(height: Spacing.xl),
             controller.entityType == 'individual'
                 ? _buildIndividualForm(context)
                 : controller.entityType == 'organization'
-                    ? _buildOrganizationForm(context)
-                    : const SizedBox(),
+                ? _buildOrganizationForm(context)
+                : const SizedBox(),
           ],
         );
       },
@@ -140,24 +147,30 @@ class _ProviderIdentityFormState extends State<ProviderIdentityForm> {
       children: [
         _fieldLabel(context, 'choose_organization_id_type'.tr),
         const SizedBox(height: Spacing.sm),
-        Row(
-          children: [
-            Expanded(
-              child: _IdTypeChip(
-                label: 'commercial_registration_option'.tr,
-                selected: idType == 'commercial',
-                onTap: () => _selectOrganizationIdType('commercial'),
+        // IntrinsicHeight + stretch: "Commercial Registration Number" wraps to
+        // two lines while "Unified Number" is one — without this the two chips
+        // render at different heights with the shorter one floating centered.
+        IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(
+                child: _IdTypeChip(
+                  label: 'commercial_registration_option'.tr,
+                  selected: idType == 'commercial',
+                  onTap: () => _selectOrganizationIdType('commercial'),
+                ),
               ),
-            ),
-            const SizedBox(width: Spacing.md),
-            Expanded(
-              child: _IdTypeChip(
-                label: 'unified_number_option'.tr,
-                selected: isUnified,
-                onTap: () => _selectOrganizationIdType('unified'),
+              const SizedBox(width: Spacing.md),
+              Expanded(
+                child: _IdTypeChip(
+                  label: 'unified_number_option'.tr,
+                  selected: isUnified,
+                  onTap: () => _selectOrganizationIdType('unified'),
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
         if (idType != null) ...[
           const SizedBox(height: Spacing.lg),
@@ -197,7 +210,9 @@ class _ProviderIdentityFormState extends State<ProviderIdentityForm> {
   Widget _fieldLabel(BuildContext context, String text) {
     return Text(
       text,
-      style: AppTypography.small.copyWith(color: AppColors.textPrimary(context)),
+      style: AppTypography.small.copyWith(
+        color: AppColors.textPrimary(context),
+      ),
     );
   }
 
@@ -275,24 +290,42 @@ class _IdTypeChip extends StatelessWidget {
       child: AnimatedContainer(
         duration: AnimSpec.button,
         padding: const EdgeInsets.symmetric(
-            vertical: Spacing.md, horizontal: Spacing.sm),
+          vertical: Spacing.md,
+          horizontal: Spacing.sm,
+        ),
         alignment: Alignment.center,
         decoration: BoxDecoration(
-          // تعبئة أساسية شفافة جدًا (0.05) عند التحديد + حدّ primary، بدل
-          // حدّ ملوّن فقط بلا خلفية — تمييز بصري أوضح للحالة المختارة.
-          color: selected ? primary.withValues(alpha: 0.05) : AppColors.surface(context),
+          // حالة "مختار" واضحة: تعبئة primary بشفافية 0.12 + حدّ 2px + ظل خفيف
+          // + علامة ✓ بجانب النص — بدل حدّ رفيع وتعبئة شبه معدومة كان الفرق
+          // فيها يكاد لا يُرى.
+          color: selected
+              ? primary.withValues(alpha: 0.12)
+              : AppColors.surface(context),
           borderRadius: BorderRadius.circular(AppRadius.medium),
           border: Border.all(
             color: selected ? primary : AppColors.border(context),
-            width: selected ? 1.6 : 1,
+            width: selected ? 2 : 1,
           ),
+          boxShadow: selected ? AppShadows.soft(blur: 10, opacity: 0.10) : null,
         ),
-        child: Text(
-          label,
-          textAlign: TextAlign.center,
-          style: AppTypography.smallMedium.copyWith(
-            color: selected ? primary : AppColors.textPrimary(context),
-          ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            if (selected) ...[
+              Icon(Icons.check_circle, size: 14, color: primary),
+              const SizedBox(width: Spacing.xs),
+            ],
+            Flexible(
+              child: Text(
+                label,
+                textAlign: TextAlign.center,
+                style: AppTypography.smallMedium.copyWith(
+                  color: selected ? primary : AppColors.textPrimary(context),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -326,7 +359,9 @@ class _FormatHint extends StatelessWidget {
         hintText,
         style: AppTypography.caption.copyWith(
           fontSize: 12,
-          color: dark ? Colors.white.withValues(alpha: 0.45) : Colors.grey.shade500,
+          color: dark
+              ? Colors.white.withValues(alpha: 0.45)
+              : Colors.grey.shade500,
         ),
       );
     }
@@ -335,7 +370,11 @@ class _FormatHint extends StatelessWidget {
     final color = isValid ? AppColors.success : AppColors.danger;
     return Row(
       children: [
-        Icon(isValid ? Icons.check_circle : Icons.error_outline, size: 14, color: color),
+        Icon(
+          isValid ? Icons.check_circle : Icons.error_outline,
+          size: 14,
+          color: color,
+        ),
         const SizedBox(width: Spacing.xs),
         Expanded(
           child: Text(
@@ -371,23 +410,42 @@ class _EntityTypeCard extends StatelessWidget {
         duration: AnimSpec.button,
         padding: const EdgeInsets.symmetric(vertical: Spacing.lg),
         decoration: BoxDecoration(
-          color: selected ? primary.withValues(alpha: 0.05) : AppColors.surface(context),
+          color: selected
+              ? primary.withValues(alpha: 0.12)
+              : AppColors.surface(context),
           borderRadius: BorderRadius.circular(AppRadius.medium),
           border: Border.all(
             color: selected ? primary : AppColors.border(context),
-            width: selected ? 1.6 : 1,
+            width: selected ? 2 : 1,
           ),
+          boxShadow: selected ? AppShadows.soft(blur: 10, opacity: 0.10) : null,
         ),
         child: Column(
           children: [
-            Icon(icon, color: selected ? primary : AppColors.textSecondary(context),
-                size: IconSpec.large),
+            Icon(
+              icon,
+              color: selected ? primary : AppColors.textSecondary(context),
+              size: IconSpec.large,
+            ),
             const SizedBox(height: Spacing.sm),
-            Text(
-              label,
-              style: AppTypography.smallMedium.copyWith(
-                color: selected ? primary : AppColors.textPrimary(context),
-              ),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (selected) ...[
+                  Icon(Icons.check_circle, size: 14, color: primary),
+                  const SizedBox(width: Spacing.xs),
+                ],
+                Flexible(
+                  child: Text(
+                    label,
+                    style: AppTypography.smallMedium.copyWith(
+                      color: selected
+                          ? primary
+                          : AppColors.textPrimary(context),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ],
         ),

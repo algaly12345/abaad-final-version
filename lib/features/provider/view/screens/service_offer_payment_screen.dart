@@ -34,6 +34,12 @@ class _ServiceOfferPaymentScreenState extends State<ServiceOfferPaymentScreen> {
   bool _isLoading = true;
   bool _isChecking = false;
 
+  // حارس دخول-واحد لمغادرة الشاشة: كل مسارات الخروج (زر الرجوع، زر رجوع/إيماءة
+  // النظام عبر PopScope، زر "حسناً" في حوار النتيجة) تمرّ من هنا. بدونه كان
+  // الضغط المتكرّر السريع على زر الرجوع في iOS يعيد استدعاء Get.until بينما
+  // انتقال الـ pop السابق ما زال يتحرّك، فيَقفل الـ Navigator وتتجمّد الواجهة.
+  bool _leaving = false;
+
   // صفحة الدفع نفسها (نموذج Moyasar + صفحة النتيجة) يقدّمها الباكند كـ HTML
   // عبر WebView — لا يمكن التحكم بملفاتها من هنا. بدل تعديل الباكند، نحقن CSS
   // تعيد تلوين/تشكيل نفس عناصرها (بأسماء أصنافها الفعلية من moyasar.css
@@ -100,32 +106,48 @@ class _ServiceOfferPaymentScreenState extends State<ServiceOfferPaymentScreen> {
   }
 
   Future<void> _confirmStatus() async {
+    if (_leaving) return;
     final controller = Get.find<ServiceOfferController>();
     final isPaid = await controller.checkSubscriptionStatus(
       widget.subscriptionNumber,
     );
 
-    if (!mounted) return;
+    // _leaving: المستخدم ضغط رجوع أثناء انتظار نتيجة الفحص — لا تُظهر حوارًا
+    // غير قابل للإغلاق فوق شاشة تُغادَر أصلاً (سببٌ آخر لتجمّد الواجهة).
+    if (!mounted || _leaving) return;
 
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (_) => AlertDialog(
         shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(DialogSpec.radius)),
+          borderRadius: BorderRadius.circular(DialogSpec.radius),
+        ),
         contentPadding: const EdgeInsets.fromLTRB(
-            DialogSpec.padding, 20, DialogSpec.padding, Spacing.sm),
+          DialogSpec.padding,
+          20,
+          DialogSpec.padding,
+          Spacing.sm,
+        ),
         actionsPadding: const EdgeInsets.fromLTRB(
-            Spacing.md, 0, Spacing.md, Spacing.sm),
+          Spacing.md,
+          0,
+          Spacing.md,
+          Spacing.sm,
+        ),
         title: Text(
           isPaid ? 'تم الدفع بنجاح' : 'تعذر تأكيد الدفع',
-          style: AppTypography.title.copyWith(color: AppColors.textPrimary(context)),
+          style: AppTypography.title.copyWith(
+            color: AppColors.textPrimary(context),
+          ),
         ),
         content: Text(
           isPaid
               ? 'تم الدفع بنجاح. طلبك الآن قيد المراجعة من الإدارة، وستصلك رسالة عند الموافقة على عرضك وتفعيل حسابك كمزود خدمة.'
               : 'لم نتمكن من تأكيد عملية الدفع، يمكنك المحاولة مرة أخرى من قائمة اشتراكاتي.',
-          style: AppTypography.small.copyWith(color: AppColors.textSecondary(context)),
+          style: AppTypography.small.copyWith(
+            color: AppColors.textSecondary(context),
+          ),
         ),
         actions: [
           TextButton(
@@ -156,9 +178,18 @@ class _ServiceOfferPaymentScreenState extends State<ServiceOfferPaymentScreen> {
   // "خدماتي" ضمن المكدّس أصلاً (الدخول من معالج إضافة خدمة جديدة بدل زر
   // "ادفع الآن" لعرض قائم) يتوقف عند أول صفحة (route.isFirst) بدل حلقة بلا
   // نهاية، فلا يعلق المستخدم داخل خطوات المعالج.
+  // العملية الفعلية — لا تُنادى مباشرةً من أي معالج ضغط، فقط عبر الأغلفة
+  // المحروسة أدناه.
+  void _popToMyServices() {
+    Get.until(
+      (route) => route.settings.name == RouteHelper.myServices || route.isFirst,
+    );
+  }
+
   void _goToMyServices() {
-    Get.until((route) =>
-    route.settings.name == RouteHelper.myServices || route.isFirst);
+    if (_leaving) return;
+    _leaving = true;
+    _popToMyServices();
   }
 
   // بعد ظهور نتيجة الدفع (نجاح أو فشل) نُعيد المستخدم إلى صفحة تفاصيل هذه
@@ -172,8 +203,10 @@ class _ServiceOfferPaymentScreenState extends State<ServiceOfferPaymentScreen> {
   // التفاصيل فوقها فيبقى زر رجوعها سليماً. لو لم يصل serviceId (0) نسقط
   // لسلوك "خدماتي" الافتراضي.
   void _goToServiceDetails() {
+    if (_leaving) return;
+    _leaving = true;
     if (widget.serviceId <= 0) {
-      _goToMyServices();
+      _popToMyServices();
       return;
     }
     Get.offUntil(
@@ -181,8 +214,7 @@ class _ServiceOfferPaymentScreenState extends State<ServiceOfferPaymentScreen> {
         page: () => ServiceDetailsScreen(serviceId: widget.serviceId),
         transition: Transition.cupertino,
       ),
-      (route) =>
-      route.settings.name == RouteHelper.myServices || route.isFirst,
+      (route) => route.settings.name == RouteHelper.myServices || route.isFirst,
     );
   }
 
@@ -211,16 +243,20 @@ class _ServiceOfferPaymentScreenState extends State<ServiceOfferPaymentScreen> {
                   shape: BoxShape.circle,
                   border: Border.all(color: Theme.of(context).dividerColor),
                 ),
-                child: Icon(Icons.arrow_back_ios_new_rounded,
-                    size: 18, color: Theme.of(context).primaryColor),
+                child: Icon(
+                  Icons.arrow_back_ios_new_rounded,
+                  size: 18,
+                  color: Theme.of(context).primaryColor,
+                ),
               ),
             ),
             const SizedBox(width: 12),
             Expanded(
               child: Text(
                 'الدفع',
-                style: AppTypography.title
-                    .copyWith(color: AppColors.textPrimary(context)),
+                style: AppTypography.title.copyWith(
+                  color: AppColors.textPrimary(context),
+                ),
               ),
             ),
           ],
@@ -232,10 +268,15 @@ class _ServiceOfferPaymentScreenState extends State<ServiceOfferPaymentScreen> {
   @override
   Widget build(BuildContext context) {
     final primary = Theme.of(context).primaryColor;
-    return WillPopScope(
-      onWillPop: () async {
+    // PopScope بدل WillPopScope المهجور: الأخير مع onWillPop يعيد false ثم ينفّذ
+    // تنقّلاً بنفسه كان يتضارب مع إيماءة الرجوع في iOS ويترك الـ Navigator
+    // مقفولاً. canPop:false + الحارس _leaving داخل _goToMyServices يجعل الخروج
+    // يحدث مرّة واحدة فقط مهما تكرّر الضغط.
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
         _goToMyServices();
-        return false;
       },
       child: Scaffold(
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -255,9 +296,12 @@ class _ServiceOfferPaymentScreenState extends State<ServiceOfferPaymentScreen> {
                           children: [
                             CircularProgressIndicator(color: primary),
                             const SizedBox(height: Spacing.lg),
-                            Text('جاري تحميل صفحة الدفع...',
-                                style: AppTypography.small.copyWith(
-                                    color: AppColors.textSecondary(context))),
+                            Text(
+                              'جاري تحميل صفحة الدفع...',
+                              style: AppTypography.small.copyWith(
+                                color: AppColors.textSecondary(context),
+                              ),
+                            ),
                           ],
                         ),
                       ),

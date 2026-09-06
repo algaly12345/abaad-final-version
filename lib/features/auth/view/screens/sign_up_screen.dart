@@ -42,7 +42,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
   final TextEditingController _referCodeController = TextEditingController();
-  final TextEditingController _unifiedNumberController = TextEditingController();
+  final TextEditingController _unifiedNumberController =
+      TextEditingController();
 
   String? _registrationType = 'individual';
   String? _selectedUserType;
@@ -64,8 +65,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
   /// حذف**: الكود يبقى محفوظًا حتى نجاح التسجيل (clearAfterRegistration في
   /// _register)، فلا يضيع لو خرج المستخدم أو تنقّل Login↔Register قبل الإكمال.
   Future<void> _prefillReferralCode() async {
-    final String? code =
-        await ReferralLinkManager.instance.pendingReferralCode();
+    final String? code = await ReferralLinkManager.instance
+        .pendingReferralCode();
     if (code != null && code.isNotEmpty && mounted) {
       setState(() {
         _referCodeController.text = code;
@@ -104,97 +105,153 @@ class _SignUpScreenState extends State<SignUpScreen> {
               backgroundColor: Colors.transparent,
               elevation: 0,
               toolbarHeight: AppBarSpec.height,
-              leading: IconButton(
-                onPressed: () => Get.back(),
-                icon: const Icon(Icons.arrow_back_ios_rounded, color: Colors.white),
-              ),
-            ),
-      body: GetBuilder<AuthController>(
-        builder: (authController) {
-          return Stack(
-            children: [
-              // Gradient header background
-              Positioned(
-                top: 0,
-                left: 0,
-                right: 0,
-                height: MediaQuery.of(context).size.height * 0.30,
-                child: Container(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        primary,
-                        primary.withValues(alpha: 0.72),
-                      ],
+              // handleBackTap (not Get.back()): this screen is often the stack
+              // root — reached via Get.offAllNamed from the referral deep-link
+              // flow (ReferralLinkManager) and from splash — and GetX's
+              // Get.back() silently no-ops when Navigator.canPop() is false, so
+              // the plain back button was dead. Falls back to the services tab.
+              leading: Padding(
+                padding: const EdgeInsets.all(8),
+                child: Material(
+                  color: Colors.black.withValues(alpha: 0.22),
+                  shape: const CircleBorder(),
+                  clipBehavior: Clip.antiAlias,
+                  child: InkWell(
+                    onTap: () => RootFallbackScope.handleBackTap(context),
+                    child: const Padding(
+                      padding: EdgeInsets.all(7),
+                      child: Icon(
+                        Icons.arrow_back_ios_new_rounded,
+                        color: Colors.white,
+                        size: 18,
+                      ),
                     ),
                   ),
                 ),
               ),
-
+            ),
+      body: GetBuilder<AuthController>(
+        builder: (authController) {
+          // Single-child Stack kept for structural stability; the gradient
+          // header is now an inline sliver of the scroll content (see below)
+          // instead of a fixed-height Positioned layer.
+          return Stack(
+            children: [
               SafeArea(
+                top: false,
                 child: LayoutBuilder(
                   builder: (context, constraints) {
-                    final maxWidth =
-                        constraints.maxWidth > 700 ? 520.0 : double.infinity;
+                    final maxWidth = constraints.maxWidth > 700
+                        ? 520.0
+                        : double.infinity;
 
                     return Center(
                       child: SingleChildScrollView(
                         physics: const BouncingScrollPhysics(),
-                        padding: const EdgeInsets.fromLTRB(
-                          Spacing.pagePadding,
-                          Spacing.md,
-                          Spacing.pagePadding,
-                          Spacing.xxl,
-                        ),
+                        padding: const EdgeInsets.only(bottom: Spacing.xxl),
                         child: ConstrainedBox(
                           constraints: BoxConstraints(maxWidth: maxWidth),
                           child: Form(
                             key: _formKey,
                             child: Column(
                               children: [
-                                // ── Logo ─────────────────────────────────
+                                // ── Gradient header ──────────────────────
+                                // Wraps its own content (logo + title +
+                                // subtitle) so the text can never bleed past
+                                // the gradient onto the light page background.
+                                // The old fixed-height Positioned layer
+                                // (size.height * 0.30) clipped the subtitle on
+                                // shorter screens / larger text scales.
                                 Container(
-                                  width: AvatarSpec.profile,
-                                  height: AvatarSpec.profile,
-                                  decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    borderRadius:
-                                        BorderRadius.circular(AppRadius.extraLarge),
-                                    boxShadow: AppShadows.soft(blur: 14, opacity: 0.1),
+                                  width: double.infinity,
+                                  padding: EdgeInsets.fromLTRB(
+                                    Spacing.pagePadding,
+                                    MediaQuery.of(context).padding.top +
+                                        AppBarSpec.height +
+                                        Spacing.sm,
+                                    Spacing.pagePadding,
+                                    Spacing.xl,
                                   ),
-                                  child: Center(
-                                    child: Image.asset(Images.logo, width: 48),
+                                  decoration: BoxDecoration(
+                                    gradient: LinearGradient(
+                                      begin: Alignment.topLeft,
+                                      end: Alignment.bottomRight,
+                                      colors: [
+                                        primary,
+                                        primary.withValues(alpha: 0.72),
+                                      ],
+                                    ),
+                                    borderRadius: const BorderRadius.vertical(
+                                      bottom: Radius.circular(
+                                        AppRadius.extraLarge,
+                                      ),
+                                    ),
+                                  ),
+                                  child: Column(
+                                    children: [
+                                      Container(
+                                        width: AvatarSpec.profile,
+                                        height: AvatarSpec.profile,
+                                        decoration: BoxDecoration(
+                                          color: Colors.white,
+                                          borderRadius: BorderRadius.circular(
+                                            AppRadius.extraLarge,
+                                          ),
+                                          boxShadow: AppShadows.soft(
+                                            blur: 14,
+                                            opacity: 0.1,
+                                          ),
+                                        ),
+                                        child: Center(
+                                          child: Image.asset(
+                                            Images.logo,
+                                            width: 48,
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(height: Spacing.lg),
+                                      Text(
+                                        'sign_up'.tr,
+                                        style: AppTypography.h3.copyWith(
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                      const SizedBox(height: Spacing.xs),
+                                      Text(
+                                        'complete_form_data'.tr,
+                                        textAlign: TextAlign.center,
+                                        style: AppTypography.small.copyWith(
+                                          color: Colors.white.withValues(
+                                            alpha: 0.85,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
                                 const SizedBox(height: Spacing.lg),
 
-                                Text(
-                                  'sign_up'.tr,
-                                  style: AppTypography.h3.copyWith(color: Colors.white),
-                                ),
-                                const SizedBox(height: Spacing.xs),
-                                Text(
-                                  'complete_form_data'.tr,
-                                  textAlign: TextAlign.center,
-                                  style: AppTypography.small.copyWith(
-                                    color: Colors.white.withValues(alpha: 0.85),
-                                  ),
-                                ),
-                                const SizedBox(height: Spacing.xl),
-
                                 // ── Form card ─────────────────────────────
                                 Container(
-                                  padding: const EdgeInsets.all(CardSpec.padding),
+                                  margin: const EdgeInsets.symmetric(
+                                    horizontal: Spacing.pagePadding,
+                                  ),
+                                  padding: const EdgeInsets.all(
+                                    CardSpec.padding,
+                                  ),
                                   decoration: BoxDecoration(
                                     color: Colors.white,
-                                    borderRadius:
-                                        BorderRadius.circular(AppRadius.large),
-                                    boxShadow: AppShadows.soft(blur: 12, opacity: 0.08),
+                                    borderRadius: BorderRadius.circular(
+                                      AppRadius.large,
+                                    ),
+                                    boxShadow: AppShadows.soft(
+                                      blur: 12,
+                                      opacity: 0.08,
+                                    ),
                                   ),
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.stretch,
                                     children: [
                                       // Full name
                                       _fieldLabel('full_name'.tr),
@@ -220,7 +277,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                         hint: 'enter_email_optional'.tr,
                                         icon: Icons.mail_outline_rounded,
                                         primary: primary,
-                                        keyboardType: TextInputType.emailAddress,
+                                        keyboardType:
+                                            TextInputType.emailAddress,
                                       ),
                                       const SizedBox(height: Spacing.md),
 
@@ -242,7 +300,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                         const SizedBox(height: Spacing.sm),
                                         AppDropdown<String>(
                                           value: _selectedUserType,
-                                          hintText: 'please_select_user_type'.tr,
+                                          hintText:
+                                              'please_select_user_type'.tr,
+                                          leadingIcon: Icons.groups_outlined,
                                           items: [
                                             DropdownMenuItem(
                                               value: 'باحث عن عقار',
@@ -250,11 +310,14 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                             ),
                                             DropdownMenuItem(
                                               value: 'مسوق عقاري',
-                                              child: Text('real_estate_marketer'.tr),
+                                              child: Text(
+                                                'real_estate_marketer'.tr,
+                                              ),
                                             ),
                                           ],
-                                          onChanged: (value) =>
-                                              setState(() => _selectedUserType = value),
+                                          onChanged: (value) => setState(
+                                            () => _selectedUserType = value,
+                                          ),
                                         ),
                                         const SizedBox(height: Spacing.md),
 
@@ -264,6 +327,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                         AppDropdown<String>(
                                           value: _registrationType,
                                           hintText: 'registration_type'.tr,
+                                          leadingIcon: Icons.badge_outlined,
                                           items: [
                                             DropdownMenuItem(
                                               value: 'individual',
@@ -271,28 +335,35 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                             ),
                                             DropdownMenuItem(
                                               value: 'organization',
-                                              child: Text('organization_label'.tr),
+                                              child: Text(
+                                                'organization_label'.tr,
+                                              ),
                                             ),
                                           ],
-                                          onChanged: (value) =>
-                                              setState(() => _registrationType = value),
+                                          onChanged: (value) => setState(
+                                            () => _registrationType = value,
+                                          ),
                                         ),
 
                                         // Unified number (organization only)
-                                        if (_registrationType == 'organization') ...[
+                                        if (_registrationType ==
+                                            'organization') ...[
                                           const SizedBox(height: Spacing.md),
                                           _fieldLabel('unified_number'.tr),
                                           const SizedBox(height: Spacing.sm),
                                           _textField(
-                                            controller: _unifiedNumberController,
+                                            controller:
+                                                _unifiedNumberController,
                                             focusNode: _unifiedNumberFocus,
                                             hint: 'enter_unified_number'.tr,
-                                            icon: Icons.badge_outlined,
+                                            icon: Icons.pin_outlined,
                                             primary: primary,
                                             keyboardType: TextInputType.number,
-                                            textInputAction: TextInputAction.done,
+                                            textInputAction:
+                                                TextInputAction.done,
                                             inputFormatters: [
-                                              FilteringTextInputFormatter.digitsOnly,
+                                              FilteringTextInputFormatter
+                                                  .digitsOnly,
                                             ],
                                           ),
                                         ],
@@ -311,7 +382,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                       ],
 
                                       // Applied referral code (read-only confirmation, only when auto-filled via link)
-                                      if (_referCodeController.text.isNotEmpty) ...[
+                                      if (_referCodeController
+                                          .text
+                                          .isNotEmpty) ...[
                                         const SizedBox(height: Spacing.md),
                                         _fieldLabel('applied_referral_code'.tr),
                                         const SizedBox(height: Spacing.sm),
@@ -322,8 +395,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                           ),
                                           decoration: BoxDecoration(
                                             color: const Color(0xFFF0FDF4),
-                                            borderRadius:
-                                                BorderRadius.circular(FieldSpec.radius),
+                                            borderRadius: BorderRadius.circular(
+                                              FieldSpec.radius,
+                                            ),
                                             border: Border.all(
                                               color: const Color(0xFF86EFAC),
                                             ),
@@ -341,8 +415,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                                   _referCodeController.text,
                                                   style: AppTypography.bodyBold
                                                       .copyWith(
-                                                          color: const Color(
-                                                              0xFF15803D)),
+                                                        color: const Color(
+                                                          0xFF15803D,
+                                                        ),
+                                                      ),
                                                 ),
                                               ),
                                             ],
@@ -360,8 +436,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                         ),
                                         decoration: BoxDecoration(
                                           color: const Color(0xFFF9FAFB),
-                                          borderRadius:
-                                              BorderRadius.circular(AppRadius.medium),
+                                          borderRadius: BorderRadius.circular(
+                                            AppRadius.medium,
+                                          ),
                                           border: Border.all(
                                             color: const Color(0xFFE5E7EB),
                                           ),
@@ -382,12 +459,30 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                       ),
                                       const SizedBox(height: Spacing.md),
 
-                                      // Sign in link
-                                      DSSecondaryButton(
-                                        label: 'already_have_account'.tr,
-                                        onPressed: () => Get.toNamed(
-                                          RouteHelper.getSignInRoute(
-                                            RouteHelper.signUp,
+                                      // Sign in link — low-emphasis text button
+                                      // so it doesn't compete with the primary
+                                      // "Sign Up" action directly above it.
+                                      Center(
+                                        child: TextButton(
+                                          onPressed: () => Get.toNamed(
+                                            RouteHelper.getSignInRoute(
+                                              RouteHelper.signUp,
+                                            ),
+                                          ),
+                                          style: TextButton.styleFrom(
+                                            foregroundColor: primary,
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: Spacing.md,
+                                              vertical: Spacing.sm,
+                                            ),
+                                            minimumSize: Size.zero,
+                                            tapTargetSize: MaterialTapTargetSize
+                                                .shrinkWrap,
+                                          ),
+                                          child: Text(
+                                            'already_have_account'.tr,
+                                            style: AppTypography.smallBold
+                                                .copyWith(color: primary),
                                           ),
                                         ),
                                       ),
@@ -456,7 +551,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
         filled: true,
         fillColor: const Color(0xFFF9FAFB),
         contentPadding: const EdgeInsets.symmetric(
-            horizontal: FieldSpec.padding, vertical: FieldSpec.padding),
+          horizontal: FieldSpec.padding,
+          vertical: FieldSpec.padding,
+        ),
         border: border,
         enabledBorder: border,
         focusedBorder: border.copyWith(
@@ -496,8 +593,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 const SizedBox(width: Spacing.xs),
                 Text(
                   '+966',
-                  style: AppTypography.bodyBold
-                      .copyWith(color: const Color(0xFF1A2340)),
+                  style: AppTypography.bodyBold.copyWith(
+                    color: const Color(0xFF1A2340),
+                  ),
                 ),
               ],
             ),
@@ -511,13 +609,16 @@ class _SignUpScreenState extends State<SignUpScreen> {
               textDirection: TextDirection.ltr,
               textAlign: TextAlign.left,
               textInputAction: TextInputAction.next,
-              style: AppTypography.body.copyWith(color: const Color(0xFF1A2340)),
+              style: AppTypography.body.copyWith(
+                color: const Color(0xFF1A2340),
+              ),
               cursorColor: primary,
               inputFormatters: [
                 FilteringTextInputFormatter.digitsOnly,
                 LengthLimitingTextInputFormatter(9),
                 TextInputFormatter.withFunction((oldValue, newValue) {
-                  if (newValue.text.isNotEmpty && !newValue.text.startsWith('5')) {
+                  if (newValue.text.isNotEmpty &&
+                      !newValue.text.startsWith('5')) {
                     showCustomSnackBar('phone_start_5_error'.tr);
                     return oldValue;
                   }
@@ -528,7 +629,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   FocusScope.of(context).requestFocus(_unifiedNumberFocus),
               decoration: InputDecoration(
                 hintText: '5XXXXXXXX',
-                hintStyle: AppTypography.small.copyWith(color: Colors.grey.shade400),
+                hintStyle: AppTypography.small.copyWith(
+                  color: Colors.grey.shade400,
+                ),
                 filled: true,
                 fillColor: const Color(0xFFF9FAFB),
                 contentPadding: const EdgeInsets.symmetric(
@@ -544,7 +647,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   borderSide: const BorderSide(color: AppColors.danger),
                 ),
                 focusedErrorBorder: border.copyWith(
-                  borderSide: const BorderSide(color: AppColors.danger, width: 1.6),
+                  borderSide: const BorderSide(
+                    color: AppColors.danger,
+                    width: 1.6,
+                  ),
                 ),
               ),
             ),
@@ -600,7 +706,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
     // لا نفرض طولًا ثابتًا: أكواد قديمة قبل توحيد التوليد (مثل "SP-9361")
     // أقصر من الصيغة الجديدة (10 أحرف بدون شرطة) — السيرفر هو من يتحقق من
     // وجود الكود فعليًا عند التسجيل، هذا فقط تحقق أولي من شكل معقول للقيمة.
-    if (referCode.isNotEmpty && (referCode.length < 3 || referCode.length > 20)) {
+    if (referCode.isNotEmpty &&
+        (referCode.length < 3 || referCode.length > 20)) {
       showCustomSnackBar('referral_code_invalid'.tr);
       return;
     }
@@ -643,7 +750,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
         // تحقق OTP أم لا). الآن فقط يُمسح الكود من التخزين المحلي.
         await ReferralLinkManager.instance.clearAfterRegistration();
 
-        if (Get.find<SplashController>().configModel?.customerVerification ?? false) {
+        if (Get.find<SplashController>().configModel?.customerVerification ??
+            false) {
           final List<int> encoded = utf8.encode('1234567');
           final String data = base64Encode(encoded);
 
@@ -664,9 +772,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
             () => const RootFallbackScope(child: _ReferralIdentitySubmitGate()),
           );
         } else {
-          Get.toNamed(
-            RouteHelper.getAccessLocationRoute(RouteHelper.signUp),
-          );
+          Get.toNamed(RouteHelper.getAccessLocationRoute(RouteHelper.signUp));
         }
       } else {
         showCustomSnackBar(status.message);
@@ -711,9 +817,7 @@ class _ReferralIdentitySubmitGateState
     if (saved) {
       Get.offAll(() => const RootFallbackScope(child: MyServicesScreen()));
     } else {
-      Get.offAll(
-        () => const RootFallbackScope(child: ProviderUpgradeScreen()),
-      );
+      Get.offAll(() => const RootFallbackScope(child: ProviderUpgradeScreen()));
     }
   }
 

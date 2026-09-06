@@ -1,4 +1,4 @@
-﻿// import 'dart:io';
+// import 'dart:io';
 //
 // import 'package:abaad_flutter/features/auth/controller/auth_controller.dart';
 // import 'package:abaad_flutter/shared/controllers/splash_controller.dart';
@@ -139,8 +139,6 @@
 //   }
 // }
 
-import 'dart:io';
-
 import 'package:abaad_flutter/features/auth/controller/auth_controller.dart';
 import 'package:abaad_flutter/shared/controllers/splash_controller.dart';
 import 'package:abaad_flutter/features/profile/controller/user_controller.dart';
@@ -245,10 +243,15 @@ class _DrawerMenuState extends State<DrawerMenu> {
                         title: 'my_account'.tr,
                         color: Colors.blueAccent,
                         onTap: () {
-                          final int userId = userController.userInfoModel?.id ?? 0;
+                          final int userId =
+                              userController.userInfoModel?.id ?? 0;
                           if (userId > 0) {
                             Get.find<UserController>().getUserInfoByID(userId);
-                            Get.find<UserController>().getEstateByUser(1, false, userId);
+                            Get.find<UserController>().getEstateByUser(
+                              1,
+                              false,
+                              userId,
+                            );
                           }
                           Get.toNamed(RouteHelper.getProfileRoute());
                         },
@@ -328,7 +331,8 @@ class _DrawerMenuState extends State<DrawerMenu> {
                         },
                       ),
 
-                      if (isLoggedIn && userController.userInfoModel?.userType == 'provider')
+                      if (isLoggedIn &&
+                          userController.userInfoModel?.userType == 'provider')
                         _drawerTile(
                           context: context,
                           icon: Icons.diversity_3_outlined,
@@ -351,7 +355,8 @@ class _DrawerMenuState extends State<DrawerMenu> {
 
                           // 🔹 sharePositionOrigin مطلوب على iOS (خصوصًا iPad) — بدونه بيرمي
                           // PlatformException. بنحسبه من موقع وحجم الشاشة الحالية نفسها.
-                          final RenderBox? box = context.findRenderObject() as RenderBox?;
+                          final RenderBox? box =
+                              context.findRenderObject() as RenderBox?;
 
                           Share.share(
                             shareLink,
@@ -419,6 +424,7 @@ class _DrawerMenuState extends State<DrawerMenu> {
       borderRadius: BorderRadius.circular(24),
       onTap: () {
         if (isLoggedIn) {
+          Scaffold.maybeOf(context)?.closeDrawer();
           Get.toNamed(RouteHelper.getProfileRoute());
         }
       },
@@ -470,47 +476,47 @@ class _DrawerMenuState extends State<DrawerMenu> {
                       child: CircularProgressIndicator(color: Colors.white),
                     )
                   : Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    userName,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: robotoBold.copyWith(
-                      fontSize: 18,
-                      color: Colors.white,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          userName,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: robotoBold.copyWith(
+                            fontSize: 18,
+                            color: Colors.white,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          phone,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: robotoRegular.copyWith(
+                            fontSize: 13,
+                            color: Colors.white.withValues(alpha: 0.92),
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.16),
+                            borderRadius: BorderRadius.circular(30),
+                          ),
+                          child: Text(
+                            isLoggedIn ? 'View profile' : 'Welcome',
+                            style: robotoMedium.copyWith(
+                              fontSize: 11,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    phone,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: robotoRegular.copyWith(
-                      fontSize: 13,
-                      color: Colors.white.withValues(alpha: 0.92),
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.16),
-                      borderRadius: BorderRadius.circular(30),
-                    ),
-                    child: Text(
-                      isLoggedIn ? 'View profile' : 'Welcome',
-                      style: robotoMedium.copyWith(
-                        fontSize: 11,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
             ),
             const Icon(
               Icons.arrow_forward_ios_rounded,
@@ -554,7 +560,15 @@ class _DrawerMenuState extends State<DrawerMenu> {
         ],
       ),
       child: ListTile(
-        onTap: onTap,
+        onTap: () {
+          // أغلق الدرج قبل التنقّل: كل عناصر الدرج كانت تنادي Get.toNamed/
+          // Get.to مباشرةً وتترك LocalHistoryEntry الخاص بالدرج قائماً على
+          // مسار لوحة التحكم — فيظهر الدرج مفتوحاً/عالقاً عند الرجوع إليها
+          // لاحقاً (وأثناء انتقال الرجوع يلمح المستخدم الشاشة السابقة بنصف
+          // الدرج فوقها). closeDrawer() آمنة: لا تفعل شيئاً إن كان مغلقاً.
+          Scaffold.maybeOf(context)?.closeDrawer();
+          onTap();
+        },
         contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
         leading: Container(
           width: 42,

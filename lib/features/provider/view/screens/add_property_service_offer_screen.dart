@@ -729,64 +729,77 @@ class _WizardScreenState extends State<_WizardScreen> {
           );
         }
 
-        return Listener(
-          // إغلاق الكيبورد عند الضغط على أي عنصر آخر في هذه الشاشة (زر،
-          // مساحة فارغة...) بعد الانتهاء من الكتابة في حقل نصي.
-          // ملاحظة: GestureDetector.onTap لا يصلح هنا — أي زر (InkWell/
-          // ElevatedButton/...) تحته يملك recognizer خاص به يفوز بـ gesture
-          // arena فيمنع onTap الخاص بالغلاف من الإطلاق أصلاً عند الضغط على
-          // الأزرار (بالضبط الحالة المطلوبة). Listener.onPointerDown لا
-          // يدخل في التنافس داخل الـ arena فيُطلَق دائماً بغض النظر عمّن
-          // يفوز بالضغطة تحته.
-          behavior: HitTestBehavior.opaque,
-          onPointerDown: (_) => FocusScope.of(context).unfocus(),
-          child: Scaffold(
-            backgroundColor: const Color(0xFFF4F6FB),
-            body: Column(
-              children: [
-                // ─── Top header + step indicator ─────────────────────────
-                _buildTopBar(context, primary),
+        // زرّ الرجوع في النظام (وإيماءة الرجوع) يجب أن يتراجع خطوة واحدة داخل
+        // المعالج مثل زرّي "السابق" (الشريط العلوي + الشريط السفلي) اللذين
+        // يناديان _goBack() — لا أن يُغلق الشاشة كاملةً ويقذف المستخدم لأسفل
+        // المكدّس (لوحة التحكم). canPop=true فقط في الخطوة الأولى فيخرج عندها
+        // من المعالج طبيعياً؛ في ما عداها نعترض الرجوع ونستدعي _goBack (فرع
+        // _step-- حصراً لأنه لا يُبلَغ إلا و _step > 0).
+        return PopScope(
+          canPop: _step == 0,
+          onPopInvokedWithResult: (didPop, result) {
+            if (didPop) return;
+            _goBack();
+          },
+          child: Listener(
+            // إغلاق الكيبورد عند الضغط على أي عنصر آخر في هذه الشاشة (زر،
+            // مساحة فارغة...) بعد الانتهاء من الكتابة في حقل نصي.
+            // ملاحظة: GestureDetector.onTap لا يصلح هنا — أي زر (InkWell/
+            // ElevatedButton/...) تحته يملك recognizer خاص به يفوز بـ gesture
+            // arena فيمنع onTap الخاص بالغلاف من الإطلاق أصلاً عند الضغط على
+            // الأزرار (بالضبط الحالة المطلوبة). Listener.onPointerDown لا
+            // يدخل في التنافس داخل الـ arena فيُطلَق دائماً بغض النظر عمّن
+            // يفوز بالضغطة تحته.
+            behavior: HitTestBehavior.opaque,
+            onPointerDown: (_) => FocusScope.of(context).unfocus(),
+            child: Scaffold(
+              backgroundColor: const Color(0xFFF4F6FB),
+              body: Column(
+                children: [
+                  // ─── Top header + step indicator ─────────────────────────
+                  _buildTopBar(context, primary),
 
-                // ─── Page content ────────────────────────────────────────
-                Expanded(
-                  child: PageView(
-                    controller: _pageController,
-                    physics: const NeverScrollableScrollPhysics(),
-                    children: [
-                      _Step1ServiceInfo(
-                        titleCtrl: _titleCtrl,
-                        valueCtrl: _valueCtrl,
-                        descCtrl: _descCtrl,
-                        addressCtrl: _addressCtrl,
-                        phoneCtrl: _phoneCtrl,
-                        controller: c,
-                        primary: primary,
-                        showErrors: _showStep1Errors,
-                      ),
-                      _Step2Plan(controller: c, primary: primary),
-                      _Step3ZoneCategory(controller: c, primary: primary),
-                      _StepLocation(
-                        controller: c,
-                        primary: primary,
-                        addressCtrl: _addressCtrl,
-                      ),
-                      _Step4Review(
-                        titleCtrl: _titleCtrl,
-                        valueCtrl: _valueCtrl,
-                        descCtrl: _descCtrl,
-                        addressCtrl: _addressCtrl,
-                        phoneCtrl: _phoneCtrl,
-                        controller: c,
-                        primary: primary,
-                        onEditStep: _jumpToStep,
-                      ),
-                    ],
+                  // ─── Page content ────────────────────────────────────────
+                  Expanded(
+                    child: PageView(
+                      controller: _pageController,
+                      physics: const NeverScrollableScrollPhysics(),
+                      children: [
+                        _Step1ServiceInfo(
+                          titleCtrl: _titleCtrl,
+                          valueCtrl: _valueCtrl,
+                          descCtrl: _descCtrl,
+                          addressCtrl: _addressCtrl,
+                          phoneCtrl: _phoneCtrl,
+                          controller: c,
+                          primary: primary,
+                          showErrors: _showStep1Errors,
+                        ),
+                        _Step2Plan(controller: c, primary: primary),
+                        _Step3ZoneCategory(controller: c, primary: primary),
+                        _StepLocation(
+                          controller: c,
+                          primary: primary,
+                          addressCtrl: _addressCtrl,
+                        ),
+                        _Step4Review(
+                          titleCtrl: _titleCtrl,
+                          valueCtrl: _valueCtrl,
+                          descCtrl: _descCtrl,
+                          addressCtrl: _addressCtrl,
+                          phoneCtrl: _phoneCtrl,
+                          controller: c,
+                          primary: primary,
+                          onEditStep: _jumpToStep,
+                        ),
+                      ],
+                    ),
                   ),
-                ),
 
-                // ─── Bottom bar ──────────────────────────────────────────
-                _buildBottomBar(context, c, primary),
-              ],
+                  // ─── Bottom bar ──────────────────────────────────────────
+                  _buildBottomBar(context, c, primary),
+                ],
+              ),
             ),
           ),
         );
@@ -884,9 +897,9 @@ class _WizardScreenState extends State<_WizardScreen> {
     // زرّ "التالي" في الخطوة الأولى مفعَّل دائماً كي يكشف الضغط عليه تلميحات
     // التحقّق؛ بقيّة الخطوات تعطّله حتى تكتمل شروطها (اختيار على الخارطة/شبكة).
     final nextEnabled = _step == 0 ? true : canNext;
-    final total = c.priceCalculation?.totalPrice ??
-        c.pricingSettings.basePrice *
-            (1 + c.pricingSettings.vatPercent / 100);
+    final total =
+        c.priceCalculation?.totalPrice ??
+        c.pricingSettings.basePrice * (1 + c.pricingSettings.vatPercent / 100);
     // يظهر شريط الإجمالي في خطوتَي المناطق (2) والموقع (3): يُخفى في خطوة
     // بيانات الخدمة (0) والاشتراك (1) وخطوة المراجعة (4) لأن _LiveTotalCard
     // يعرض نفس الإجمالي ضمن محتوى الصفحة هناك (تفادي عرض الرقم مرتين معاً).
@@ -1308,10 +1321,7 @@ class _Step1ServiceInfoState extends State<_Step1ServiceInfo> {
                   icon: Icons.forum_outlined,
                 ),
                 const SizedBox(height: Spacing.sm),
-                _ContactTypeSelector(
-                  controller: controller,
-                  primary: primary,
-                ),
+                _ContactTypeSelector(controller: controller, primary: primary),
               ],
             ),
           ),
@@ -1498,7 +1508,8 @@ class _PricingFormulaCard extends StatelessWidget {
               IconButton(
                 icon: Icon(Icons.info_outline, color: primary, size: 20),
                 tooltip: 'pricing_details'.tr,
-                onPressed: () => _showPricingInfoSheet(context, controller, primary),
+                onPressed: () =>
+                    _showPricingInfoSheet(context, controller, primary),
               ),
             ],
           ),
@@ -1542,7 +1553,9 @@ void _showPricingInfoSheet(
     isScrollControlled: true,
     backgroundColor: AppColors.surface(context),
     shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.large)),
+      borderRadius: BorderRadius.vertical(
+        top: Radius.circular(AppRadius.large),
+      ),
     ),
     builder: (sheetContext) {
       return SafeArea(
@@ -1649,9 +1662,11 @@ class _DurationSelector extends StatelessWidget {
               final selected = controller.selectedDuration == months;
               // نسبة الخصم الفعلية لهذه المدة من الباك إند (لا رقم ثابت
               // بالواجهة) — 0 إن لم تُشغَّل بيانات الإعداد بعد.
-              final discountPercent = controller.durationDiscounts
-                  .firstWhereOrNull((d) => d.durationMonths == months)
-                  ?.discountPercent ?? 0;
+              final discountPercent =
+                  controller.durationDiscounts
+                      .firstWhereOrNull((d) => d.durationMonths == months)
+                      ?.discountPercent ??
+                  0;
               return GestureDetector(
                 onTap: () => controller.selectDuration(months),
                 child: AnimatedContainer(
@@ -1763,7 +1778,8 @@ class _LiveTotalCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final total = controller.priceCalculation?.totalPrice ??
+    final total =
+        controller.priceCalculation?.totalPrice ??
         controller.pricingSettings.basePrice *
             (1 + controller.pricingSettings.vatPercent / 100);
     return Container(
@@ -1900,11 +1916,7 @@ class _PriceBreakdownCard extends StatelessWidget {
             color: AppColors.success,
           ),
         if (vatAmount.round() > 0) ...[
-          _line(
-            context,
-            'الإجمالي قبل الضريبة',
-            _riyal(calc.totalBeforeVat),
-          ),
+          _line(context, 'الإجمالي قبل الضريبة', _riyal(calc.totalBeforeVat)),
           _line(
             context,
             'ضريبة القيمة المضافة (${_num(calc.vatPercent ?? settings.vatPercent)}%)',
@@ -2593,7 +2605,8 @@ class _Step4Review extends StatelessWidget {
         .$2
         .tr;
 
-    final locationText = controller.selectedAddress ??
+    final locationText =
+        controller.selectedAddress ??
         (controller.selectedLatitude != null
             ? '${controller.selectedLatitude!.toStringAsFixed(5)}, '
                   '${controller.selectedLongitude!.toStringAsFixed(5)}'

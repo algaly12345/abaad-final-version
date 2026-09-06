@@ -193,19 +193,61 @@ class OfferViewsEntry {
   int? offerId;
   String? title;
   String? status;
+  // فئة موحّدة من الباكند: active | pending | unpaid | rejected | expired —
+  // نفس تصنيف دونات "توزيع حالة العروض" كي لا تتناقض التسميتان.
+  String? statusBucket;
   bool isExpired;
   int? views;
   int? viewsAllTime;
   String? createdAt;
+  // موجود فقط في استجابة درِل-داون البُعد.
+  String? expiryDate;
 
   OfferViewsEntry.fromJson(Map<String, dynamic> json)
       : offerId = _toInt(json['offer_id']),
         title = json['title']?.toString(),
         status = json['status']?.toString(),
+        statusBucket = json['status_bucket']?.toString(),
         isExpired = _toBool(json['is_expired']),
         views = _toInt(json['views']),
         viewsAllTime = _toInt(json['views_all_time']),
-        createdAt = json['created_at']?.toString();
+        createdAt = json['created_at']?.toString(),
+        expiryDate = json['expiry_date']?.toString();
+}
+
+// ─── درِل-داون بُعد واحد (منطقة/تصنيف/نوع خدمة) لنوافذ التفاصيل ────────────
+
+class DimensionMeta {
+  final String? type;
+  final int? id;
+  final String? name;
+  final String? nameAr;
+
+  DimensionMeta.fromJson(Map<String, dynamic> json)
+      : type = json['type']?.toString(),
+        id = _toInt(json['id']),
+        name = json['name']?.toString(),
+        nameAr = json['name_ar']?.toString();
+
+  String get displayName => (nameAr?.isNotEmpty ?? false)
+      ? nameAr!
+      : (name?.isNotEmpty ?? false)
+          ? name!
+          : '-';
+}
+
+class DimensionOffers {
+  final DimensionMeta? dimension;
+  final int totalViews;
+  final List<OfferViewsEntry> offers;
+
+  DimensionOffers.fromJson(Map<String, dynamic> json)
+      : dimension = json['dimension'] is Map
+            ? DimensionMeta.fromJson(
+                Map<String, dynamic>.from(json['dimension']))
+            : null,
+        totalViews = _toInt(json['total_views']) ?? 0,
+        offers = _mapList(json['offers'], OfferViewsEntry.fromJson);
 }
 
 // مشتركة بين by_zone / by_category / views_by_zone / views_by_category — نفس
@@ -296,6 +338,8 @@ class SubscriptionEntry {
   int? numberOfCategories;
   int? offerId;
   String? offerTitle;
+  // يحدّده الباكند: أحدث اشتراك مدفوع غير منتهٍ — لا مجرد أحدث صف.
+  bool isCurrent;
 
   SubscriptionEntry.fromJson(Map<String, dynamic> json)
       : id = _toInt(json['id']),
@@ -313,7 +357,8 @@ class SubscriptionEntry {
         numberOfZone = _toInt(json['number_of_zone']),
         numberOfCategories = _toInt(json['number_of_categories']),
         offerId = _toInt(json['offer_id']),
-        offerTitle = (json['offer'] is Map) ? json['offer']['title']?.toString() : null;
+        offerTitle = (json['offer'] is Map) ? json['offer']['title']?.toString() : null,
+        isCurrent = _toBool(json['is_current']);
 }
 
 class CoverageBlock {

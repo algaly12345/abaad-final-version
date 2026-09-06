@@ -173,4 +173,29 @@ class ProviderStatisticsController extends GetxController implements GetxService
   Future<void> loadAll() async {
     await Future.wait([loadDashboard(), loadPeriodOffers(reload: true)]);
   }
+
+  /// جلب مرّة واحدة لعروض بُعد محدّد (منطقة/تصنيف/نوع خدمة) لنافذة التفاصيل —
+  /// يتبع نفس الفترة المختارة حاليًا. النافذة تدير حالتها عبر FutureBuilder.
+  Future<DimensionOffers?> fetchDimensionOffers(String type, int id) async {
+    try {
+      final response = await providerStatisticsRepo.getDimensionOffers(
+        type: type,
+        id: id,
+        period: selectedPeriod,
+        from: _fromDateParam,
+        to: _toDateParam,
+      );
+
+      if (response.statusCode == 200 &&
+          response.body is Map &&
+          response.body['data'] is Map) {
+        return DimensionOffers.fromJson(
+          Map<String, dynamic>.from(response.body['data'] as Map),
+        );
+      }
+    } catch (e) {
+      debugPrint('ProviderStatisticsController.fetchDimensionOffers failed: $e');
+    }
+    return null;
+  }
 }

@@ -25,4 +25,25 @@ class ProviderStatisticsRepo {
     }
     return await apiClient.getData(uri);
   }
+
+  /// درِل-داون: عروض المزوّد ضمن بُعد واحد.
+  /// [type]: 'zone' | 'category' | 'service_type'. [period]/[from]/[to] بنفس
+  /// دلالات getDashboard.
+  Future<Response> getDimensionOffers({
+    required String type,
+    required int id,
+    String period = 'all',
+    String? from,
+    String? to,
+  }) async {
+    String uri =
+        '/api/v1/reports/provider/dimension?type=$type&id=$id&period=$period';
+    if (from != null && from.isNotEmpty) {
+      uri += '&from=$from';
+    }
+    if (to != null && to.isNotEmpty) {
+      uri += '&to=$to';
+    }
+    return await apiClient.getData(uri);
+  }
 }

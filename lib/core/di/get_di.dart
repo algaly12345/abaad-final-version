@@ -1,4 +1,4 @@
-﻿import 'dart:convert';
+import 'dart:convert';
 
 import 'package:abaad_flutter/features/auth/controller/auth_controller.dart';
 import 'package:abaad_flutter/features/home/controller/banner_controller.dart';
@@ -117,11 +117,27 @@ Future<Map<String, Map<String, String>>> init() async {
   Get.lazyPut(() => ServiceOfferRepo(apiClient: Get.find()));
   Get.lazyPut(() => ServiceOfferController(serviceOfferRepo: Get.find()));
 
-  Get.lazyPut(() => ServicesRepo(apiClient: Get.find()));
-  Get.lazyPut(() => ServicesController(servicesRepo: Get.find()));
+  // fenix: true — ProviderStatisticsController (below) resolves ServicesRepo via
+  // Get.find() when it is lazily built on the statistics route. Under the default
+  // SmartManagement.full, ServicesRepo gets disposed when the services route that
+  // first instantiated it is popped, and a plain lazyPut also drops its factory —
+  // so the later Get.find() threw "ServicesRepo not found". fenix keeps the
+  // factory so it is rebuilt on demand.
+  Get.lazyPut(() => ServicesRepo(apiClient: Get.find()), fenix: true);
+  Get.lazyPut(() => ServicesController(servicesRepo: Get.find()), fenix: true);
 
-  Get.lazyPut(() => ProviderStatisticsRepo(apiClient: Get.find()));
-  Get.lazyPut(() => ProviderStatisticsController(providerStatisticsRepo: Get.find(), servicesRepo: Get.find()));
+  // fenix: true — same reason as ServicesRepo above: this repo is instantiated
+  // only on the statistics route, so SmartManagement.full disposes it (and drops
+  // the plain-lazyPut factory) once that route is left, making a second visit
+  // throw "not found".
+  Get.lazyPut(() => ProviderStatisticsRepo(apiClient: Get.find()), fenix: true);
+  Get.lazyPut(
+    () => ProviderStatisticsController(
+      providerStatisticsRepo: Get.find(),
+      servicesRepo: Get.find(),
+    ),
+    fenix: true,
+  );
 
   Get.lazyPut(() => ProviderPermissionRepo(apiClient: Get.find()));
   Get.lazyPut(() => ProviderPermissionController(repo: Get.find()));

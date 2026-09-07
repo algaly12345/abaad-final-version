@@ -6,6 +6,10 @@
 <uses-permission android:name="android.permission.INTERNET"/>
 <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
 <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
+<<<<<<< HEAD
+=======
+<uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32"/>
+>>>>>>> 415627b (إزالة إذن READ_MEDIA_IMAGES نهائيًا - سياسة Google Play)
 <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
 
 <!-- سياسة Google Play لأذونات الصور والفيديو (Android 13+، API 33+): يُمنع

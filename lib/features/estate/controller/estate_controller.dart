@@ -439,38 +439,32 @@ class EstateController extends GetxController implements GetxService {
     _isLoading = true;
     update();
 
+    Response response = await estateRepo.addEstate(estateBody);
 
-    Response response = await estateRepo.addEstate(
-        estateBody);
-    prefs.setString('estate_id', response.body["estate_id"].toString());
     _pickPlaned.clear();
+
     if (response.statusCode == 200) {
-      _isLoading=false;
+      // 🔹 نقل قراءة estate_id لجوّه شرط النجاح — كان الكود بيحاول يقراها
+      // فورًا بعد الرد مباشرة، حتى لو الطلب فشل (response.body كانت null
+      // في الحالة دي)، وهو السبب الحقيقي للكراش.
+      final String estateIdStr = (response.body?["estate_id"] ?? "0").toString();
+      await prefs.setString('estate_id', estateIdStr);
+
+      _isLoading = false;
       _pickPlaned.clear();
       _pickedIdentities.clear();
-      _categoryIndex=0;
-      //  Get.offNamed(RouteHelper.getUploadRoute(161));
-
-
-      String estateIdStr = response.body["estate_id"].toString();
+      _categoryIndex = 0;
 
       int estateId = int.tryParse(estateIdStr) ?? 0;
       Get.offNamed(RouteHelper.getUploadRoute(estateId));
-
-      //   Get.offAllNamed(RouteHelper.getSuccess());
     } else {
       ApiChecker.checkApi(response, showToaster: true);
-      // //print("🔴 Error: Status Code: ${response.body["message"].toString()}");
       print("🔴 Error Body: ${response.statusText}");
       print("🔴 Error Body2: ${response.statusCode}");
-      //   //print("error estate---------------------------------------------------${response}");
     }
     _isLoading = false;
     update();
   }
-
-
-
 
 
   Future<void> updatEstate(EstateBody estatetBody) async {

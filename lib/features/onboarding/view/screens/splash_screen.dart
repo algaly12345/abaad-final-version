@@ -114,13 +114,19 @@ class _SplashScreenState extends State<SplashScreen> {
         //      لو تجاوز المهلة نُكمل، والفتح التالي يلتقط الكود المحفوظ.
         final bool firstLaunch = await rlm.isFirstLaunchThenMark();
         if (rlm.referralLinkDetected || firstLaunch) {
-          // رابط رُصد فعلاً → مهلة أطول لاكتمال حلّه (~8s). أول تشغيل بلا رابط
-          // مرصود بعد → مهلة قصيرة (~3s) لاحتمال deferred، حتى لا نُبطئ فتح
-          // كل مستخدم جديد. الحلقة تنكسر فور توفّر كود. لو تجاوزت المهلة يظل
-          // الكود محفوظًا ويُلتقَط في الفتح التالي.
-          final int maxTries = rlm.referralLinkDetected ? 40 : 15;
+          // الانتظار ينتهي فور أول شرط:
+          //  • hasPendingReferral(): وصل كود إحالة → توجيه للتسجيل بلا وميض.
+          //  • deferredCheckComplete: ReferralLinkManager حسم النتيجة (كود / لا
+          //    تطابُق organic / مهلة).
+          //  • maxTries: سقف. رابط رُصد فعلاً في هذا التشغيل → 8s حتى يكتمل حلّه
+          //    بلا وميض. أول تشغيل فقط بلا رابط مرصود → 5s فقط حتى لا نُبطئ كل
+          //    مستخدم جديد؛ لو وصل كود مؤجَّل متأخرًا بعدها فـ ReferralLinkManager
+          //    يعيد التوجيه لشاشة التسجيل (مسار warm/late) والكود محفوظ لا يضيع.
+          final int maxTries = rlm.referralLinkDetected ? 40 : 25;
           int tries = 0;
-          while (!(await rlm.hasPendingReferral()) && tries < maxTries) {
+          while (!(await rlm.hasPendingReferral()) &&
+              !rlm.deferredCheckComplete &&
+              tries < maxTries) {
             await Future.delayed(const Duration(milliseconds: 200));
             tries++;
           }

@@ -19,7 +19,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 #
 #version: 2.0.33+2
 
-version: 1.0.9+89
+version: 1.0.9+90
 
 
 environment:
@@ -121,9 +121,12 @@ dependencies:
   # ChottuLink للروابط الجديدة.
   play_install_referrer: ^0.5.0
   # ChottuLink (بديل Firebase Dynamic Links): رابط الإحالة القصير على
-  # go.abaadapp.sa يحمل الكود عبر التثبيت (deferred deep link) على
-  # iOS/أندرويد. الإنشاء من الخادم؛ هنا للاستقبال فقط. انظر main.dart.
-  chottu_link: ^1.1.3
+  # abaadapp.chottu.link يحمل الكود عبر التثبيت (deferred deep link) على
+  # iOS/أندرويد. الإنشاء من الخادم؛ هنا للاستقبال فقط. انظر
+  # referral_link_manager.dart. **مثبَّت بالضبط**: ReferralLinkManager ينادي
+  # قناة chottu_link الأصلية getAppLinkData مباشرةً (لا يكشفها غلاف Dart)،
+  # فترقية غير مقصودة قد تكسر هذا المسار بصمت.
+  chottu_link: 1.1.3
   any_link_preview: any
   tutorial_coach_mark: any
   webview_flutter: any

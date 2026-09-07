@@ -118,13 +118,28 @@ class AppConstants {
   // ChottuLink (بديل Firebase Dynamic Links): مفتاح SDK للجوال + النطاق
   // يصلان من الباكند ضمن /api/v1/config (جدول business_settings:
   // chottulink_mobile_sdk_key / chottulink_domain)، ويُخزَّنان في
-  // SharedPreferences ليُقرآ مبكرًا في main() عند الفتح البارد. لا مفتاح
-  // مُضمَّن في التطبيق. النطاق الافتراضي أدناه احتياط فقط لحين أول مزامنة
-  // إعدادات — يجب أن يطابق مضيف intent-filter في AndroidManifest.xml
-  // وapplinks في Runner.entitlements (كلاهما لا يمكن ضبطه وقت التشغيل).
+  // SharedPreferences ليُقرآ مبكرًا في main() عند الفتح البارد. النطاق
+  // الافتراضي أدناه احتياط لحين أول مزامنة إعدادات — يجب أن يطابق مضيف
+  // intent-filter في AndroidManifest.xml وapplinks في Runner.entitlements
+  // (كلاهما لا يمكن ضبطه وقت التشغيل).
   static const String CHOTTULINK_SDK_KEY_PREF = 'chottulink_sdk_key';
   static const String CHOTTULINK_DOMAIN_PREF = 'chottulink_domain';
   static String chottulinkDomain = 'abaadapp.chottu.link';
+
+  // مفتاح SDK مُضمَّن كاحتياط: في **أول تشغيل بعد التثبيت** — وهي الحالة
+  // الوحيدة المهمة للرابط المؤجَّل (deferred deep link) — لا يكون المفتاح
+  // القادم من /api/v1/config قد خُزِّن في SharedPreferences بعد، فتتأخّر
+  // تهيئة ChottuLink SDK لِما بعد نداء الإعدادات، وتُهدر الطلقة الوحيدة
+  // التي يفحص فيها الـ SDK الأصلي رابط التثبيت المؤجَّل (يمهل 6s للتهيئة
+  // ثم يضبط deferred_check_done نهائيًا). هذا مفتاح عميل عام (c_app_…)
+  // مشحون أصلًا داخل الحزمة ومكشوف في رد /api/v1/config — تضمينه هنا لا
+  // يكشف سرًّا، لكنه يتيح تهيئة الـ SDK فورًا قبل أي فحص. القيمة القادمة
+  // من الباكند تظل لها الأولوية (تدوير المفتاح — انظر onConfigChottuLink).
+  // **يجب أن يطابق `chottulink_mobile_sdk_key` في business_settings على
+  // الإنتاج** (BASE_URL أعلاه = app.abaadapp.sa دائمًا). آخر تحقّق من
+  // https://app.abaadapp.sa/api/v1/config : 2026-09-07.
+  static const String CHOTTULINK_SDK_KEY_FALLBACK =
+      'c_app_YKYjoD4DZYS5Uka8KVxUmajPWmrcowhl';
   static const String LOYALTY_TRANSACTION_URL =
       '/api/v1/loyalty-point/transactions';
   static const String LOYALTY_POINT_TRANSFER_URL =

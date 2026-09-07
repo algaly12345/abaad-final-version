@@ -8,8 +8,10 @@ import 'package:abaad_flutter/shared/utils/app_constants.dart';
 import 'package:abaad_flutter/shared/utils/referral_code_storage.dart';
 import 'package:app_links/app_links.dart';
 import 'package:chottu_link/chottu_link.dart';
+import 'package:chottu_link/model/attribution_data.dart';
 import 'package:chottu_link/model/chottu_link_resolve_link.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 
 /// نقطة موحّدة لكل ما يخصّ روابط الإحالة العميقة (Deep / Deferred Deep Links):
@@ -35,6 +37,28 @@ class ReferralLinkManager {
   StreamSubscription<Uri>? _appLinksSub;
   StreamSubscription<ResolvedLink>? _chottuSub;
   bool _initDone = false;
+
+  /// نفس اسم قناة chottu_link الأصلية — للنداء المباشر على `getAppLinkData`
+  /// (لا يكشفه غلاف Dart) بعد اكتمال التهيئة، فيُعيد تشغيل فحص النيّة في
+  /// الإضافة الأصلية والـ SDK مُهيّأ فعلًا هذه المرة (انظر _pokeNativeAppLinkCheck).
+  static const MethodChannel _chottuMethodChannel = MethodChannel('chottu_link');
+
+  /// المفتاح الذي هُيّئ به الـ SDK فعليًا (مضمَّن أو من الإعدادات) — يستخدمه
+  /// [onConfigChottuLink] لكشف تدوير المفتاح من الباكند وإعادة التهيئة عندها فقط.
+  String? _activeSdkKey;
+
+  /// تهيئة SDK جارية الآن — لمنع نداءين متوازيين لـ ChottuLink.init (من [init]
+  /// ومن [onConfigChottuLink] الذي يُستدعى بلا await من SplashController).
+  Future<void>? _pendingInit;
+
+  /// آخر كود إحالة عولج فعليًا — يمنع ازدواج الحفظ/التوجيه حين يصل نفس الكود
+  /// من أكثر من مصدر (تدفّق onLinkReceivedWithMeta + استطلاع getAttributionData).
+  String? _lastHandledCode;
+
+  /// يصير true فور معرفة نتيجة فحص الرابط المؤجَّل في أول تشغيل: رابط وُجد
+  /// وعولِج، أو لا تطابُق (organic)، أو انتهت المهلة. شاشة السبلاش تنتظر عليه
+  /// فتتوقّف فورًا للمستخدم العادي بلا إحالة بدل انتظار السقف الكامل.
+  bool deferredCheckComplete = false;
 
   // ── حالة مشتركة تقرأها شاشة السبلاش (SplashScreen._navigateToApp) ────────
   /// معرّف عقار من رابط تفاصيل معلَّق (app.abaadapp.sa/details/{id}).
@@ -67,10 +91,23 @@ class ReferralLinkManager {
     if (prefsDomain != null && prefsDomain.isNotEmpty) {
       AppConstants.chottulinkDomain = prefsDomain;
     }
+    // تهيئة ChottuLink SDK **فورًا وقبل الاستماع أدناه**: الإضافة الأصلية
+    // تفحص رابط التثبيت المؤجَّل مرّة واحدة فقط (عند onListen / onAttachedToActivity)
+    // وتمهل 6s فقط لاكتمال التهيئة ثم تضبط deferred_check_done نهائيًا. لو
+    // انتظرنا مفتاح /api/v1/config (غير المخزَّن في أول تشغيل) تفوت هذه الطلقة.
+    // نستخدم المخزَّن إن وُجد، وإلا المفتاح المضمَّن؛ والقيمة القادمة من
+    // الباكند تُحدِّث لاحقًا عند تدوير المفتاح (onConfigChottuLink).
     final prefsKey =
         await ReferralCodeStorage.readString(AppConstants.CHOTTULINK_SDK_KEY_PREF);
-    if (prefsKey != null && prefsKey.isNotEmpty) {
-      await _initChottuSdk(prefsKey);
+    final String sdkKey = (prefsKey != null && prefsKey.isNotEmpty)
+        ? prefsKey
+        : AppConstants.CHOTTULINK_SDK_KEY_FALLBACK;
+    if (sdkKey.isNotEmpty) {
+      // بلا await: التهيئة الأصلية قد تستغرق ~4s على فتح بارد، ولا نريد تأخير
+      // تسجيل المستمع/بدء حلقة الحلّ أدناه بها. مستمع onLinkReceivedWithMeta
+      // ونداء الإضافة الأصلي كلاهما يصبر حتى isInitialized (مهلة 6s داخلية)،
+      // وحلقة _resolveDeferredOnFirstLaunch تفحص isInitialized قبل كل استعلام.
+      unawaited(_initChottuSdk(sdkKey));
     }
 
     // احتياط أندرويد: Play Install Referrer للروابط الخام القديمة.
@@ -99,6 +136,11 @@ class ReferralLinkManager {
       _log('DEEPLINK', 'ChottuLink listen error: $e');
     }
 
+    // حلّ الرابط المؤجَّل في أول تشغيل: يحفّز فحص النيّة الأصلي مرّة، ويستطلع
+    // getAttributionData حتى تُعرف النتيجة (رابط / لا تطابُق / مهلة) فيرفع
+    // deferredCheckComplete لتتوقّف شاشة السبلاش عن الانتظار فورًا.
+    unawaited(_resolveDeferredOnFirstLaunch());
+
     // app_links: الفتح البارد (getInitialLink) + الروابط أثناء التشغيل.
     try {
       final Uri? initialUri = await _appLinks.getInitialLink();
@@ -115,22 +157,124 @@ class ReferralLinkManager {
   }
 
   /// يُستدعى من SplashController بعد وصول /api/v1/config (المفتاح/النطاق من
-  /// جدول business_settings). يهيّئ الـ SDK إن لم يكن مُهيّأً (أول تشغيل /
-  /// تدوير المفتاح).
+  /// جدول business_settings). الـ SDK هُيّئ أصلًا في [init] بمفتاح مخزَّن أو
+  /// مضمَّن؛ هنا نُعيد التهيئة **فقط** إن جاء الباكند بمفتاح مختلف (تدوير مفتاح).
   Future<void> onConfigChottuLink({required String key, required String domain}) async {
     if (!GetPlatform.isMobile) return;
     if (domain.isNotEmpty) AppConstants.chottulinkDomain = domain;
-    if (key.isNotEmpty && !ChottuLink.isInitialized()) {
+    if (key.isEmpty) return;
+    if (!ChottuLink.isInitialized() || key != _activeSdkKey) {
       await _initChottuSdk(key);
     }
   }
 
+  /// يُهيّئ الـ SDK مرّة واحدة لكل مفتاح؛ نداءان متوازيان لنفس المفتاح يتشاركان
+  /// نفس الـ Future (لا نداء ChottuLink.init مزدوج بسبب سباق init/onConfigChottuLink).
   Future<void> _initChottuSdk(String key) async {
+    if (ChottuLink.isInitialized() && _activeSdkKey == key) return;
+    final Future<void>? inFlight = _pendingInit;
+    if (inFlight != null) {
+      await inFlight;
+      if (ChottuLink.isInitialized() && _activeSdkKey == key) return;
+    }
+    final Future<void> run = _runChottuInit(key);
+    _pendingInit = run;
+    try {
+      await run;
+    } finally {
+      if (identical(_pendingInit, run)) _pendingInit = null;
+    }
+  }
+
+  Future<void> _runChottuInit(String key) async {
     try {
       await ChottuLink.init(apiKey: key).timeout(const Duration(seconds: 8));
+      _activeSdkKey = key;
       _log('DEEPLINK', 'ChottuLink.init OK isInitialized=${ChottuLink.isInitialized()}');
     } catch (e) {
       _log('DEEPLINK', 'ChottuLink.init error: $e');
+    }
+  }
+
+  /// يُستدعى مرّة من [init] بعد بدء تهيئة الـ SDK وتسجيل مستمع التدفّق (التهيئة
+  /// تجري بالتوازي؛ الحلقة تفحص isInitialized). يغطّي الحالة التي فيها نداءا
+  /// onListen/onAttachedToActivity في الإضافة الأصلية سبقا اكتمال التهيئة
+  /// وسقطا بمهلة 6s بصمت (أول تشغيل: بدء بطيء + نداء /api/v1/config). آلية العمل:
+  ///   • بعد تهيئة الـ SDK (وبحدّ أدنى ~600ms): تحفيز واحد لـ getAppLinkData
+  ///     الأصلي (يجبر الإضافة على تشغيل فرع الرابط المؤجَّل والـ SDK مُهيّأ الآن).
+  ///   • استطلاع getAttributionData كل 400ms: عند توفّر بيانات الإسناد إمّا
+  ///     تطابُق (نمرّر الوجهة كرابط مؤجَّل) أو لا تطابُق (organic) — الحالتان
+  ///     ترفعان deferredCheckComplete فتخرج شاشة السبلاش فورًا.
+  ///   • سقف 9s: لو لم تصل بيانات إسناد إطلاقًا (خدمة ChottuLink بطيئة/معطّلة)
+  ///     نرفع deferredCheckComplete على أي حال فلا تتجمّد السبلاش.
+  /// المسار الأساسي يبقى تدفّق onLinkReceivedWithMeta؛ هذا استطلاع مكمِّل
+  /// وإشارة "انتهى" للسبلاش. آمن ضد الازدواج عبر _lastHandledCode.
+  Future<void> _resolveDeferredOnFirstLaunch() async {
+    // الإحالة تعني تسجيلًا جديدًا فقط — مستخدم مسجَّل لا يحتاج حلّ الرابط
+    // المؤجَّل، ولا نُعيد اشتقاق الكود من إسناد ChottuLink المخبّأ عند كل فتح.
+    if (!GetPlatform.isMobile || _isLoggedIn()) {
+      deferredCheckComplete = true;
+      return;
+    }
+    const int maxMs = 9000;
+    const int stepMs = 400;
+    // تأخير بسيط قبل التحفيز: يكفي لتسجيل المستمع (onListen) وبدء تهيئة الـ SDK،
+    // فلا يتسابق نداءان لفرع الرابط المؤجَّل. أصغر بكثير من السابق (2s) ليقصر
+    // زمن سبلاش المستخدم العادي بلا إحالة (يخرج فور رجوع "لا تطابُق").
+    const int pokeAfterMs = 600;
+    int elapsed = 0;
+    bool poked = false;
+    try {
+      while (elapsed < maxMs) {
+        if (!poked && elapsed >= pokeAfterMs && ChottuLink.isInitialized()) {
+          poked = true;
+          unawaited(_pokeNativeAppLinkCheck());
+        }
+        if (await hasPendingReferral()) return; // التقطه التدفّق بالفعل
+        if (ChottuLink.isInitialized()) {
+          AttributionData? att;
+          try {
+            att = await ChottuLink.getAttributionData();
+          } catch (_) {
+            att = null;
+          }
+          if (att != null) {
+            final String? dest = att.destinationUrl;
+            if (att.matchFound && dest != null && dest.isNotEmpty) {
+              _log('REFERRAL', 'deferred via getAttributionData: $dest');
+              final Uri? uri = Uri.tryParse(dest);
+              if (uri != null) await handleUri(uri, deferred: true);
+              return;
+            }
+            if (!att.matchFound) {
+              _log('REFERRAL', 'deferred: no match (organic)');
+              return;
+            }
+          }
+        }
+        await Future.delayed(const Duration(milliseconds: stepMs));
+        elapsed += stepMs;
+      }
+      _log('REFERRAL', 'deferred resolve timed out after ${maxMs}ms');
+    } catch (e) {
+      _log('REFERRAL', 'deferred resolve loop error: $e');
+    } finally {
+      deferredCheckComplete = true;
+    }
+  }
+
+  /// نداء مباشر على قناة chottu_link الأصلية لدالة `getAppLinkData` (لا
+  /// يكشفها غلاف Dart): تُجبر الإضافة الأصلية على إعادة معالجة نيّة النشاط
+  /// الحالية بحثًا عن رابط مؤجَّل، والـ SDK مُهيّأ فعلًا الآن. النتيجة تصل
+  /// عبر نفس EventChannel الذي يستمع إليه [init]. أي خطأ (منصّة لا تدعم
+  /// الدالة، لم تُهيَّأ بعد) يُبتلع بصمت.
+  Future<void> _pokeNativeAppLinkCheck() async {
+    if (!GetPlatform.isMobile) return;
+    try {
+      await _chottuMethodChannel.invokeMethod<dynamic>('getAppLinkData');
+      _log('DEEPLINK', 're-poked native getAppLinkData after init');
+    } catch (e) {
+      _log('DEEPLINK', 'getAppLinkData poke error: $e');
     }
   }
 
@@ -232,6 +376,10 @@ class ReferralLinkManager {
   // ═══════════════════════ استلام الكود + التوجيه ════════════════════════
 
   Future<void> _onCodeReceived(String code, {required bool deferred}) async {
+    // نفس الكود قد يصل من مصدرين (تدفّق onLinkReceivedWithMeta + استطلاع
+    // getAttributionData) — نعالجه مرّة واحدة فقط فلا يتكرّر Get.offAllNamed.
+    if (code == _lastHandledCode) return;
+    _lastHandledCode = code;
     await ReferralCodeStorage.save(code);
     _log('REFERRAL', 'saved locally (deferred=$deferred): $code');
 
@@ -290,6 +438,7 @@ class ReferralLinkManager {
   Future<void> clearAfterRegistration() async {
     pendingReferralSignUp = false;
     referralLinkDetected = false;
+    _lastHandledCode = null;
     await ReferralCodeStorage.clear();
     _log('REFERRAL', 'cleared after registration/login');
   }

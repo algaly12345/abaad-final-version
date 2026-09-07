@@ -707,5 +707,7 @@
   "good_afternoon": "طاب يومك",
   "good_evening": "مساء الخير",
   "services": "خدمات",
-  "choose_your_preferred_app_language": "Choose the language you'd like to use in the app"
+  "choose_your_preferred_app_language": "Choose the language you'd like to use in the app",
+  "cancel_signup_title": "إلغاء التسجيل؟",
+  "cancel_signup_message": "سيتم إلغاء عملية التسجيل والعودة إلى الصفحة الرئيسية. هل تريد المتابعة؟"
 }

@@ -709,6 +709,8 @@
   "good_afternoon": "Good afternoon",
   "good_evening": "Good evening",
   "services": "services",
-  "choose_your_preferred_app_language": "اختر اللغة التي تفضل استخدامها داخل التطبيق"
+  "choose_your_preferred_app_language": "اختر اللغة التي تفضل استخدامها داخل التطبيق",
+  "cancel_signup_title": "Cancel registration?",
+  "cancel_signup_message": "Your registration will be cancelled and you'll return to the home page. Continue?"
 
 }

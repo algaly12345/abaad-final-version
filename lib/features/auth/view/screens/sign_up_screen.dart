@@ -48,6 +48,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
   String? _registrationType = 'individual';
   String? _selectedUserType;
 
+  /// حارس إعادة الدخول لزرّ الرجوع — نقرة مزدوجة سريعة أو فتح الحوار مرّتين.
+  bool _handlingBack = false;
+
   /// المصدر الوحيد الذي يملأ _referCodeController هو رابط الإحالة (لا يوجد
   /// حقل يدوي له في الواجهة) — فوجود قيمة هنا يعني تحديداً أن هذا التسجيل
   /// جاء عبر رابط إحالة مزوّد خدمة، فنسجّله هو أيضاً كمزوّد خدمة مباشرة بلا
@@ -77,6 +80,48 @@ class _SignUpScreenState extends State<SignUpScreen> {
     }
   }
 
+  /// معالج زرّ الرجوع (أيقونة الشريط + زرّ النظام/الإيماءة معًا). لا يمسّ منطق
+  /// الإحالة إطلاقًا — يقرأ فقط [_isReferralSignUp] القائم:
+  ///  • جاء عبر رابط إحالة: هذه الشاشة جذر المكدّس (Get.offAllNamed)، فالرجوع
+  ///    "ميت". نعرض تأكيد إلغاء التسجيل، وعند التأكيد ننتقل للصفحة الرئيسية.
+  ///    الكود المحفوظ لا يُمسح (يبقى لأي محاولة تسجيل لاحقة كما هو مصمَّم).
+  ///  • تسجيل عادي: سلوك RootFallbackScope.handleBackTap القائم بلا تغيير.
+  Future<void> _handleBack() async {
+    if (_handlingBack) return;
+    _handlingBack = true;
+    try {
+      if (_isReferralSignUp) {
+        final bool leave = await _confirmCancelSignUp() ?? false;
+        if (!leave || !mounted) return;
+        Get.offAllNamed(RouteHelper.getInitialRoute());
+        return;
+      }
+      if (mounted) RootFallbackScope.handleBackTap(context);
+    } finally {
+      _handlingBack = false;
+    }
+  }
+
+  Future<bool?> _confirmCancelSignUp() {
+    return showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text('cancel_signup_title'.tr),
+        content: Text('cancel_signup_message'.tr),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: Text('no'.tr),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: Text('yes'.tr),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   void dispose() {
     _firstNameFocus.dispose();
@@ -96,7 +141,15 @@ class _SignUpScreenState extends State<SignUpScreen> {
     final bool isDesktop = ResponsiveHelper.isDesktop(context);
     final primary = Theme.of(context).primaryColor;
 
-    return Scaffold(
+    return PopScope(
+      // زرّ/إيماءة الرجوع من النظام لا يُغلق التطبيق ولا "يموت" على هذه
+      // الشاشة حين تكون جذر المكدّس — نمرّره لنفس معالج أيقونة الرجوع.
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        _handleBack();
+      },
+      child: Scaffold(
       backgroundColor: const Color(0xFFF4F6F9),
       extendBodyBehindAppBar: true,
       appBar: isDesktop
@@ -105,11 +158,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
               backgroundColor: Colors.transparent,
               elevation: 0,
               toolbarHeight: AppBarSpec.height,
-              // handleBackTap (not Get.back()): this screen is often the stack
-              // root — reached via Get.offAllNamed from the referral deep-link
-              // flow (ReferralLinkManager) and from splash — and GetX's
-              // Get.back() silently no-ops when Navigator.canPop() is false, so
-              // the plain back button was dead. Falls back to the services tab.
+              // زرّ الرجوع يمرّ عبر _handleBack: لمن جاء برابط إحالة يعرض تأكيد
+              // إلغاء التسجيل ثم ينتقل للرئيسية؛ لغيره سلوك RootFallbackScope
+              // القائم. (Get.back() وحدها "ميتة" هنا لأن الشاشة جذر المكدّس
+              // بعد Get.offAllNamed من تدفّق الإحالة / السبلاش.)
               leading: Padding(
                 padding: const EdgeInsets.all(8),
                 child: Material(
@@ -117,7 +169,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   shape: const CircleBorder(),
                   clipBehavior: Clip.antiAlias,
                   child: InkWell(
-                    onTap: () => RootFallbackScope.handleBackTap(context),
+                    onTap: _handleBack,
                     child: const Padding(
                       padding: EdgeInsets.all(7),
                       child: Icon(
@@ -501,6 +553,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
             ],
           );
         },
+      ),
       ),
     );
   }

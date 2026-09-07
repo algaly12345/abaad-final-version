@@ -51,22 +51,25 @@ class ReferralCodeStorage {
 
   /// أندرويد فقط: يقرأ Play Install Referrer (القيمة التي مرّرها
   /// ReferralLinkController ضمن رابط متجر بلاي عند التحويل من
-  /// abaadapp.sa/ref/CODE) ويحفظ الكود إن وُجد. احتياط للروابط الخام القديمة؛
-  /// الروابط عبر ChottuLink يغطّيها الـ SDK. يتجاهل أي خطأ بصمت.
-  static Future<void> captureFromPlayInstallReferrer() async {
-    if (!GetPlatform.isAndroid) return;
+  /// abaadapp.sa/ref/CODE) ويحفظ الكود إن وُجد، ويعيده. احتياط للروابط الخام
+  /// القديمة؛ الروابط عبر ChottuLink يغطّيها الـ SDK (تمرّر `cid` لا `ref_code`).
+  /// يعيد null لو لم يحمل الـ referrer `ref_code`. يتجاهل أي خطأ بصمت.
+  static Future<String?> captureFromPlayInstallReferrer() async {
+    if (!GetPlatform.isAndroid) return null;
 
     try {
       final ReferrerDetails details = await PlayInstallReferrer.installReferrer;
       final String? referrer = details.installReferrer;
-      if (referrer == null || referrer.isEmpty) return;
+      if (referrer == null || referrer.isEmpty) return null;
 
       final String? code = Uri.splitQueryString(referrer)['ref_code'];
       if (code != null && code.isNotEmpty) {
         await save(code);
+        return code;
       }
     } catch (e) {
       debugPrint('Play Install Referrer error: $e');
     }
+    return null;
   }
 }

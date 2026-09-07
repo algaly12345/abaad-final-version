@@ -110,10 +110,11 @@ class ReferralLinkManager {
       unawaited(_initChottuSdk(sdkKey));
     }
 
-    // احتياط أندرويد: Play Install Referrer للروابط الخام القديمة.
-    unawaited(ReferralCodeStorage.captureFromPlayInstallReferrer().then((_) async {
-      final code = await ReferralCodeStorage.peek();
-      if (code != null) {
+    // احتياط أندرويد: Play Install Referrer للروابط الخام (abaadapp.sa/ref/CODE
+    // → referrer=ref_code=...). روابط ChottuLink تمرّر `cid` لا `ref_code`
+    // فيتجاهلها هذا ويحلّها الـ SDK. نتصرّف فقط لو التقط كودًا فعليًا.
+    unawaited(ReferralCodeStorage.captureFromPlayInstallReferrer().then((code) async {
+      if (code != null && code.isNotEmpty) {
         _log('REFERRAL', 'from Play Install Referrer: $code');
         await _onCodeReceived(code, deferred: true);
       }
@@ -197,18 +198,20 @@ class ReferralLinkManager {
   }
 
   /// يُستدعى مرّة من [init] بعد بدء تهيئة الـ SDK وتسجيل مستمع التدفّق (التهيئة
-  /// تجري بالتوازي؛ الحلقة تفحص isInitialized). يغطّي الحالة التي فيها نداءا
-  /// onListen/onAttachedToActivity في الإضافة الأصلية سبقا اكتمال التهيئة
-  /// وسقطا بمهلة 6s بصمت (أول تشغيل: بدء بطيء + نداء /api/v1/config). آلية العمل:
-  ///   • بعد تهيئة الـ SDK (وبحدّ أدنى ~600ms): تحفيز واحد لـ getAppLinkData
-  ///     الأصلي (يجبر الإضافة على تشغيل فرع الرابط المؤجَّل والـ SDK مُهيّأ الآن).
-  ///   • استطلاع getAttributionData كل 400ms: عند توفّر بيانات الإسناد إمّا
-  ///     تطابُق (نمرّر الوجهة كرابط مؤجَّل) أو لا تطابُق (organic) — الحالتان
-  ///     ترفعان deferredCheckComplete فتخرج شاشة السبلاش فورًا.
-  ///   • سقف 9s: لو لم تصل بيانات إسناد إطلاقًا (خدمة ChottuLink بطيئة/معطّلة)
-  ///     نرفع deferredCheckComplete على أي حال فلا تتجمّد السبلاش.
-  /// المسار الأساسي يبقى تدفّق onLinkReceivedWithMeta؛ هذا استطلاع مكمِّل
-  /// وإشارة "انتهى" للسبلاش. آمن ضد الازدواج عبر _lastHandledCode.
+  /// تجري بالتوازي؛ الحلقة تفحص isInitialized).
+  ///
+  /// **حرج**: على تثبيت حقيقي من Google Play، تهيئة ChottuLink الأصلية تستغرق
+  /// **10‑20 ثانية** (ربط خدمة Install Referrer + نداء خادم لحلّ الـ cid حتميًا
+  /// + جلب الإعدادات) — أطول بكثير من التحميل الجانبي. خلالها ترجع
+  /// getAttributionData/getAppLinkData الأصليتان "not initialized". لذا:
+  ///   • السقف 45s (لا 9s) مع تحفيز getAppLinkData متكرّر كل ~6s (نافذة انتظار
+  ///     الإضافة الداخلية) حتى تكتمل التهيئة الأصلية فيصل الرابط.
+  ///   • deferredCheckComplete يُرفع بعد ~6s فقط (تخرج شاشة السبلاش) بينما تظلّ
+  ///     الحلقة تعمل بالخلفية — إن وصل الكود متأخّرًا يوجّه _onCodeReceived
+  ///     لشاشة التسجيل عبر مسار warm/late والكود محفوظ لا يضيع.
+  ///   • أول ردّ إسناد فعلي: تطابُق → نمرّر الوجهة؛ لا تطابُق → organic ونتوقّف.
+  /// المسار الأساسي يبقى تدفّق onLinkReceivedWithMeta. آمن ضد الازدواج عبر
+  /// _lastHandledCode.
   Future<void> _resolveDeferredOnFirstLaunch() async {
     // الإحالة تعني تسجيلًا جديدًا فقط — مستخدم مسجَّل لا يحتاج حلّ الرابط
     // المؤجَّل، ولا نُعيد اشتقاق الكود من إسناد ChottuLink المخبّأ عند كل فتح.
@@ -216,27 +219,31 @@ class ReferralLinkManager {
       deferredCheckComplete = true;
       return;
     }
-    const int maxMs = 9000;
-    const int stepMs = 400;
-    // تأخير بسيط قبل التحفيز: يكفي لتسجيل المستمع (onListen) وبدء تهيئة الـ SDK،
-    // فلا يتسابق نداءان لفرع الرابط المؤجَّل. أصغر بكثير من السابق (2s) ليقصر
-    // زمن سبلاش المستخدم العادي بلا إحالة (يخرج فور رجوع "لا تطابُق").
-    const int pokeAfterMs = 600;
+    const int maxMs = 45000;
+    const int stepMs = 500;
+    const int splashReleaseMs = 6000; // بعده تكمل السبلاش، والحلقة تستمر بالخلفية
+    const int pokeEveryMs = 6000; // نافذة انتظار getAppLinkData الداخلية
     int elapsed = 0;
-    bool poked = false;
+    int lastPokeMs = -pokeEveryMs;
     try {
       while (elapsed < maxMs) {
-        if (!poked && elapsed >= pokeAfterMs && ChottuLink.isInitialized()) {
-          poked = true;
-          unawaited(_pokeNativeAppLinkCheck());
+        if (!deferredCheckComplete && elapsed >= splashReleaseMs) {
+          deferredCheckComplete = true;
         }
         if (await hasPendingReferral()) return; // التقطه التدفّق بالفعل
+
+        if (ChottuLink.isInitialized() &&
+            elapsed - lastPokeMs >= pokeEveryMs) {
+          lastPokeMs = elapsed;
+          unawaited(_pokeNativeAppLinkCheck());
+        }
+
         if (ChottuLink.isInitialized()) {
           AttributionData? att;
           try {
             att = await ChottuLink.getAttributionData();
           } catch (_) {
-            att = null;
+            att = null; // الأصلية ترجع null حتى تكتمل التهيئة — نُكمل الانتظار
           }
           if (att != null) {
             final String? dest = att.destinationUrl;
@@ -255,7 +262,7 @@ class ReferralLinkManager {
         await Future.delayed(const Duration(milliseconds: stepMs));
         elapsed += stepMs;
       }
-      _log('REFERRAL', 'deferred resolve timed out after ${maxMs}ms');
+      _log('REFERRAL', 'deferred resolve gave up after ${maxMs}ms');
     } catch (e) {
       _log('REFERRAL', 'deferred resolve loop error: $e');
     } finally {

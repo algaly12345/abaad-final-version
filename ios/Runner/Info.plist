@@ -83,5 +83,9 @@
 	<array>
 		<string>whatsapp</string>
 	</array>
+	<key>NSCameraUsageDescription</key>
+	<string>يستخدم التطبيق الكاميرا لتصوير العقارات ورفع صورها ومستنداتك.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>يستخدم التطبيق موقعك لعرض العقارات القريبة منك على الخريطة.</string>
 </dict>
 </plist>

@@ -296,6 +296,8 @@ import 'package:abaad_flutter/shared/utils/messages.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+import 'package:image_picker_android/image_picker_android.dart';
+import 'package:image_picker_platform_interface/image_picker_platform_interface.dart';
 import 'package:url_strategy/url_strategy.dart';
 
 import 'package:abaad_flutter/features/estate/controller/estate_controller.dart';
@@ -308,6 +310,15 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // تفعيل "أداة اختيار الصور من Android" (Photo Picker) بدل ACTION_GET_CONTENT
+  // — المسار الذي توصي به سياسة Google Play لأذونات الصور والفيديو، ولا يحتاج
+  // أي إذن READ_MEDIA_IMAGES. آمن على كل الأجهزة: image_picker يسقط تلقائياً
+  // لـ ACTION_GET_CONTENT عند غياب الأداة.
+  final imagePickerImpl = ImagePickerPlatform.instance;
+  if (imagePickerImpl is ImagePickerAndroid) {
+    imagePickerImpl.useAndroidPhotoPicker = true;
+  }
 
   SystemChrome.setEnabledSystemUIMode(
     SystemUiMode.manual,

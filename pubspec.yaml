@@ -19,7 +19,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 #
 #version: 2.0.33+2
 
-version: 1.0.8+88
+version: 1.0.9+89
 
 
 environment:
@@ -78,6 +78,10 @@ dependencies:
   http: any
   path_provider: any
   image_picker: any
+  # promoted transitive → direct so main.dart can opt into the Android Photo
+  # Picker (useAndroidPhotoPicker) — Google Play photo/video permissions policy.
+  image_picker_android: any
+  image_picker_platform_interface: any
   phone_number: any
   country_code_picker: any
   geolocator: any
@@ -170,6 +174,8 @@ dependency_overrides:
   http: any
   path_provider: any
   image_picker: any
+  image_picker_android: any
+  image_picker_platform_interface: any
   phone_number: any
   country_code_picker: any
   geolocator: any

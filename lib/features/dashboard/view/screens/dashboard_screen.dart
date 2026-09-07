@@ -561,7 +561,11 @@ class _DashboardScreenState extends State<DashboardScreen> with RouteAware {
   // يطلب أذونات النظام مباشرة (نوافذ Android/iOS الأصلية) مرة واحدة فقط عند
   // أول فتح للتطبيق. إن رفض المستخدم إذنًا دون اختيار "عدم السؤال مجددًا"،
   // لن يُعاد سؤاله تلقائيًا في كل فتح — سيُطلب الإذن المحدد عند نقطة
-  // استخدامه الفعلية (مثل اختيار صورة) بدل إزعاجه هنا في كل مرة.
+  // استخدامه الفعلية بدل إزعاجه هنا في كل مرة.
+  //
+  // ملاحظة: لا نطلب Permission.photos — اختيار الصور يتم عبر أداة اختيار
+  // الصور من Android (Photo Picker) التي لا تحتاج أي إذن، ووجود إذن
+  // READ_MEDIA_IMAGES ممنوع بسياسة Google Play (انظر AndroidManifest.xml).
   Future<void> _requestAppPermissions() async {
     try {
       final prefs = Get.find<SharedPreferences>();
@@ -571,7 +575,6 @@ class _DashboardScreenState extends State<DashboardScreen> with RouteAware {
 
       await [
         Permission.locationWhenInUse,
-        Permission.photos,
         Permission.notification,
       ].request();
 

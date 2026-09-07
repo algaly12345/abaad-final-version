@@ -6,9 +6,20 @@
 <uses-permission android:name="android.permission.INTERNET"/>
 <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
 <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
-<uses-permission android:name="android.permission.READ_MEDIA_IMAGES"/>
-<uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32"/>
 <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+
+<!-- سياسة Google Play لأذونات الصور والفيديو (Android 13+، API 33+): يُمنع
+     طلب READ_MEDIA_IMAGES / READ_MEDIA_VIDEO ما دامت أدوات الاختيار المضمّنة
+     بالنظام كافية. التطبيق يختار الصور حصراً عبر image_picker (أداة اختيار
+     الصور من Android — Photo Picker، مُفعَّلة في main.dart) و file_picker
+     (SAF)، وكلاهما يعيد URI بصلاحية مؤقتة دون أي إذن تخزين. نمنع صراحةً حقن
+     أي إذن وسائط واسع من أي حزمة عبر manifest merge حتى لا يُرفض الإصدار
+     مستقبلاً — tools:node="remove" يُزيلها من الـ manifest المدموج النهائي
+     فلا تصل لفحص Play إطلاقاً (نفس أسلوب أذونات الكاميرا أدناه). -->
+<uses-permission android:name="android.permission.READ_MEDIA_IMAGES" tools:node="remove"/>
+<uses-permission android:name="android.permission.READ_MEDIA_VIDEO" tools:node="remove"/>
+<uses-permission android:name="android.permission.READ_MEDIA_VISUAL_USER_SELECTED" tools:node="remove"/>
+<uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" tools:node="remove"/>
 
 <!-- حزمة camera (مُستورَدة فقط في lib/shared/widgets/qr_code.dart — شاشة
      ماسح QR غير مُستخدَمة إطلاقاً، كل كود المسح فيها معلَّق) تحقن تلقائياً

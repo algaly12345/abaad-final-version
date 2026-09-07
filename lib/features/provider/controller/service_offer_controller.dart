@@ -5,7 +5,6 @@ import 'package:abaad_flutter/shared/widgets/custom_snackbar.dart';
 import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:permission_handler/permission_handler.dart';
 
 class ServiceOfferController extends GetxController implements GetxService {
   final ServiceOfferRepo serviceOfferRepo;
@@ -243,20 +242,8 @@ class ServiceOfferController extends GetxController implements GetxService {
 
   void pickImage() async {
     try {
-      PermissionStatus status = await Permission.photos.status;
-      if (!status.isGranted && !status.isLimited) {
-        status = await Permission.photos.request();
-      }
-      if (status.isPermanentlyDenied) {
-        showCustomSnackBar('permission_permanently_denied_msg'.tr);
-        await openAppSettings();
-        return;
-      }
-      if (!status.isGranted && !status.isLimited) {
-        showCustomSnackBar('فشل اختيار الصورة، تحقق من الصلاحيات');
-        return;
-      }
-
+      // أداة اختيار الصور من Android (Photo Picker) — لا تحتاج أي إذن
+      // READ_MEDIA_IMAGES (سياسة Google Play؛ انظر AndroidManifest.xml + main.dart).
       final XFile? image = await ImagePicker().pickImage(
         source: ImageSource.gallery,
         imageQuality: 80,
@@ -266,7 +253,7 @@ class ServiceOfferController extends GetxController implements GetxService {
         update();
       }
     } catch (e) {
-      showCustomSnackBar('فشل اختيار الصورة، تحقق من الصلاحيات');
+      showCustomSnackBar('فشل اختيار الصورة');
     }
   }
 
@@ -284,20 +271,8 @@ class ServiceOfferController extends GetxController implements GetxService {
 
   Future<void> pickLogo() async {
     try {
-      PermissionStatus status = await Permission.photos.status;
-      if (!status.isGranted && !status.isLimited) {
-        status = await Permission.photos.request();
-      }
-      if (status.isPermanentlyDenied) {
-        showCustomSnackBar('permission_permanently_denied_msg'.tr);
-        await openAppSettings();
-        return;
-      }
-      if (!status.isGranted && !status.isLimited) {
-        showCustomSnackBar('فشل اختيار الصورة، تحقق من الصلاحيات');
-        return;
-      }
-
+      // أداة اختيار الصور من Android (Photo Picker) — لا تحتاج أي إذن
+      // READ_MEDIA_IMAGES (سياسة Google Play؛ انظر AndroidManifest.xml + main.dart).
       final XFile? image = await ImagePicker().pickImage(
         source: ImageSource.gallery,
         imageQuality: 80,
@@ -307,7 +282,7 @@ class ServiceOfferController extends GetxController implements GetxService {
         update();
       }
     } catch (e) {
-      showCustomSnackBar('فشل اختيار الصورة، تحقق من الصلاحيات');
+      showCustomSnackBar('فشل اختيار الصورة');
     }
   }
 

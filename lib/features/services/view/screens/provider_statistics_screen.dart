@@ -352,6 +352,16 @@ class _OverviewTab extends StatelessWidget {
                 Icons.visibility_rounded,
                 scoped ? 'stats_period_views'.tr : 'stats_total_views'.tr,
                 _formatNumber(s?.totalViews)),
+            // ظهور الإعلان داخل صفحات العقارات + عدد العقارات المختلفة (الوصول)
+            // — منفصلان عن "المشاهدات" (فتح صفحة العرض نفسها).
+            _KpiData(
+                Icons.campaign_rounded,
+                scoped ? 'stats_period_appearances'.tr : 'stats_appearances'.tr,
+                _formatNumber(s?.totalAppearances)),
+            _KpiData(
+                Icons.holiday_village_rounded,
+                scoped ? 'stats_period_reach'.tr : 'stats_reach'.tr,
+                _formatNumber(s?.totalReach)),
             _KpiData(Icons.trending_up_rounded, 'stats_views_last_30d'.tr,
                 _formatNumber(s?.viewsLast30d)),
             _KpiData(
@@ -724,7 +734,30 @@ class _PerformanceTab extends StatelessWidget {
                             _formatNumber(p?.viewsLast30d))),
                   ],
                 ),
-                if ((p?.totalViews ?? 0) == 0) ...[
+                const Divider(height: Spacing.sectionGap),
+                // ظهور الإعلان داخل صفحات العقارات، والوصول (عقارات مختلفة)،
+                // مقابل إجمالي العقارات المؤهّلة لظهوره.
+                Row(
+                  children: [
+                    Expanded(
+                        child: _MiniStat(
+                            periodScoped
+                                ? 'stats_period_appearances'.tr
+                                : 'stats_appearances'.tr,
+                            _formatNumber(p?.totalAppearances))),
+                    Expanded(
+                        child: _MiniStat(
+                            periodScoped
+                                ? 'stats_period_reach'.tr
+                                : 'stats_reach'.tr,
+                            _formatNumber(p?.totalReach))),
+                    Expanded(
+                        child: _MiniStat('stats_eligible_estates'.tr,
+                            _formatNumber(p?.totalEligibleEstates))),
+                  ],
+                ),
+                if ((p?.totalViews ?? 0) == 0 &&
+                    (p?.totalAppearances ?? 0) == 0) ...[
                   const SizedBox(height: Spacing.sm),
                   Text(
                     'stats_views_tracking_note'.tr,
@@ -1059,6 +1092,18 @@ class _OfferDetailDialog extends StatelessWidget {
                     label: 'stats_all_time'.tr,
                     value: _formatNumber(entry.viewsAllTime),
                   ),
+                  // ظهور هذا الإعلان داخل صفحات العقارات + عدد العقارات
+                  // المختلفة التي ظهر فيها (الوصول).
+                  _DetailRow(
+                    icon: Icons.campaign_rounded,
+                    label: 'stats_appearances'.tr,
+                    value: _formatNumber(entry.appearances),
+                  ),
+                  _DetailRow(
+                    icon: Icons.holiday_village_rounded,
+                    label: 'stats_reach'.tr,
+                    value: _formatNumber(entry.reach),
+                  ),
                   if (entry.createdAt != null)
                     _DetailRow(
                       icon: Icons.add_circle_outline_rounded,
@@ -1308,8 +1353,11 @@ class _DimensionDetailSheetState extends State<_DimensionDetailSheet> {
                   _infoBanner(context, children: [
                     _bannerStat(context, Icons.visibility_rounded,
                         _formatNumber(d.totalViews), 'stats_total_views'.tr),
-                    _bannerStat(context, Icons.storefront_rounded,
-                        _formatNumber(offers.length), 'stats_offers_unit'.tr),
+                    _bannerStat(context, Icons.campaign_rounded,
+                        _formatNumber(d.totalAppearances),
+                        'stats_appearances'.tr),
+                    _bannerStat(context, Icons.holiday_village_rounded,
+                        _formatNumber(d.totalReach), 'stats_reach'.tr),
                   ]),
                   const SizedBox(height: Spacing.sm),
                   Text('stats_dimension_hint'.tr,
@@ -1460,6 +1508,18 @@ class _OfferViewsSection extends StatelessWidget {
                                 ],
                               ],
                             ),
+                            // ظهور هذا الإعلان داخل صفحات العقارات + عدد
+                            // العقارات المختلفة التي ظهر فيها (الوصول).
+                            if ((o.appearances ?? 0) > 0 ||
+                                (o.reach ?? 0) > 0) ...[
+                              const SizedBox(height: 4),
+                              Text(
+                                '${'stats_appearances'.tr}: ${_formatNumber(o.appearances)}'
+                                '  ·  ${'stats_reach'.tr}: ${_formatNumber(o.reach)}',
+                                style: AppTypography.caption.copyWith(
+                                    color: AppColors.textSecondary(context)),
+                              ),
+                            ],
                           ],
                         ),
                       ),
@@ -1578,6 +1638,27 @@ class _RankedDimensionSection extends StatelessWidget {
                                     style: AppTypography.caption.copyWith(
                                         color: AppColors.textSecondary(
                                             context))),
+                                // "ظهر في N شقة من M مؤهلة" — متاح لتوزيع
+                                // المناطق فقط (by_zone).
+                                if (type == 'zone' &&
+                                    ((e.reach ?? 0) > 0 ||
+                                        (e.eligibleEstates ?? 0) > 0)) ...[
+                                  const SizedBox(width: 10),
+                                  Icon(Icons.holiday_village_outlined,
+                                      size: 12,
+                                      color:
+                                          AppColors.textSecondary(context)),
+                                  const SizedBox(width: 3),
+                                  Text(
+                                    'stats_reach_of_eligible'.trParams({
+                                      'n': _formatNumber(e.reach),
+                                      'm': _formatNumber(e.eligibleEstates),
+                                    }),
+                                    style: AppTypography.caption.copyWith(
+                                        color: AppColors.textSecondary(
+                                            context)),
+                                  ),
+                                ],
                               ],
                             ),
                           ],

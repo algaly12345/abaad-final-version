@@ -112,6 +112,10 @@ class ProviderStatsSummary {
   int? expiredOffersCount;
   int? totalOffersCount;
   int? totalViews;
+  // مرّات ظهور إعلانات المزوّد داخل صفحات العقارات، وعدد العقارات المختلفة
+  // التي ظهرت فيها (الوصول) — منفصلان تمامًا عن totalViews (فتح صفحة العرض).
+  int? totalAppearances;
+  int? totalReach;
   int? viewsLast7d;
   int? viewsLast30d;
   double? avgViewsPerActiveOffer;
@@ -126,6 +130,8 @@ class ProviderStatsSummary {
     expiredOffersCount = _toInt(json['expired_offers_count']);
     totalOffersCount = _toInt(json['total_offers_count']);
     totalViews = _toInt(json['total_views']);
+    totalAppearances = _toInt(json['total_appearances']);
+    totalReach = _toInt(json['total_reach']);
     viewsLast7d = _toInt(json['views_last_7d']);
     viewsLast30d = _toInt(json['views_last_30d']);
     avgViewsPerActiveOffer = _toDouble(json['avg_views_per_active_offer']);
@@ -172,6 +178,11 @@ class AccountProfile {
 
 class PerformanceBlock {
   int? totalViews;
+  int? totalAppearances;
+  int? totalReach;
+  // إجمالي العقارات النشطة المؤهّلة لظهور إعلانات المزوّد (تقاطع مناطق ×
+  // تصنيفات عروضه النشطة) — مفهوم آني لا يتأثّر بفلتر الفترة.
+  int? totalEligibleEstates;
   int? viewsLast7d;
   int? viewsLast30d;
   List<OfferViewsEntry> byOffer;
@@ -181,6 +192,9 @@ class PerformanceBlock {
 
   PerformanceBlock.fromJson(Map<String, dynamic> json)
       : totalViews = _toInt(json['total_views']),
+        totalAppearances = _toInt(json['total_appearances']),
+        totalReach = _toInt(json['total_reach']),
+        totalEligibleEstates = _toInt(json['total_eligible_estates']),
         viewsLast7d = _toInt(json['views_last_7d']),
         viewsLast30d = _toInt(json['views_last_30d']),
         byOffer = _mapList(json['by_offer'], OfferViewsEntry.fromJson),
@@ -199,6 +213,9 @@ class OfferViewsEntry {
   bool isExpired;
   int? views;
   int? viewsAllTime;
+  // ظهور هذا الإعلان داخل صفحات العقارات + عدد العقارات المختلفة (الوصول).
+  int? appearances;
+  int? reach;
   String? createdAt;
   // موجود فقط في استجابة درِل-داون البُعد.
   String? expiryDate;
@@ -211,6 +228,8 @@ class OfferViewsEntry {
         isExpired = _toBool(json['is_expired']),
         views = _toInt(json['views']),
         viewsAllTime = _toInt(json['views_all_time']),
+        appearances = _toInt(json['appearances']),
+        reach = _toInt(json['reach']),
         createdAt = json['created_at']?.toString(),
         expiryDate = json['expiry_date']?.toString();
 }
@@ -239,6 +258,8 @@ class DimensionMeta {
 class DimensionOffers {
   final DimensionMeta? dimension;
   final int totalViews;
+  final int totalAppearances;
+  final int totalReach;
   final List<OfferViewsEntry> offers;
 
   DimensionOffers.fromJson(Map<String, dynamic> json)
@@ -247,6 +268,8 @@ class DimensionOffers {
                 Map<String, dynamic>.from(json['dimension']))
             : null,
         totalViews = _toInt(json['total_views']) ?? 0,
+        totalAppearances = _toInt(json['total_appearances']) ?? 0,
+        totalReach = _toInt(json['total_reach']) ?? 0,
         offers = _mapList(json['offers'], OfferViewsEntry.fromJson);
 }
 
@@ -258,13 +281,19 @@ class DimensionViewsEntry {
   String? nameAr;
   int? offersCount;
   int? totalViews;
+  // موجودان فقط في by_zone (توزيع المشاهدات حسب المنطقة): عدد العقارات التي
+  // ظهر فيها إعلان المزوّد بهذه المنطقة، وعدد العقارات المؤهّلة فيها.
+  int? reach;
+  int? eligibleEstates;
 
   DimensionViewsEntry.fromJson(Map<String, dynamic> json)
       : id = _toInt(json['id']),
         name = json['name']?.toString(),
         nameAr = json['name_ar']?.toString(),
         offersCount = _toInt(json['offers_count']),
-        totalViews = _toInt(json['total_views']);
+        totalViews = _toInt(json['total_views']),
+        reach = _toInt(json['reach']),
+        eligibleEstates = _toInt(json['eligible_estates']);
 }
 
 class ViewsPoint {

@@ -260,6 +260,7 @@ class ApiClient extends GetxService {
       ).timeout(Duration(seconds: timeoutInSeconds));
       return handleResponse(response, uri, handleError);
     } catch (e) {
+      print("🔴🔴 REAL EXCEPTION for $uri: ${e.runtimeType} -> $e");
       return Response(statusCode: 1, statusText: noInternetMessage);
     }
   }
@@ -319,6 +320,7 @@ class ApiClient extends GetxService {
       http.Response response = await http.Response.fromStream(await request.send());
       return handleResponse(response, uri, handleError);
     } catch (e) {
+      print("🔴🔴 REAL EXCEPTION for $uri: ${e.runtimeType} -> $e");
       return Response(statusCode: 1, statusText: noInternetMessage);
     }
   }
@@ -336,6 +338,7 @@ class ApiClient extends GetxService {
       ).timeout(Duration(seconds: timeoutInSeconds));
       return handleResponse(response, uri, handleError);
     } catch (e) {
+      print("🔴🔴 REAL EXCEPTION for $uri: ${e.runtimeType} -> $e");
       return Response(statusCode: 1, statusText: noInternetMessage);
     }
   }
@@ -351,6 +354,7 @@ class ApiClient extends GetxService {
       ).timeout(Duration(seconds: timeoutInSeconds));
       return handleResponse(response, uri, handleError);
     } catch (e) {
+      print("🔴🔴 REAL EXCEPTION for $uri: ${e.runtimeType} -> $e");
       return Response(statusCode: 1, statusText: noInternetMessage);
     }
   }
@@ -377,7 +381,7 @@ class ApiClient extends GetxService {
     }
     if(foundation.kDebugMode) {
       if(response0.statusCode == 500) {
-        debugPrint('====> API Response: [${response0.statusCode}] $uri\n${(response0.body.toString().substring(0, 500))}');
+        debugPrint('====> API Response: [${response0.statusCode}] $uri\n${response0.body.toString().substring(0, response0.body.toString().length > 500 ? 500 : response0.body.toString().length)}');
       } else {
         debugPrint('====> API Response: [${response0.statusCode}] $uri\n${response0.body}');
       }

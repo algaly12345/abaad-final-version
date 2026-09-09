@@ -1,10 +1,12 @@
 import 'dart:math';
 
 import 'package:abaad_flutter/core/routes/route_helper.dart';
+import 'package:abaad_flutter/features/estate/view/screens/estate_details.dart';
 import 'package:abaad_flutter/features/provider/data/models/service_offer_model.dart';
 import 'package:abaad_flutter/features/services/controller/provider_statistics_controller.dart';
 import 'package:abaad_flutter/features/services/view/screens/service_details_screen.dart';
 import 'package:abaad_flutter/features/services/data/models/provider_statistics_model.dart';
+import 'package:abaad_flutter/shared/data/models/estate_model.dart' show Estate;
 import 'package:abaad_flutter/shared/helpers/price_converter.dart';
 import 'package:abaad_flutter/shared/theme/design_system.dart';
 import 'package:abaad_flutter/shared/utils/styles.dart';
@@ -875,6 +877,19 @@ IconData _forwardChevron(BuildContext context) => _isRtl(context)
     ? Icons.chevron_right_rounded
     : Icons.chevron_left_rounded;
 
+/// عنوان قسم صغير داخل نافذة درِل-داون البُعد (أيقونة + نص).
+Widget _dimSectionLabel(BuildContext context, IconData icon, String text) {
+  return Row(
+    children: [
+      Icon(icon, size: 15, color: AppColors.textSecondary(context)),
+      const SizedBox(width: 6),
+      Text(text,
+          style: AppTypography.smallBold
+              .copyWith(color: AppColors.textPrimary(context))),
+    ],
+  );
+}
+
 void _showDimensionSheet(
     BuildContext context, String type, int? id, String title) {
   if (id == null) return;
@@ -1281,6 +1296,95 @@ class _DimOfferRow extends StatelessWidget {
   }
 }
 
+/// صف عقار واحد ضمن "العقارات المُغطّاة" — الضغط يفتح تفاصيل العقار.
+class _DimEstateRow extends StatelessWidget {
+  final DimensionEstate entry;
+  const _DimEstateRow({required this.entry});
+
+  @override
+  Widget build(BuildContext context) {
+    final cat = entry.displayCategory;
+    final loc = [entry.city, entry.districts]
+        .where((s) => (s ?? '').trim().isNotEmpty)
+        .join(' · ');
+    final shown = (entry.appearances ?? 0) > 0;
+
+    return InkWell(
+      onTap: entry.estateId == null
+          ? null
+          : () {
+              Navigator.pop(context);
+              Get.to(
+                () => EstateDetails(estate: Estate(id: entry.estateId!)),
+                transition: Transition.cupertino,
+              );
+            },
+      borderRadius: BorderRadius.circular(AppRadius.medium),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: Spacing.sm),
+        padding: const EdgeInsets.all(Spacing.md),
+        decoration: BoxDecoration(
+          color: AppColors.surface(context),
+          borderRadius: BorderRadius.circular(AppRadius.medium),
+          border: Border.all(color: AppColors.divider(context)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    (entry.title?.isNotEmpty ?? false)
+                        ? entry.title!
+                        : (cat.isNotEmpty ? cat : '-'),
+                    style: AppTypography.smallBold
+                        .copyWith(color: AppColors.textPrimary(context)),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                if ((entry.views ?? 0) > 0) ...[
+                  Icon(Icons.visibility_outlined,
+                      size: 13, color: AppColors.textSecondary(context)),
+                  const SizedBox(width: 3),
+                  Text(_formatNumber(entry.views),
+                      style: AppTypography.smallBold
+                          .copyWith(color: AppColors.textSecondary(context))),
+                ],
+                const SizedBox(width: 4),
+                Icon(_forwardChevron(context),
+                    size: 18, color: AppColors.textSecondary(context)),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: Spacing.sm,
+              runSpacing: 4,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                if (cat.isNotEmpty)
+                  _premiumBadge(cat, AppColors.primary(context)),
+                if (loc.isNotEmpty)
+                  _InfoBit(icon: Icons.place_outlined, text: loc),
+                if ((entry.price ?? 0) > 0)
+                  _InfoBit(
+                      icon: Icons.sell_outlined,
+                      text: PriceConverter.convertPrice(entry.price ?? 0.0)),
+                if (shown)
+                  _InfoBit(
+                      icon: Icons.campaign_rounded,
+                      text:
+                          '${'stats_appearances'.tr}: ${_formatNumber(entry.appearances)}'),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 /// نافذة سفلية: كل عروض المزوّد ضمن منطقة/تصنيف/نوع خدمة واحد.
 class _DimensionDetailSheet extends StatefulWidget {
   final String type;
@@ -1338,7 +1442,7 @@ class _DimensionDetailSheetState extends State<_DimensionDetailSheet> {
                 child: _emptyState(context, Icons.wifi_off_rounded,
                     'stats_dimension_load_error'.tr),
               );
-            } else if (offers.isEmpty) {
+            } else if (offers.isEmpty && d.coveredEstates.isEmpty) {
               body = Padding(
                 padding: const EdgeInsets.symmetric(vertical: 48),
                 child: _emptyState(context, Icons.inbox_rounded,
@@ -1363,8 +1467,30 @@ class _DimensionDetailSheetState extends State<_DimensionDetailSheet> {
                   Text('stats_dimension_hint'.tr,
                       style: AppTypography.caption.copyWith(
                           color: AppColors.textSecondary(context))),
-                  const SizedBox(height: Spacing.md),
-                  ...offers.map((o) => _DimOfferRow(entry: o)),
+                  if (offers.isNotEmpty) ...[
+                    const SizedBox(height: Spacing.md),
+                    _dimSectionLabel(context, Icons.design_services_rounded,
+                        '${'stats_dim_services_header'.tr} (${_formatNumber(offers.length)})'),
+                    const SizedBox(height: Spacing.sm),
+                    ...offers.map((o) => _DimOfferRow(entry: o)),
+                  ],
+                  // العقارات التي تغطّيها إعلانات المزوّد ضمن هذه المنطقة/التصنيف.
+                  if (d.coveredEstates.isNotEmpty) ...[
+                    const SizedBox(height: Spacing.md),
+                    _dimSectionLabel(context, Icons.holiday_village_outlined,
+                        '${'stats_covered_estates'.tr} (${_formatNumber(d.coveredEstatesCount)})'),
+                    const SizedBox(height: Spacing.sm),
+                    ...d.coveredEstates.map((e) => _DimEstateRow(entry: e)),
+                    if (d.coveredEstatesCount > d.coveredEstates.length) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        'stats_showing_top_n'.trParams(
+                            {'n': _formatNumber(d.coveredEstates.length)}),
+                        style: AppTypography.caption.copyWith(
+                            color: AppColors.textSecondary(context)),
+                      ),
+                    ],
+                  ],
                 ],
               );
             }

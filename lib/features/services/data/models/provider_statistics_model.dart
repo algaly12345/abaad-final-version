@@ -261,6 +261,10 @@ class DimensionOffers {
   final int totalAppearances;
   final int totalReach;
   final List<OfferViewsEntry> offers;
+  // العقارات النشطة التي تغطّيها إعلانات المزوّد ضمن هذا البُعد (منطقة/تصنيف):
+  // أعلى 50 حسب المشاهدات، مع العدد الكلي.
+  final List<DimensionEstate> coveredEstates;
+  final int coveredEstatesCount;
 
   DimensionOffers.fromJson(Map<String, dynamic> json)
       : dimension = json['dimension'] is Map
@@ -270,7 +274,39 @@ class DimensionOffers {
         totalViews = _toInt(json['total_views']) ?? 0,
         totalAppearances = _toInt(json['total_appearances']) ?? 0,
         totalReach = _toInt(json['total_reach']) ?? 0,
-        offers = _mapList(json['offers'], OfferViewsEntry.fromJson);
+        offers = _mapList(json['offers'], OfferViewsEntry.fromJson),
+        coveredEstates =
+            _mapList(json['covered_estates'], DimensionEstate.fromJson),
+        coveredEstatesCount = _toInt(json['covered_estates_count']) ?? 0;
+}
+
+/// عقار واحد ضمن "العقارات المُغطّاة" في نافذة درِل-داون البُعد.
+class DimensionEstate {
+  final int? estateId;
+  final String? title;
+  final String? categoryName;
+  final String? categoryNameAr;
+  final String? city;
+  final String? districts;
+  final double? price;
+  final int? views;
+  // مرّات ظهور إعلان المزوّد داخل صفحة هذا العقار.
+  final int? appearances;
+
+  DimensionEstate.fromJson(Map<String, dynamic> json)
+      : estateId = _toInt(json['estate_id']),
+        title = json['title']?.toString(),
+        categoryName = json['category_name']?.toString(),
+        categoryNameAr = json['category_name_ar']?.toString(),
+        city = json['city']?.toString(),
+        districts = json['districts']?.toString(),
+        price = _toDouble(json['price']),
+        views = _toInt(json['views']),
+        appearances = _toInt(json['appearances']);
+
+  String get displayCategory => (categoryNameAr?.isNotEmpty ?? false)
+      ? categoryNameAr!
+      : (categoryName ?? '');
 }
 
 // مشتركة بين by_zone / by_category / views_by_zone / views_by_category — نفس

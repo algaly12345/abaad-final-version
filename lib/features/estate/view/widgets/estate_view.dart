@@ -1,4 +1,5 @@
 ﻿import 'package:abaad_flutter/features/auth/controller/auth_controller.dart';
+import 'package:abaad_flutter/features/estate/controller/estate_share_helper.dart';
 import 'package:abaad_flutter/shared/controllers/splash_controller.dart';
 import 'package:abaad_flutter/features/favourite/controller/wishlist_controller.dart';
 import 'package:abaad_flutter/shared/data/models/estate_model.dart';
@@ -225,8 +226,9 @@ class _EstateViewState extends State<EstateView> {
               InkWell(
                 borderRadius: BorderRadius.circular(10),
                 onTap: () async {
+                  // رابط ChottuLink قصير (بلا إحالة/مكافأة)، مع تراجع للرابط الخام.
                   final String estateLink =
-                      'https://app.abaadapp.sa/details/${widget.estate?.id}';
+                      await resolveEstateShareLink(widget.estate?.id ?? 0);
                   final String message = 'شاهد هذا العقار: $estateLink';
                   final String encodedMessage = Uri.encodeComponent(message);
 

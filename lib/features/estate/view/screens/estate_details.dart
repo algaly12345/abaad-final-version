@@ -1,4 +1,5 @@
 import 'package:abaad_flutter/features/estate/controller/estate_controller.dart';
+import 'package:abaad_flutter/features/estate/controller/estate_share_helper.dart';
 import 'package:abaad_flutter/features/estate/view/widgets/estate_broker_verification_card.dart';
 import 'package:abaad_flutter/features/estate/view/widgets/estate_full_screen_gallery.dart';
 import 'package:abaad_flutter/shared/data/models/estate_model.dart';
@@ -27,6 +28,8 @@ class _EstateDetailsState extends State<EstateDetails> {
   void initState() {
     super.initState();
     Get.find<EstateController>().getEstateDetails(Estate(id: widget.estate.id));
+    // جلب رابط المشاركة بالخلفية الآن حتى يظهر زرّ المشاركة فورًا لاحقًا.
+    prefetchEstateShareLink(widget.estate.id ?? 0);
   }
 
   @override

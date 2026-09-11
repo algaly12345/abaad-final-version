@@ -11,8 +11,9 @@ class AppConstants {
 
   static const String BASE_URL = 'https://app.abaadapp.sa';
 
-  // فعّل هذا للاختبار المحلي (مع إضافة العنوان لـ network_security_config.xml)
-  //static const String BASE_URL = 'http://10.108.21.182';
+  // فعّل هذا للاختبار المحلي فقط (مع إضافة العنوان لـ network_security_config.xml)
+  // ⚠️ اختبار محلي فقط — أعِده إلى app.abaadapp.sa أعلاه قبل أي رفع/بناء إنتاج.
+  // static const String BASE_URL = 'http://10.108.21.222';
 
   // static const String BASE_URL = 'https://baad.arabengksa.com';
   static const String LAND_SERVICE_URL =
@@ -114,6 +115,16 @@ class AppConstants {
       '/api/v1/referrals/withdrawals';
   static const String REFERRAL_PAYOUT_METHOD_URL =
       '/api/v1/referrals/payout-method';
+
+  // رابط مشاركة العقار: GET /api/v1/estate/{id}/share-link → رابط ChottuLink
+  // قصير وجهته app.abaadapp.sa/details/{id}. **ليس رابط إحالة** — لا كود ولا
+  // مكافأة؛ فقط فتح التطبيق + deferred deep link + بطاقة معاينة بصورة العقار.
+  static const String ESTATE_SHARE_LINK_URI = '/api/v1/estate/';
+
+  // وجهة رابط تفاصيل العقار (نطاق الإنتاج دائمًا) — احتياط يُشارَك مباشرةً حين
+  // يفشل/يبطئ إنشاء الرابط القصير. نفس ما يعالجه ReferralLinkManager الحالة (1).
+  static const String ESTATE_DETAILS_DEEPLINK_BASE =
+      'https://app.abaadapp.sa/details/';
 
   // ChottuLink (بديل Firebase Dynamic Links): مفتاح SDK للجوال + النطاق
   // يصلان من الباكند ضمن /api/v1/config (جدول business_settings:

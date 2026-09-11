@@ -46,4 +46,17 @@ class ProviderStatisticsRepo {
     }
     return await apiClient.getData(uri);
   }
+
+  /// صفحة إضافية من "العقارات المُغطّاة" لنفس البُعد (تحميل متدرّج بالتمرير —
+  /// نداء درِل-داون البُعد يحمل الصفحة الأولى). [offset] رقم صفحة 1-based.
+  /// [type]: 'zone' | 'category' فقط.
+  Future<Response> getDimensionEstates({
+    required String type,
+    required int id,
+    int offset = 1,
+  }) async {
+    return await apiClient.getData(
+      '/api/v1/reports/provider/dimension-estates?type=$type&id=$id&offset=$offset',
+    );
+  }
 }

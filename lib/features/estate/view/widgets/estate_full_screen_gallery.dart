@@ -1,4 +1,5 @@
 import 'package:abaad_flutter/features/auth/controller/auth_controller.dart';
+import 'package:abaad_flutter/features/estate/controller/estate_share_helper.dart';
 import 'package:abaad_flutter/features/favourite/controller/wishlist_controller.dart';
 import 'package:abaad_flutter/shared/controllers/splash_controller.dart';
 import 'package:abaad_flutter/shared/data/models/estate_model.dart';
@@ -32,8 +33,10 @@ class _EstateFullScreenGalleryState extends State<EstateFullScreenGallery> {
     super.dispose();
   }
 
-  void _share() {
-    final link = 'https://app.abaadapp.sa/details/${widget.estate.id}';
+  Future<void> _share() async {
+    // رابط ChottuLink قصير (فتح التطبيق + deferred + بطاقة معاينة بصورة العقار)،
+    // ويتراجع للرابط الخام عند فشل/بطء الخدمة. بلا إحالة/مكافأة.
+    final link = await resolveEstateShareLink(widget.estate.id ?? 0);
     Share.share('${'check_this_property'.tr}: $link', subject: 'Abaad');
   }
 

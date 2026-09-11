@@ -198,4 +198,29 @@ class ProviderStatisticsController extends GetxController implements GetxService
     }
     return null;
   }
+
+  /// صفحة إضافية من "العقارات المُغطّاة" لنفس البُعد (تحميل متدرّج بالتمرير).
+  /// نافذة التفاصيل تحمل الصفحة الأولى عبر fetchDimensionOffers، وتطلب الباقي
+  /// صفحةً صفحةً هنا. [offset] رقم صفحة 1-based.
+  Future<DimensionEstatesPage?> fetchDimensionEstates(
+      String type, int id, int offset) async {
+    try {
+      final response = await providerStatisticsRepo.getDimensionEstates(
+        type: type,
+        id: id,
+        offset: offset,
+      );
+
+      if (response.statusCode == 200 &&
+          response.body is Map &&
+          response.body['data'] is Map) {
+        return DimensionEstatesPage.fromJson(
+          Map<String, dynamic>.from(response.body['data'] as Map),
+        );
+      }
+    } catch (e) {
+      debugPrint('ProviderStatisticsController.fetchDimensionEstates failed: $e');
+    }
+    return null;
+  }
 }

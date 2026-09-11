@@ -2,6 +2,7 @@
 
 import 'package:abaad_flutter/features/auth/controller/auth_controller.dart';
 import 'package:abaad_flutter/features/estate/controller/estate_controller.dart';
+import 'package:abaad_flutter/features/estate/controller/estate_share_helper.dart';
 import 'package:abaad_flutter/shared/controllers/splash_controller.dart';
 import 'package:abaad_flutter/features/profile/controller/user_controller.dart';
 import 'package:abaad_flutter/features/notification/data/models/notification_body.dart';
@@ -97,6 +98,9 @@ class _DettailsDilogState extends State<DettailsDilog> {
   void initState() {
     super.initState();
     _isLoggedIn = Get.find<AuthController>().isLoggedIn();
+
+    // جلب رابط المشاركة بالخلفية الآن حتى يظهر زرّ المشاركة فورًا لاحقًا.
+    prefetchEstateShareLink(widget.estate?.id ?? 0);
 
     if (widget.estate?.userId != null) {
       Get.find<UserController>().getUserInfoByID(widget.estate!.userId!);
@@ -1960,7 +1964,8 @@ class _DettailsDilogState extends State<DettailsDilog> {
   }
 
   void shareToWhatsApp(int id) async {
-    final url = "https://app.abaadapp.sa/details/$id";
+    // رابط ChottuLink قصير (بلا إحالة/مكافأة)، مع تراجع للرابط الخام.
+    final url = await resolveEstateShareLink(id);
     final message = "شاهد تفاصيل العقار:\n$url";
     final whatsappUrl =
         "https://wa.me/?text=${Uri.encodeComponent(message)}";
@@ -2090,10 +2095,11 @@ class _DettailsDilogState extends State<DettailsDilog> {
             iconColor: const Color(0xFF25D366),
             iconBg: const Color(0xFFE3FBEC),
             label: 'contact_whatsApp'.tr,
-            onTap: () {
-              final estateId = widget.estate?.id;
+            onTap: () async {
               final advertiserPhone = widget.estate?.users?.phone;
-              final estateUrl = "https://app.abaadapp.sa/details/$estateId";
+              // رابط ChottuLink قصير (بلا إحالة/مكافأة)، مع تراجع للرابط الخام.
+              final estateUrl =
+                  await resolveEstateShareLink(widget.estate?.id ?? 0);
               final message =
                   "السلام عليكم، أرغب في الاستفسار عن هذا العقار:\n$estateUrl";
               final whatsappUrl =

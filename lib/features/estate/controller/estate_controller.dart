@@ -3,6 +3,7 @@
 import 'package:abaad_flutter/features/category/controller/category_controller.dart';
 import 'package:abaad_flutter/core/api/api_checker.dart';
 import 'package:abaad_flutter/core/api/api_client.dart';
+import 'package:abaad_flutter/features/estate/controller/estate_share_helper.dart';
 import 'package:abaad_flutter/features/estate/data/bodies/estate_body.dart';
 import 'package:abaad_flutter/shared/data/models/category_model.dart';
 import 'package:abaad_flutter/shared/data/models/estate_model.dart';
@@ -347,6 +348,10 @@ class EstateController extends GetxController implements GetxService {
 
       if (response.statusCode == 200) {
         _estate = Estate.fromJson(response.body);
+        // رابط المشاركة يأتي داخل الرد — نخزّنه فورًا فيصير زرّ المشاركة فوريًا.
+        if (response.body is Map) {
+          seedEstateShareLink(estate.id ?? 0, response.body['share_link']);
+        }
         print('📍 PARSED lat/lng: ${_estate?.latitude} / ${_estate?.longitude}');
       } else {
         ApiChecker.checkApi(response, showToaster: true);

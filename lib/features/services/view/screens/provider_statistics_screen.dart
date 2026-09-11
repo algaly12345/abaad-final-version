@@ -825,17 +825,7 @@ class _MiniStat extends StatelessWidget {
 
 // ─── نمط شارة حالة العرض (مشترك بين القائمة ونوافذ التفاصيل) ──────────────
 
-({String label, Color color}) _offerBucketStyle(OfferViewsEntry o) {
-  // نعتمد status_bucket من الباكند (نفس تصنيف الدونات). fallback لمنطق status
-  // وحده فقط للتوافق مع نسخة باكند أقدم لا ترسله.
-  final bucket = o.statusBucket ??
-      (o.status == 'accept' && !o.isExpired
-          ? 'active'
-          : o.status == 'pending'
-              ? 'pending'
-              : o.status == 'rejected'
-                  ? 'rejected'
-                  : 'expired');
+({String label, Color color}) _bucketStyle(String bucket) {
   switch (bucket) {
     case 'active':
       return (label: 'active_status'.tr, color: Colors.green.shade600);
@@ -848,6 +838,20 @@ class _MiniStat extends StatelessWidget {
     default:
       return (label: 'expired_status'.tr, color: Colors.grey.shade600);
   }
+}
+
+({String label, Color color}) _offerBucketStyle(OfferViewsEntry o) {
+  // نعتمد status_bucket من الباكند (نفس تصنيف الدونات). fallback لمنطق status
+  // وحده فقط للتوافق مع نسخة باكند أقدم لا ترسله.
+  final bucket = o.statusBucket ??
+      (o.status == 'accept' && !o.isExpired
+          ? 'active'
+          : o.status == 'pending'
+              ? 'pending'
+              : o.status == 'rejected'
+                  ? 'rejected'
+                  : 'expired');
+  return _bucketStyle(bucket);
 }
 
 // ─── نوافذ التفاصيل (درِل-داون) ──────────────────────────────────────────
@@ -977,39 +981,51 @@ Widget _infoBanner(BuildContext context, {required List<Widget> children}) {
   final primary = AppColors.primary(context);
   return Container(
     padding: const EdgeInsets.symmetric(
-        horizontal: Spacing.md, vertical: Spacing.md),
+        horizontal: Spacing.sm, vertical: Spacing.md),
     decoration: BoxDecoration(
       color: primary.withValues(alpha: 0.06),
       borderRadius: BorderRadius.circular(AppRadius.medium),
       border: Border.all(color: primary.withValues(alpha: 0.2)),
     ),
-    child: Row(children: children),
+    // عمودي لكل إحصائية: القيمة فوق والوسم تحتها يلتفّ سطرين — يمنع بتر
+    // النصوص العربية الطويلة عند وضع ٣ إحصائيات في صفّ واحد.
+    child: Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: children,
+    ),
   );
 }
 
 Widget _bannerStat(BuildContext context, IconData icon, String value,
     String label) {
   return Expanded(
-    child: Row(
+    child: Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, size: 16, color: AppColors.primary(context)),
-        const SizedBox(width: 8),
-        Flexible(
-          child: RichText(
-            overflow: TextOverflow.ellipsis,
-            text: TextSpan(
-              style: AppTypography.caption
-                  .copyWith(color: AppColors.textSecondary(context)),
-              children: [
-                TextSpan(
-                  text: '$value ',
-                  style: AppTypography.smallBold
-                      .copyWith(color: AppColors.textPrimary(context)),
-                ),
-                TextSpan(text: label),
-              ],
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 15, color: AppColors.primary(context)),
+            const SizedBox(width: 5),
+            Flexible(
+              child: Text(
+                value,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: AppTypography.smallBold
+                    .copyWith(color: AppColors.textPrimary(context)),
+              ),
             ),
-          ),
+          ],
+        ),
+        const SizedBox(height: 3),
+        Text(
+          label,
+          textAlign: TextAlign.center,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          style: AppTypography.caption
+              .copyWith(color: AppColors.textSecondary(context)),
         ),
       ],
     ),
@@ -1223,7 +1239,10 @@ class _DetailRow extends StatelessWidget {
 
 class _DimOfferRow extends StatelessWidget {
   final OfferViewsEntry entry;
-  const _DimOfferRow({required this.entry});
+  // true عندما يكون الصفّ داخل ورقة سفلية (فنُغلقها قبل الانتقال)؛ false في
+  // القسم الموسّع داخل التبويب (لا نافذة نُغلقها).
+  final bool closeSheet;
+  const _DimOfferRow({required this.entry, this.closeSheet = false});
 
   @override
   Widget build(BuildContext context) {
@@ -1232,7 +1251,7 @@ class _DimOfferRow extends StatelessWidget {
       onTap: entry.offerId == null
           ? null
           : () {
-              Navigator.pop(context);
+              if (closeSheet) Navigator.pop(context);
               Get.to(
                 () => ServiceDetailsScreen(serviceId: entry.offerId!),
                 transition: Transition.cupertino,
@@ -1299,7 +1318,8 @@ class _DimOfferRow extends StatelessWidget {
 /// صف عقار واحد ضمن "العقارات المُغطّاة" — الضغط يفتح تفاصيل العقار.
 class _DimEstateRow extends StatelessWidget {
   final DimensionEstate entry;
-  const _DimEstateRow({required this.entry});
+  final bool closeSheet;
+  const _DimEstateRow({required this.entry, this.closeSheet = false});
 
   @override
   Widget build(BuildContext context) {
@@ -1313,7 +1333,7 @@ class _DimEstateRow extends StatelessWidget {
       onTap: entry.estateId == null
           ? null
           : () {
-              Navigator.pop(context);
+              if (closeSheet) Navigator.pop(context);
               Get.to(
                 () => EstateDetails(estate: Estate(id: entry.estateId!)),
                 transition: Transition.cupertino,
@@ -1385,23 +1405,275 @@ class _DimEstateRow extends StatelessWidget {
   }
 }
 
-/// نافذة سفلية: كل عروض المزوّد ضمن منطقة/تصنيف/نوع خدمة واحد.
-class _DimensionDetailSheet extends StatefulWidget {
+/// جسم تفاصيل بُعد واحد (منطقة/تصنيف/نوع خدمة): بانر الأرقام + خدمات المزوّد
+/// في هذا البُعد + "العقارات المُغطّاة" بتحميل متدرّج (١٠ لكل ضغطة "تحميل
+/// المزيد"). عمود بلا تمرير داخلي — يصلح داخل ورقة سفلية أو قسم موسّع في تبويب
+/// التغطية. [inSheet] يُغلق الورقة قبل الانتقال لصفحة عرض/عقار.
+class _DimensionDetailBody extends StatefulWidget {
+  final String type;
+  final int id;
+  final EdgeInsets padding;
+  final bool inSheet;
+  const _DimensionDetailBody({
+    required this.type,
+    required this.id,
+    this.padding = EdgeInsets.zero,
+    this.inSheet = false,
+  });
+
+  @override
+  State<_DimensionDetailBody> createState() => _DimensionDetailBodyState();
+}
+
+class _DimensionDetailBodyState extends State<_DimensionDetailBody> {
+  bool _loading = true;
+  bool _failed = false;
+  DimensionOffers? _data;
+
+  ProviderStatisticsController get _ctrl =>
+      Get.find<ProviderStatisticsController>();
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    final d = await _ctrl.fetchDimensionOffers(widget.type, widget.id);
+    if (!mounted) return;
+    setState(() {
+      _data = d;
+      _failed = d == null;
+      _loading = false;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final d = _data;
+    final offers = d?.offers ?? const <OfferViewsEntry>[];
+
+    if (_loading) {
+      return Padding(
+        padding: widget.padding,
+        child: _Shimmer(
+          child: Column(
+            children: List.generate(
+              3,
+              (_) => const Padding(
+                padding: EdgeInsets.only(bottom: Spacing.sm),
+                child: _SkeletonBox(height: 64, radius: 12),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    if (_failed || d == null) {
+      return Padding(
+        padding: widget.padding,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 24),
+          child: _emptyState(context, Icons.wifi_off_rounded,
+              'stats_dimension_load_error'.tr),
+        ),
+      );
+    }
+
+    if (offers.isEmpty && d.coveredEstatesCount == 0) {
+      return Padding(
+        padding: widget.padding,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 24),
+          child: _emptyState(
+              context, Icons.inbox_rounded, 'stats_no_services_in_period'.tr),
+        ),
+      );
+    }
+
+    return Padding(
+      padding: widget.padding,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _infoBanner(context, children: [
+            _bannerStat(context, Icons.visibility_rounded,
+                _formatNumber(d.totalViews), 'stats_total_views'.tr),
+            _bannerStat(context, Icons.campaign_rounded,
+                _formatNumber(d.totalAppearances), 'stats_appearances'.tr),
+            _bannerStat(context, Icons.holiday_village_rounded,
+                _formatNumber(d.totalReach), 'stats_reach'.tr),
+          ]),
+          if (offers.isNotEmpty) ...[
+            const SizedBox(height: Spacing.md),
+            _dimSectionLabel(context, Icons.design_services_rounded,
+                '${'stats_dim_services_header'.tr} (${_formatNumber(offers.length)})'),
+            const SizedBox(height: Spacing.sm),
+            ...offers
+                .map((o) => _DimOfferRow(entry: o, closeSheet: widget.inSheet)),
+          ],
+          if (d.coveredEstatesCount > 0) ...[
+            const SizedBox(height: Spacing.md),
+            _PaginatedEstates(
+              type: widget.type,
+              id: widget.id,
+              totalCount: d.coveredEstatesCount,
+              initial: d.coveredEstates,
+              inSheet: widget.inSheet,
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// قائمة "العقارات المُغطّاة" بتحميل متدرّج (١٠ لكل ضغطة "تحميل المزيد"):
+/// [initial] الصفحة الأولى إن توفّرت مع نداءٍ سابق، وإلا تُجلب هنا. يُعاد
+/// استخدامها في نافذة البُعد (منطقة/تصنيف) وفي توسّع الخدمة (type='offer').
+class _PaginatedEstates extends StatefulWidget {
+  final String type; // 'zone' | 'category' | 'offer'
+  final int id;
+  final int totalCount;
+  final List<DimensionEstate> initial;
+  final bool inSheet;
+  const _PaginatedEstates({
+    required this.type,
+    required this.id,
+    required this.totalCount,
+    this.initial = const [],
+    this.inSheet = false,
+  });
+
+  @override
+  State<_PaginatedEstates> createState() => _PaginatedEstatesState();
+}
+
+class _PaginatedEstatesState extends State<_PaginatedEstates> {
+  final List<DimensionEstate> _estates = [];
+  int _page = 0;
+  bool _loadingFirst = false;
+  bool _loadingMore = false;
+  bool _reachedEnd = false;
+
+  ProviderStatisticsController get _ctrl =>
+      Get.find<ProviderStatisticsController>();
+
+  @override
+  void initState() {
+    super.initState();
+    _estates.addAll(widget.initial);
+    if (_estates.isNotEmpty) {
+      _page = 1;
+      _reachedEnd = _estates.length >= widget.totalCount;
+    } else if (widget.totalCount > 0) {
+      _loadingFirst = true;
+      _fetch(1);
+    } else {
+      _reachedEnd = true;
+    }
+  }
+
+  Future<void> _fetch(int page) async {
+    final res = await _ctrl.fetchDimensionEstates(widget.type, widget.id, page);
+    if (!mounted) return;
+    setState(() {
+      _loadingFirst = false;
+      _loadingMore = false;
+      if (res == null) {
+        _reachedEnd = true;
+        return;
+      }
+      _page = page;
+      final seen = _estates.map((e) => e.estateId).toSet();
+      _estates.addAll(res.estates.where((e) => !seen.contains(e.estateId)));
+      final total = widget.totalCount > 0 ? widget.totalCount : res.totalSize;
+      _reachedEnd = res.estates.isEmpty || _estates.length >= total;
+    });
+  }
+
+  void _loadMore() {
+    if (_loadingMore || _reachedEnd) return;
+    setState(() => _loadingMore = true);
+    _fetch(_page + 1);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _dimSectionLabel(context, Icons.holiday_village_outlined,
+            '${'stats_covered_estates'.tr} (${_formatNumber(widget.totalCount)})'),
+        const SizedBox(height: Spacing.sm),
+        if (_loadingFirst)
+          _Shimmer(
+            child: Column(
+              children: List.generate(
+                3,
+                (_) => const Padding(
+                  padding: EdgeInsets.only(bottom: Spacing.sm),
+                  child: _SkeletonBox(height: 64, radius: 12),
+                ),
+              ),
+            ),
+          )
+        else ...[
+          ..._estates
+              .map((e) => _DimEstateRow(entry: e, closeSheet: widget.inSheet)),
+          if (_loadingMore)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 12),
+              child: Center(
+                child: SizedBox(
+                    width: 22,
+                    height: 22,
+                    child: CircularProgressIndicator(strokeWidth: 2.2)),
+              ),
+            )
+          else if (_estates.length < widget.totalCount)
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: InkWell(
+                onTap: _loadMore,
+                borderRadius: BorderRadius.circular(8),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 9),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text('stats_load_more'.tr,
+                          style: AppTypography.smallBold
+                              .copyWith(color: AppColors.primary(context))),
+                      const SizedBox(width: 4),
+                      Icon(Icons.keyboard_arrow_down_rounded,
+                          size: 18, color: AppColors.primary(context)),
+                      const SizedBox(width: 8),
+                      Text(
+                        '${_formatNumber(_estates.length)} / ${_formatNumber(widget.totalCount)}',
+                        style: AppTypography.caption.copyWith(
+                            color: AppColors.textSecondary(context)),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ],
+    );
+  }
+}
+
+/// نافذة سفلية لتفاصيل تصنيف/نوع خدمة (المناطق صارت قسمًا موسّعًا في التبويب).
+class _DimensionDetailSheet extends StatelessWidget {
   final String type;
   final int id;
   final String title;
   const _DimensionDetailSheet(
       {required this.type, required this.id, required this.title});
-
-  @override
-  State<_DimensionDetailSheet> createState() => _DimensionDetailSheetState();
-}
-
-class _DimensionDetailSheetState extends State<_DimensionDetailSheet> {
-  // يُنشأ مرّة واحدة — لا داخل builder الذي يُعاد بناؤه مع كل سحب.
-  late final Future<DimensionOffers?> _future = Get
-      .find<ProviderStatisticsController>()
-      .fetchDimensionOffers(widget.type, widget.id);
 
   @override
   Widget build(BuildContext context) {
@@ -1414,101 +1686,40 @@ class _DimensionDetailSheetState extends State<_DimensionDetailSheet> {
       child: Container(
         color: AppColors.background(context),
         constraints: BoxConstraints(maxHeight: maxH),
-        child: FutureBuilder<DimensionOffers?>(
-          future: _future,
-          builder: (context, snap) {
-            final loading = snap.connectionState == ConnectionState.waiting;
-            final d = snap.data;
-            final offers = d?.offers ?? const <OfferViewsEntry>[];
-
-            Widget body;
-            if (loading) {
-              body = _Shimmer(
-                child: ListView(
-                  shrinkWrap: true,
-                  padding: const EdgeInsets.all(Spacing.lg),
-                  children: List.generate(
-                    5,
-                    (_) => const Padding(
-                      padding: EdgeInsets.only(bottom: Spacing.sm),
-                      child: _SkeletonBox(height: 72, radius: 12),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _lightHeader(
+              context,
+              icon: _dimensionIcon(type),
+              title: title,
+              subtitle: _dimensionTypeLabel(type),
+              onClose: () => Navigator.pop(context),
+            ),
+            Flexible(
+              child: SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(
+                          Spacing.lg, Spacing.md, Spacing.lg, 0),
+                      child: Text('stats_dimension_hint'.tr,
+                          style: AppTypography.caption.copyWith(
+                              color: AppColors.textSecondary(context))),
                     ),
-                  ),
-                ),
-              );
-            } else if (d == null) {
-              body = Padding(
-                padding: const EdgeInsets.symmetric(vertical: 48),
-                child: _emptyState(context, Icons.wifi_off_rounded,
-                    'stats_dimension_load_error'.tr),
-              );
-            } else if (offers.isEmpty && d.coveredEstates.isEmpty) {
-              body = Padding(
-                padding: const EdgeInsets.symmetric(vertical: 48),
-                child: _emptyState(context, Icons.inbox_rounded,
-                    'stats_no_services_in_period'.tr),
-              );
-            } else {
-              body = ListView(
-                shrinkWrap: true,
-                padding: EdgeInsets.fromLTRB(
-                    Spacing.lg, Spacing.lg, Spacing.lg, 20 + bottomInset),
-                children: [
-                  _infoBanner(context, children: [
-                    _bannerStat(context, Icons.visibility_rounded,
-                        _formatNumber(d.totalViews), 'stats_total_views'.tr),
-                    _bannerStat(context, Icons.campaign_rounded,
-                        _formatNumber(d.totalAppearances),
-                        'stats_appearances'.tr),
-                    _bannerStat(context, Icons.holiday_village_rounded,
-                        _formatNumber(d.totalReach), 'stats_reach'.tr),
-                  ]),
-                  const SizedBox(height: Spacing.sm),
-                  Text('stats_dimension_hint'.tr,
-                      style: AppTypography.caption.copyWith(
-                          color: AppColors.textSecondary(context))),
-                  if (offers.isNotEmpty) ...[
-                    const SizedBox(height: Spacing.md),
-                    _dimSectionLabel(context, Icons.design_services_rounded,
-                        '${'stats_dim_services_header'.tr} (${_formatNumber(offers.length)})'),
-                    const SizedBox(height: Spacing.sm),
-                    ...offers.map((o) => _DimOfferRow(entry: o)),
+                    _DimensionDetailBody(
+                      type: type,
+                      id: id,
+                      inSheet: true,
+                      padding: EdgeInsets.fromLTRB(Spacing.lg, Spacing.sm,
+                          Spacing.lg, 20 + bottomInset),
+                    ),
                   ],
-                  // العقارات التي تغطّيها إعلانات المزوّد ضمن هذه المنطقة/التصنيف.
-                  if (d.coveredEstates.isNotEmpty) ...[
-                    const SizedBox(height: Spacing.md),
-                    _dimSectionLabel(context, Icons.holiday_village_outlined,
-                        '${'stats_covered_estates'.tr} (${_formatNumber(d.coveredEstatesCount)})'),
-                    const SizedBox(height: Spacing.sm),
-                    ...d.coveredEstates.map((e) => _DimEstateRow(entry: e)),
-                    if (d.coveredEstatesCount > d.coveredEstates.length) ...[
-                      const SizedBox(height: 2),
-                      Text(
-                        'stats_showing_top_n'.trParams(
-                            {'n': _formatNumber(d.coveredEstates.length)}),
-                        style: AppTypography.caption.copyWith(
-                            color: AppColors.textSecondary(context)),
-                      ),
-                    ],
-                  ],
-                ],
-              );
-            }
-
-            return Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                _lightHeader(
-                  context,
-                  icon: _dimensionIcon(widget.type),
-                  title: widget.title,
-                  subtitle: _dimensionTypeLabel(widget.type),
-                  onClose: () => Navigator.pop(context),
                 ),
-                Flexible(child: body),
-              ],
-            );
-          },
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -2224,6 +2435,11 @@ class _CoverageTab extends StatelessWidget {
               ),
             ),
           const SizedBox(height: Spacing.sectionGap),
+          // القسم الرئيسي: الخدمة أولًا — كل خدمة نشطة تتوسّع لتعرض مناطقها
+          // وتصنيفاتها وعقاراتها المُغطّاة مباشرةً (بلا نافذة منبثقة).
+          _ExpandableServiceCoverageSection(offers: c?.offers ?? const []),
+          const SizedBox(height: Spacing.sectionGap),
+          // نظرة مجمّعة (اختيارية) — المناطق/التصنيفات/أنواع الخدمة بنافذة تفاصيل.
           _CoverageListSection(
             title: 'stats_coverage_zones'.tr,
             icon: Icons.map_outlined,
@@ -2304,6 +2520,174 @@ class _AllowanceBar extends StatelessWidget {
   }
 }
 
+/// القسم الرئيسي في تبويب التغطية — "الخدمة أولًا": لكل خدمة نشطة صفٌّ يتوسّع
+/// في مكانه ليعرض تفاصيلها (النوع/الحالة/الانتهاء + مؤشّرات) ومناطقها
+/// وتصنيفاتها والعقارات المُغطّاة (بتحميل متدرّج). أكورديون: صفٌّ واحد مفتوح.
+class _ExpandableServiceCoverageSection extends StatefulWidget {
+  final List<CoverageOfferEntry> offers;
+  const _ExpandableServiceCoverageSection({required this.offers});
+
+  @override
+  State<_ExpandableServiceCoverageSection> createState() =>
+      _ExpandableServiceCoverageSectionState();
+}
+
+class _ExpandableServiceCoverageSectionState
+    extends State<_ExpandableServiceCoverageSection> {
+  int? _openId;
+
+  @override
+  Widget build(BuildContext context) {
+    final offers = widget.offers;
+
+    return _Card(
+      icon: Icons.design_services_rounded,
+      title: 'stats_services_coverage'.tr,
+      child: offers.isEmpty
+          ? Text('stats_no_active_services_coverage'.tr,
+              style: AppTypography.small
+                  .copyWith(color: AppColors.textSecondary(context)))
+          : Column(
+              children: [
+                for (int i = 0; i < offers.length; i++)
+                  _row(context, offers[i], i),
+              ],
+            ),
+    );
+  }
+
+  Widget _row(BuildContext context, CoverageOfferEntry o, int i) {
+    final open = _openId != null && _openId == o.offerId;
+    final primary = AppColors.primary(context);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (i > 0) Divider(height: 1, color: AppColors.divider(context)),
+        InkWell(
+          onTap: o.offerId == null
+              ? null
+              : () => setState(() => _openId = open ? null : o.offerId),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 10),
+            child: Row(
+              children: [
+                Icon(Icons.circle, size: 6, color: primary),
+                const SizedBox(width: Spacing.sm),
+                Expanded(
+                  child: Text(o.title ?? '-',
+                      style: AppTypography.smallBold
+                          .copyWith(color: AppColors.textPrimary(context)),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis),
+                ),
+                Text(
+                  '${_formatNumber(o.zones.length)} ${'stats_dim_zone'.tr}'
+                  '  ·  ${_formatNumber(o.estatesCount)} ${'stats_estates_unit'.tr}',
+                  style: AppTypography.captionMedium
+                      .copyWith(color: AppColors.textSecondary(context)),
+                ),
+                const SizedBox(width: 4),
+                AnimatedRotation(
+                  turns: open ? 0.5 : 0,
+                  duration: const Duration(milliseconds: 180),
+                  child: Icon(Icons.keyboard_arrow_down_rounded,
+                      size: 18, color: AppColors.textSecondary(context)),
+                ),
+              ],
+            ),
+          ),
+        ),
+        if (open && o.offerId != null)
+          Padding(
+            padding: const EdgeInsets.only(bottom: Spacing.md),
+            child: _ServiceCoverageBody(
+                key: ValueKey('svc-cov-${o.offerId}'), entry: o),
+          ),
+      ],
+    );
+  }
+}
+
+/// محتوى توسّع خدمة واحدة في تبويب التغطية: مؤشّرات + مناطق + تصنيفات +
+/// العقارات المُغطّاة (بتحميل متدرّج عبر type='offer').
+class _ServiceCoverageBody extends StatelessWidget {
+  final CoverageOfferEntry entry;
+  const _ServiceCoverageBody({super.key, required this.entry});
+
+  @override
+  Widget build(BuildContext context) {
+    final bucket = _bucketStyle(entry.statusBucket ?? 'active');
+    final primary = AppColors.primary(context);
+    final secondary = AppColors.textSecondary(context);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Wrap(
+          spacing: Spacing.sm,
+          runSpacing: 4,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            _premiumBadge(bucket.label, bucket.color),
+            if ((entry.serviceTypeName ?? '').isNotEmpty)
+              _InfoBit(
+                  icon: Icons.build_outlined, text: entry.serviceTypeName!),
+            if (entry.expiryDate != null)
+              _InfoBit(
+                  icon: Icons.event_busy_outlined,
+                  text:
+                      '${'stats_expiry_date'.tr}: ${_formatDateOnly(entry.expiryDate)}'),
+          ],
+        ),
+        const SizedBox(height: Spacing.md),
+        _infoBanner(context, children: [
+          _bannerStat(context, Icons.visibility_rounded,
+              _formatNumber(entry.views), 'stats_total_views'.tr),
+          _bannerStat(context, Icons.campaign_rounded,
+              _formatNumber(entry.appearances), 'stats_appearances'.tr),
+          _bannerStat(context, Icons.holiday_village_rounded,
+              _formatNumber(entry.reach), 'stats_reach'.tr),
+        ]),
+        if (entry.zones.isNotEmpty) ...[
+          const SizedBox(height: Spacing.md),
+          _dimSectionLabel(context, Icons.map_outlined,
+              '${'stats_coverage_zones'.tr} (${_formatNumber(entry.zones.length)})'),
+          const SizedBox(height: Spacing.sm),
+          Wrap(
+            spacing: Spacing.sm,
+            runSpacing: 6,
+            children: entry.zones
+                .map((z) => _premiumBadge(z.display, primary))
+                .toList(),
+          ),
+        ],
+        if (entry.categories.isNotEmpty) ...[
+          const SizedBox(height: Spacing.md),
+          _dimSectionLabel(context, Icons.category_outlined,
+              '${'stats_coverage_categories'.tr} (${_formatNumber(entry.categories.length)})'),
+          const SizedBox(height: Spacing.sm),
+          Wrap(
+            spacing: Spacing.sm,
+            runSpacing: 6,
+            children: entry.categories
+                .map((c) => _premiumBadge(c.display, secondary))
+                .toList(),
+          ),
+        ],
+        if ((entry.estatesCount ?? 0) > 0 && entry.offerId != null) ...[
+          const SizedBox(height: Spacing.md),
+          _PaginatedEstates(
+            type: 'offer',
+            id: entry.offerId!,
+            totalCount: entry.estatesCount ?? 0,
+          ),
+        ],
+      ],
+    );
+  }
+}
+
 class _CoverageListSection extends StatelessWidget {
   final String title;
   final IconData icon;
@@ -2347,7 +2731,12 @@ class _CoverageListSection extends StatelessWidget {
                               overflow: TextOverflow.ellipsis),
                         ),
                         Text(
-                          '${e.offersCount ?? 0} ${'stats_offers_unit'.tr}',
+                          [
+                            '${e.offersCount ?? 0} ${'stats_offers_unit'.tr}',
+                            // عدد العقارات المُغطّاة — لا يُعرض لأنواع الخدمة.
+                            if (e.estatesCount != null)
+                              '${_formatNumber(e.estatesCount)} ${'stats_estates_unit'.tr}',
+                          ].join('  ·  '),
                           style: AppTypography.captionMedium.copyWith(
                               color: AppColors.textSecondary(context)),
                         ),

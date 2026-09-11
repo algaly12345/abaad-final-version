@@ -680,6 +680,15 @@ class _DetailsDeepLinkOpenerState extends State<_DetailsDeepLinkOpener> {
 
   @override
   Widget build(BuildContext context) {
-    return const SizedBox.shrink();
+    // شاشة تحميل بدل SizedBox.shrink (كان يظهر كشاشة سوداء أثناء جلب تفاصيل
+    // العقار عبر رابط عميق). خلفية بلون سطح التطبيق + مؤشّر تحميل.
+    return Scaffold(
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      body: Center(
+        child: CircularProgressIndicator(
+          color: Theme.of(context).primaryColor,
+        ),
+      ),
+    );
   }
 }

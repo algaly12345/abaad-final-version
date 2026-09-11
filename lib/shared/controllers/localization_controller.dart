@@ -17,7 +17,9 @@ class LocalizationController extends GetxController implements GetxService {
     loadCurrentLanguage();
   }
 
-  Locale _locale = Locale(AppConstants.languages[0].languageCode, AppConstants.languages[0].countryCode);
+  // الافتراضي العربية (تطبيق سعودي): يُستخدم فقط قبل قراءة التفضيل المحفوظ أو
+  // حين لا يوجد تفضيل (تثبيت جديد فُتح عبر رابط عميق فتخطّى شاشة اختيار اللغة).
+  Locale _locale = const Locale('ar', 'SA');
   bool _isLtr = true;
   List<LanguageModel> _languages = [];
 
@@ -28,11 +30,7 @@ class LocalizationController extends GetxController implements GetxService {
   void setLanguage(Locale locale) {
     Get.updateLocale(locale);
     _locale = locale;
-    if(_locale.languageCode == 'ar') {
-      _isLdel : false;
-    }else {
-      _isLtr = true;
-    }
+    _isLtr = _locale.languageCode != 'ar';
     AddressModel addressModel = AddressModel(id: 0, addressType: '', contactPersonNumber: '', address: '', latitude: '', longitude: '', zoneId: 0, zoneIds: [], method: '', contactPersonName: '', road: '', house: '', floor: '', zoneData: []);
     try {
       addressModel = AddressModel.fromJson(jsonDecode(sharedPreferences.getString(AppConstants.userAddress)!));
@@ -52,8 +50,9 @@ class LocalizationController extends GetxController implements GetxService {
   }
 
   void loadCurrentLanguage() async {
-    _locale = Locale(sharedPreferences.getString(AppConstants.languageCode) ?? AppConstants.languages[0].languageCode,
-        sharedPreferences.getString(AppConstants.countryCode) ?? AppConstants.languages[0].countryCode);
+    // بلا تفضيل محفوظ → العربية (تطبيق سعودي)، لا languages[0] (الإنجليزية).
+    _locale = Locale(sharedPreferences.getString(AppConstants.languageCode) ?? 'ar',
+        sharedPreferences.getString(AppConstants.countryCode) ?? 'SA');
     _isLtr = _locale.languageCode != 'ar';
     for(int index = 0; index<AppConstants.languages.length; index++) {
       if(AppConstants.languages[index].languageCode == _locale.languageCode) {

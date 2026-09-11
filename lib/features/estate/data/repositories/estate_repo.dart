@@ -36,6 +36,13 @@ class EstateRepo {
     return await apiClient.getData('${AppConstants.ESTATE_DETAILS_URI}$estateID');
   }
 
+  /// رابط مشاركة العقار (رابط ChottuLink قصير، بلا إحالة/مكافأة).
+  /// GET /api/v1/estate/{id}/share-link
+  Future<Response> getShareLink(int estateID) async {
+    return await apiClient
+        .getData('${AppConstants.ESTATE_SHARE_LINK_URI}$estateID/share-link');
+  }
+
 
   // Future<Response> createEstate(EstateBody estate,List<MultipartBody> multiParts) async {
   //   List<MultipartBody> multipartBody;

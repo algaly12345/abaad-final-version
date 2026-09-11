@@ -309,6 +309,17 @@ class DimensionEstate {
       : (categoryName ?? '');
 }
 
+/// صفحة من "العقارات المُغطّاة" (تحميل متدرّج) — استجابة
+/// GET /reports/provider/dimension-estates.
+class DimensionEstatesPage {
+  final int totalSize;
+  final List<DimensionEstate> estates;
+
+  DimensionEstatesPage.fromJson(Map<String, dynamic> json)
+      : totalSize = _toInt(json['total_size']) ?? 0,
+        estates = _mapList(json['estates'], DimensionEstate.fromJson);
+}
+
 // مشتركة بين by_zone / by_category / views_by_zone / views_by_category — نفس
 // البنية تمامًا (id, name, name_ar, offers_count, total_views).
 class DimensionViewsEntry {
@@ -427,13 +438,16 @@ class SubscriptionEntry {
 }
 
 class CoverageBlock {
+  // "الخدمة أولًا": القسم الرئيسي في تبويب التغطية — كل خدمة نشطة وتفاصيل تغطيتها.
+  List<CoverageOfferEntry> offers;
   List<CoverageEntry> zones;
   List<CoverageEntry> categories;
   List<CoverageEntry> serviceTypes;
   PlanAllowance? planAllowance;
 
   CoverageBlock.fromJson(Map<String, dynamic> json)
-      : zones = _mapList(json['zones'], CoverageEntry.fromJson),
+      : offers = _mapList(json['offers'], CoverageOfferEntry.fromJson),
+        zones = _mapList(json['zones'], CoverageEntry.fromJson),
         categories = _mapList(json['categories'], CoverageEntry.fromJson),
         serviceTypes = _mapList(json['service_types'], CoverageEntry.fromJson),
         planAllowance = json['plan_allowance'] is Map
@@ -441,17 +455,67 @@ class CoverageBlock {
             : null;
 }
 
+/// مرجع منطقة/تصنيف مختصر (id + اسم) داخل تغطية خدمة.
+class CoverageDimRef {
+  final int? id;
+  final String? name;
+  final String? nameAr;
+  CoverageDimRef.fromJson(Map<String, dynamic> json)
+      : id = _toInt(json['id']),
+        name = json['name']?.toString(),
+        nameAr = json['name_ar']?.toString();
+
+  String get display =>
+      (nameAr?.isNotEmpty ?? false) ? nameAr! : (name ?? '');
+}
+
+/// خدمة نشطة واحدة مع تفاصيل تغطيتها (القسم الرئيسي في تبويب التغطية).
+class CoverageOfferEntry {
+  final int? offerId;
+  final String? title;
+  final String? statusBucket;
+  final bool isExpired;
+  final String? expiryDate;
+  final String? createdAt;
+  final String? serviceTypeName;
+  final List<CoverageDimRef> zones;
+  final List<CoverageDimRef> categories;
+  final int? estatesCount;
+  final int? views;
+  final int? appearances;
+  final int? reach;
+
+  CoverageOfferEntry.fromJson(Map<String, dynamic> json)
+      : offerId = _toInt(json['offer_id']),
+        title = json['title']?.toString(),
+        statusBucket = json['status_bucket']?.toString(),
+        isExpired = _toBool(json['is_expired']),
+        expiryDate = json['expiry_date']?.toString(),
+        createdAt = json['created_at']?.toString(),
+        serviceTypeName = json['service_type_name']?.toString(),
+        zones = _mapList(json['zones'], CoverageDimRef.fromJson),
+        categories = _mapList(json['categories'], CoverageDimRef.fromJson),
+        estatesCount = _toInt(json['estates_count']),
+        views = _toInt(json['views']),
+        appearances = _toInt(json['appearances']),
+        reach = _toInt(json['reach']);
+}
+
 class CoverageEntry {
   int? id;
   String? name;
   String? nameAr;
   int? offersCount;
+  // عدد العقارات النشطة المُغطّاة في هذه المنطقة/التصنيف — يطابق رأس نافذة
+  // درِل-داون البُعد. غير موجود لأنواع الخدمة.
+  int? estatesCount;
 
   CoverageEntry.fromJson(Map<String, dynamic> json)
       : id = _toInt(json['id']),
         name = json['name']?.toString(),
         nameAr = json['name_ar']?.toString(),
-        offersCount = _toInt(json['offers_count']);
+        offersCount = _toInt(json['offers_count']),
+        estatesCount = _toInt(json['estates_count']);
 }
 
 class PlanAllowance {

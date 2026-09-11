@@ -1,6 +1,6 @@
 ﻿import 'package:abaad_flutter/shared/controllers/splash_controller.dart';
+import 'package:abaad_flutter/features/estate/controller/estate_share_helper.dart';
 import 'package:abaad_flutter/shared/data/models/estate_model.dart';
-import 'package:abaad_flutter/shared/utils/app_constants.dart';
 import 'package:abaad_flutter/shared/utils/dimensions.dart';
 import 'package:abaad_flutter/shared/utils/styles.dart';
 import 'package:abaad_flutter/shared/widgets/custom_image.dart';
@@ -138,8 +138,9 @@ class ServiceProviderItem extends StatelessWidget {
                               onTap: () async{
                                 final phoneNumber = estate.serviceOffers![index].phoneProvider;
                                // //print("----------${phoneNumber}");// رقم الهاتف بدون "+" وبصيغة دولية
-                                final estateId = estate.id; // تأكد أن الـ ID موجود لديك
-                                final estateUrl = '${AppConstants.BASE_URL}/details/$estateId';
+                                // رابط ChottuLink قصير (بلا إحالة/مكافأة)، مع تراجع للرابط الخام.
+                                final estateUrl =
+                                    await resolveEstateShareLink(estate.id ?? 0);
                                 final message = Uri.encodeComponent(
                                   "عرض داخل العقار مقدم من منصة أبعاد\n$estateUrl",
                                 );

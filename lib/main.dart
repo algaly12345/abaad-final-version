@@ -304,6 +304,7 @@ import 'package:abaad_flutter/features/estate/controller/estate_controller.dart'
 import 'package:abaad_flutter/shared/data/models/estate_model.dart';
 import 'package:abaad_flutter/core/di/get_di.dart' as di;
 import 'dart:async';
+import 'package:abaad_flutter/features/estate/controller/estate_chottu_link_manager.dart';
 import 'package:abaad_flutter/shared/services/referral_link_manager.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -394,8 +395,12 @@ class _MyAppState extends State<MyApp> {
   void initState() {
     super.initState();
     // كل استقبال روابط الإحالة/التفاصيل + تهيئة ChottuLink SDK + حفظ الكود +
-    // التوجيه لشاشة التسجيل: يُدار مركزيًا في ReferralLinkManager.
+    // التوجيه لشاشة التسجيل: يُدار مركزيًا في ReferralLinkManager (بلا تعديل).
     unawaited(ReferralLinkManager.instance.init());
+    // روابط مشاركة العقار — مدير مستقل تمامًا، مستمعان خاصّان به على نفس
+    // التيّارات (بثّ آمن للاستماع المتعدّد)، بلا أي تعديل أو استدعاء داخلي
+    // على ReferralLinkManager — انظر توثيق الكلاس لتفاصيل الفصل.
+    unawaited(EstateChottuLinkManager.instance.init());
   }
 
   Future<void> openEstateDialog(int estateId) async {

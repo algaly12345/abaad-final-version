@@ -47,7 +47,7 @@ class _SplashScreenState extends State<SplashScreen> {
 
     _loadAppVersion();
     Get.find<SplashController>().initSharedData();
-
+    Get.find<AuthController>().getZoneList();
     if (Get.find<LocationController>().getUserAddress()?.zoneData == null) {
       Get.find<AuthController>().clearSharedAddress();
     }

@@ -1966,7 +1966,7 @@ class _DettailsDilogState extends State<DettailsDilog> {
   void shareToWhatsApp(int id) async {
     // رابط ChottuLink قصير (بلا إحالة/مكافأة)، مع تراجع للرابط الخام.
     final url = await resolveEstateShareLink(id);
-    final message = "شاهد تفاصيل العقار:\n$url";
+    final message = estateShareMessage(url);
     final whatsappUrl =
         "https://wa.me/?text=${Uri.encodeComponent(message)}";
 
@@ -2101,7 +2101,7 @@ class _DettailsDilogState extends State<DettailsDilog> {
               final estateUrl =
                   await resolveEstateShareLink(widget.estate?.id ?? 0);
               final message =
-                  "السلام عليكم، أرغب في الاستفسار عن هذا العقار:\n$estateUrl";
+                  "السلام عليكم، أرغب في الاستفسار عن هذا العقار المعروض على منصة وتطبيق أبعاد العقارية:\n$estateUrl";
               final whatsappUrl =
                   "https://wa.me/$advertiserPhone?text=${Uri.encodeComponent(message)}";
               launchUrl(Uri.parse(whatsappUrl),

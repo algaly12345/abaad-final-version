@@ -229,7 +229,7 @@ class _EstateViewState extends State<EstateView> {
                   // رابط ChottuLink قصير (بلا إحالة/مكافأة)، مع تراجع للرابط الخام.
                   final String estateLink =
                       await resolveEstateShareLink(widget.estate?.id ?? 0);
-                  final String message = 'شاهد هذا العقار: $estateLink';
+                  final String message = estateShareMessage(estateLink);
                   final String encodedMessage = Uri.encodeComponent(message);
 
                   final Uri whatsappAppUri =

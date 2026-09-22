@@ -41,7 +41,7 @@ class _OfferListState extends State<OfferList> {
               final estateUrl =
                   await resolveEstateShareLink(widget.estate?.id ?? 0);
               final message = Uri.encodeComponent(
-                "عرض داخل العقار مقدم من منصة أبعاد\n$estateUrl",
+                estateOfferMessage(estateUrl),
               );
               final url = "https://wa.me/$phoneNumber?text=$message";
 

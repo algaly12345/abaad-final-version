@@ -37,7 +37,7 @@ class _EstateFullScreenGalleryState extends State<EstateFullScreenGallery> {
     // رابط ChottuLink قصير (فتح التطبيق + deferred + بطاقة معاينة بصورة العقار)،
     // ويتراجع للرابط الخام عند فشل/بطء الخدمة. بلا إحالة/مكافأة.
     final link = await resolveEstateShareLink(widget.estate.id ?? 0);
-    Share.share('${'check_this_property'.tr}: $link', subject: 'Abaad');
+    Share.share(estateShareMessage(link), subject: 'تطبيق أبعاد العقارية');
   }
 
   @override

@@ -347,32 +347,28 @@ class _OverviewTab extends StatelessWidget {
             _KpiData(
                 Icons.storefront_rounded,
                 scoped ? 'stats_period_offers'.tr : 'stats_total_offers'.tr,
-                _formatNumber(s?.totalOffersCount)),
+                _formatNumber(s?.totalOffersCount),
+                helpText: 'stats_help_total_offers'.tr),
             _KpiData(Icons.check_circle_rounded, 'active_status'.tr,
-                _formatNumber(s?.activeOffersCount)),
+                _formatNumber(s?.activeOffersCount),
+                helpText: 'stats_help_active_offers'.tr),
             _KpiData(
                 Icons.visibility_rounded,
                 scoped ? 'stats_period_views'.tr : 'stats_total_views'.tr,
-                _formatNumber(s?.totalViews)),
-            // ظهور الإعلان داخل صفحات العقارات + عدد العقارات المختلفة (الوصول)
-            // — منفصلان عن "المشاهدات" (فتح صفحة العرض نفسها).
-            _KpiData(
-                Icons.campaign_rounded,
-                scoped ? 'stats_period_appearances'.tr : 'stats_appearances'.tr,
-                _formatNumber(s?.totalAppearances)),
-            _KpiData(
-                Icons.holiday_village_rounded,
-                scoped ? 'stats_period_reach'.tr : 'stats_reach'.tr,
-                _formatNumber(s?.totalReach)),
+                _formatNumber(s?.totalViews),
+                helpText: 'stats_help_total_views'.tr),
             _KpiData(Icons.trending_up_rounded, 'stats_views_last_30d'.tr,
-                _formatNumber(s?.viewsLast30d)),
+                _formatNumber(s?.viewsLast30d),
+                helpText: 'stats_help_views_window'.tr),
             _KpiData(
                 Icons.payments_rounded,
                 scoped ? 'stats_period_spend'.tr : 'stats_lifetime_spend'.tr,
-                PriceConverter.convertPrice(f?.lifetimePaid ?? 0)),
+                PriceConverter.convertPrice(f?.lifetimePaid ?? 0),
+                helpText: 'stats_help_lifetime_spend'.tr),
             _KpiData(Icons.error_outline_rounded, 'stats_outstanding'.tr,
                 PriceConverter.convertPrice(f?.outstandingAmount ?? 0),
-                highlight: (f?.outstandingAmount ?? 0) > 0),
+                highlight: (f?.outstandingAmount ?? 0) > 0,
+                helpText: 'stats_help_outstanding'.tr),
           ]),
           const SizedBox(height: Spacing.sectionGap),
           _AccountCard(account: data.account),
@@ -394,7 +390,9 @@ class _KpiData {
   final String label;
   final String value;
   final bool highlight;
-  const _KpiData(this.icon, this.label, this.value, {this.highlight = false});
+  final String? helpText;
+  const _KpiData(this.icon, this.label, this.value,
+      {this.highlight = false, this.helpText});
 }
 
 class _KpiGrid extends StatelessWidget {
@@ -463,12 +461,23 @@ class _KpiTile extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
           ),
           const SizedBox(height: 2),
-          Text(
-            data.label,
-            style: AppTypography.caption
-                .copyWith(color: AppColors.textSecondary(context)),
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Text(
+                  data.label,
+                  style: AppTypography.caption
+                      .copyWith(color: AppColors.textSecondary(context)),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              if (data.helpText != null) ...[
+                const SizedBox(width: 2),
+                _HelpIcon(message: data.helpText!),
+              ],
+            ],
           ),
         ],
       ),
@@ -542,6 +551,8 @@ class _AccountCard extends StatelessWidget {
               Text('stats_profile_completeness'.tr,
                   style: AppTypography.small
                       .copyWith(color: AppColors.textSecondary(context))),
+              const SizedBox(width: 4),
+              _HelpIcon(message: 'stats_help_profile_completeness'.tr),
               const Spacer(),
               Text('$completeness%',
                   style: AppTypography.smallBold
@@ -718,6 +729,7 @@ class _PerformanceTab extends StatelessWidget {
           _Card(
             icon: Icons.insights_rounded,
             title: 'stats_views_summary'.tr,
+            helpText: 'stats_help_views_summary_card'.tr,
             child: Column(
               children: [
                 Row(
@@ -727,36 +739,26 @@ class _PerformanceTab extends StatelessWidget {
                             periodScoped
                                 ? 'stats_period_views'.tr
                                 : 'stats_total_views'.tr,
-                            _formatNumber(p?.totalViews))),
+                            _formatNumber(p?.totalViews),
+                            helpText: 'stats_help_total_views'.tr)),
                     Expanded(
                         child: _MiniStat('stats_views_last_7d'.tr,
-                            _formatNumber(p?.viewsLast7d))),
+                            _formatNumber(p?.viewsLast7d),
+                            helpText: 'stats_help_views_window'.tr)),
                     Expanded(
                         child: _MiniStat('stats_views_last_30d'.tr,
-                            _formatNumber(p?.viewsLast30d))),
+                            _formatNumber(p?.viewsLast30d),
+                            helpText: 'stats_help_views_window'.tr)),
                   ],
                 ),
                 const Divider(height: Spacing.sectionGap),
-                // ظهور الإعلان داخل صفحات العقارات، والوصول (عقارات مختلفة)،
-                // مقابل إجمالي العقارات المؤهّلة لظهوره.
-                Row(
-                  children: [
-                    Expanded(
-                        child: _MiniStat(
-                            periodScoped
-                                ? 'stats_period_appearances'.tr
-                                : 'stats_appearances'.tr,
-                            _formatNumber(p?.totalAppearances))),
-                    Expanded(
-                        child: _MiniStat(
-                            periodScoped
-                                ? 'stats_period_reach'.tr
-                                : 'stats_reach'.tr,
-                            _formatNumber(p?.totalReach))),
-                    Expanded(
-                        child: _MiniStat('stats_eligible_estates'.tr,
-                            _formatNumber(p?.totalEligibleEstates))),
-                  ],
+                Center(
+                  child: SizedBox(
+                    width: 160,
+                    child: _MiniStat('stats_eligible_estates'.tr,
+                        _formatNumber(p?.totalEligibleEstates),
+                        helpText: 'stats_help_eligible_estates'.tr),
+                  ),
                 ),
                 if ((p?.totalViews ?? 0) == 0 &&
                     (p?.totalAppearances ?? 0) == 0) ...[
@@ -785,6 +787,7 @@ class _PerformanceTab extends StatelessWidget {
             icon: Icons.map_outlined,
             type: 'zone',
             entries: p?.byZone ?? const [],
+            helpText: 'stats_help_views_by_zone_card'.tr,
           ),
           const SizedBox(height: Spacing.sectionGap),
           _RankedDimensionSection(
@@ -792,6 +795,7 @@ class _PerformanceTab extends StatelessWidget {
             icon: Icons.category_outlined,
             type: 'category',
             entries: p?.byCategory ?? const [],
+            helpText: 'stats_help_views_by_category_card'.tr,
           ),
         ],
       ),
@@ -802,7 +806,8 @@ class _PerformanceTab extends StatelessWidget {
 class _MiniStat extends StatelessWidget {
   final String label;
   final String value;
-  const _MiniStat(this.label, this.value);
+  final String? helpText;
+  const _MiniStat(this.label, this.value, {this.helpText});
 
   @override
   Widget build(BuildContext context) {
@@ -812,12 +817,23 @@ class _MiniStat extends StatelessWidget {
             style: AppTypography.title
                 .copyWith(color: AppColors.textPrimary(context))),
         const SizedBox(height: 2),
-        Text(label,
-            style: AppTypography.caption
-                .copyWith(color: AppColors.textSecondary(context)),
-            textAlign: TextAlign.center,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Flexible(
+              child: Text(label,
+                  style: AppTypography.caption
+                      .copyWith(color: AppColors.textSecondary(context)),
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis),
+            ),
+            if (helpText != null) ...[
+              const SizedBox(width: 2),
+              _HelpIcon(message: helpText!),
+            ],
+          ],
+        ),
       ],
     );
   }
@@ -1123,18 +1139,6 @@ class _OfferDetailDialog extends StatelessWidget {
                     label: 'stats_all_time'.tr,
                     value: _formatNumber(entry.viewsAllTime),
                   ),
-                  // ظهور هذا الإعلان داخل صفحات العقارات + عدد العقارات
-                  // المختلفة التي ظهر فيها (الوصول).
-                  _DetailRow(
-                    icon: Icons.campaign_rounded,
-                    label: 'stats_appearances'.tr,
-                    value: _formatNumber(entry.appearances),
-                  ),
-                  _DetailRow(
-                    icon: Icons.holiday_village_rounded,
-                    label: 'stats_reach'.tr,
-                    value: _formatNumber(entry.reach),
-                  ),
                   if (entry.createdAt != null)
                     _DetailRow(
                       icon: Icons.add_circle_outline_rounded,
@@ -1327,7 +1331,6 @@ class _DimEstateRow extends StatelessWidget {
     final loc = [entry.city, entry.districts]
         .where((s) => (s ?? '').trim().isNotEmpty)
         .join(' · ');
-    final shown = (entry.appearances ?? 0) > 0;
 
     return InkWell(
       onTap: entry.estateId == null
@@ -1391,11 +1394,6 @@ class _DimEstateRow extends StatelessWidget {
                   _InfoBit(
                       icon: Icons.sell_outlined,
                       text: PriceConverter.convertPrice(entry.price ?? 0.0)),
-                if (shown)
-                  _InfoBit(
-                      icon: Icons.campaign_rounded,
-                      text:
-                          '${'stats_appearances'.tr}: ${_formatNumber(entry.appearances)}'),
               ],
             ),
           ],
@@ -1501,10 +1499,6 @@ class _DimensionDetailBodyState extends State<_DimensionDetailBody> {
           _infoBanner(context, children: [
             _bannerStat(context, Icons.visibility_rounded,
                 _formatNumber(d.totalViews), 'stats_total_views'.tr),
-            _bannerStat(context, Icons.campaign_rounded,
-                _formatNumber(d.totalAppearances), 'stats_appearances'.tr),
-            _bannerStat(context, Icons.holiday_village_rounded,
-                _formatNumber(d.totalReach), 'stats_reach'.tr),
           ]),
           if (offers.isNotEmpty) ...[
             const SizedBox(height: Spacing.md),
@@ -1755,6 +1749,7 @@ class _OfferViewsSection extends StatelessWidget {
     return _Card(
       icon: Icons.leaderboard_outlined,
       title: 'stats_views_by_offer'.tr,
+      helpText: 'stats_help_views_by_offer_card'.tr,
       child: rows.isEmpty
           ? Text('stats_no_views_data'.tr,
               style: AppTypography.small
@@ -1845,18 +1840,6 @@ class _OfferViewsSection extends StatelessWidget {
                                 ],
                               ],
                             ),
-                            // ظهور هذا الإعلان داخل صفحات العقارات + عدد
-                            // العقارات المختلفة التي ظهر فيها (الوصول).
-                            if ((o.appearances ?? 0) > 0 ||
-                                (o.reach ?? 0) > 0) ...[
-                              const SizedBox(height: 4),
-                              Text(
-                                '${'stats_appearances'.tr}: ${_formatNumber(o.appearances)}'
-                                '  ·  ${'stats_reach'.tr}: ${_formatNumber(o.reach)}',
-                                style: AppTypography.caption.copyWith(
-                                    color: AppColors.textSecondary(context)),
-                              ),
-                            ],
                           ],
                         ),
                       ),
@@ -1877,12 +1860,14 @@ class _RankedDimensionSection extends StatelessWidget {
   final IconData icon;
   final List<DimensionViewsEntry> entries;
   final String type; // zone | category — لدرِل-داون التفاصيل
+  final String? helpText;
 
   const _RankedDimensionSection({
     required this.title,
     required this.icon,
     required this.entries,
     required this.type,
+    this.helpText,
   });
 
   @override
@@ -1897,6 +1882,7 @@ class _RankedDimensionSection extends StatelessWidget {
     return _Card(
       icon: icon,
       title: title,
+      helpText: helpText,
       child: rows.isEmpty
           ? Text('stats_no_views_data'.tr,
               style: AppTypography.small
@@ -1975,27 +1961,6 @@ class _RankedDimensionSection extends StatelessWidget {
                                     style: AppTypography.caption.copyWith(
                                         color: AppColors.textSecondary(
                                             context))),
-                                // "ظهر في N شقة من M مؤهلة" — متاح لتوزيع
-                                // المناطق فقط (by_zone).
-                                if (type == 'zone' &&
-                                    ((e.reach ?? 0) > 0 ||
-                                        (e.eligibleEstates ?? 0) > 0)) ...[
-                                  const SizedBox(width: 10),
-                                  Icon(Icons.holiday_village_outlined,
-                                      size: 12,
-                                      color:
-                                          AppColors.textSecondary(context)),
-                                  const SizedBox(width: 3),
-                                  Text(
-                                    'stats_reach_of_eligible'.trParams({
-                                      'n': _formatNumber(e.reach),
-                                      'm': _formatNumber(e.eligibleEstates),
-                                    }),
-                                    style: AppTypography.caption.copyWith(
-                                        color: AppColors.textSecondary(
-                                            context)),
-                                  ),
-                                ],
                               ],
                             ),
                           ],
@@ -2069,10 +2034,12 @@ class _FinanceTab extends StatelessWidget {
                 periodScoped
                     ? 'stats_period_spend'.tr
                     : 'stats_lifetime_spend'.tr,
-                PriceConverter.convertPrice(f?.lifetimePaid ?? 0)),
+                PriceConverter.convertPrice(f?.lifetimePaid ?? 0),
+                helpText: 'stats_help_lifetime_spend'.tr),
             _KpiData(Icons.error_outline_rounded, 'stats_outstanding'.tr,
                 PriceConverter.convertPrice(f?.outstandingAmount ?? 0),
-                highlight: (f?.outstandingAmount ?? 0) > 0),
+                highlight: (f?.outstandingAmount ?? 0) > 0,
+                helpText: 'stats_help_outstanding'.tr),
             _KpiData(Icons.event_repeat_rounded, 'stats_next_renewal'.tr,
                 _formatDateOnly(f?.nextRenewalAt)),
             _KpiData(Icons.hourglass_bottom_rounded, 'stats_soonest_expiry'.tr,
@@ -2090,6 +2057,7 @@ class _FinanceTab extends StatelessWidget {
           _Card(
             icon: Icons.bar_chart_rounded,
             title: 'stats_spend_by_month'.tr,
+            helpText: 'stats_help_spend_by_month_card'.tr,
             child: _MiniBarChart(entries: f?.spendByMonth ?? const []),
           ),
           const SizedBox(height: Spacing.sectionGap),
@@ -2118,6 +2086,7 @@ class _SpendByPlanSection extends StatelessWidget {
     return _Card(
       icon: Icons.workspace_premium_outlined,
       title: 'stats_spend_by_plan'.tr,
+      helpText: 'stats_help_spend_by_plan_card'.tr,
       child: entries.isEmpty
           ? Text('stats_no_subscription'.tr,
               style: AppTypography.small
@@ -2405,22 +2374,26 @@ class _CoverageTab extends StatelessWidget {
             _Card(
               icon: Icons.tune_rounded,
               title: 'stats_plan_allowance'.tr,
+              helpText: 'stats_help_plan_allowance_card'.tr,
               child: Column(
                 children: [
                   _AllowanceBar(
                     label: 'stats_active_offers'.tr,
                     used: a.activeOffers,
                     allowed: a.ads,
+                    helpText: 'stats_help_plan_ads'.tr,
                   ),
                   _AllowanceBar(
                     label: 'stats_coverage_zones'.tr,
                     used: a.zonesUsed,
                     allowed: a.zones,
+                    helpText: 'stats_help_plan_zones'.tr,
                   ),
                   _AllowanceBar(
                     label: 'stats_coverage_categories'.tr,
                     used: a.categoriesUsed,
                     allowed: a.categories,
+                    helpText: 'stats_help_plan_categories'.tr,
                   ),
                   const SizedBox(height: 4),
                   Align(
@@ -2470,10 +2443,12 @@ class _AllowanceBar extends StatelessWidget {
   final String label;
   final int used;
   final int allowed;
+  final String? helpText;
   const _AllowanceBar({
     required this.label,
     required this.used,
     required this.allowed,
+    this.helpText,
   });
 
   @override
@@ -2494,6 +2469,10 @@ class _AllowanceBar extends StatelessWidget {
                     style: AppTypography.small.copyWith(
                         color: AppColors.textPrimary(context))),
               ),
+              if (helpText != null) ...[
+                _HelpIcon(message: helpText!),
+                const SizedBox(width: 4),
+              ],
               Text(
                 allowed > 0
                     ? 'stats_used_of'.trParams(
@@ -2644,10 +2623,6 @@ class _ServiceCoverageBody extends StatelessWidget {
         _infoBanner(context, children: [
           _bannerStat(context, Icons.visibility_rounded,
               _formatNumber(entry.views), 'stats_total_views'.tr),
-          _bannerStat(context, Icons.campaign_rounded,
-              _formatNumber(entry.appearances), 'stats_appearances'.tr),
-          _bannerStat(context, Icons.holiday_village_rounded,
-              _formatNumber(entry.reach), 'stats_reach'.tr),
         ]),
         if (entry.zones.isNotEmpty) ...[
           const SizedBox(height: Spacing.md),
@@ -2968,6 +2943,7 @@ class _PeriodStatsSection extends StatelessWidget {
     return _Card(
       icon: Icons.event_note_outlined,
       title: 'stats_period_section'.tr,
+      helpText: 'stats_help_period_section_card'.tr,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -3257,7 +3233,13 @@ class _Card extends StatelessWidget {
   final IconData icon;
   final String title;
   final Widget child;
-  const _Card({required this.icon, required this.title, required this.child});
+  final String? helpText;
+  const _Card({
+    required this.icon,
+    required this.title,
+    required this.child,
+    this.helpText,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -3281,12 +3263,43 @@ class _Card extends StatelessWidget {
                     style: AppTypography.smallBold
                         .copyWith(color: AppColors.textPrimary(context))),
               ),
+              if (helpText != null) ...[
+                const SizedBox(width: 4),
+                _HelpIcon(message: helpText!),
+              ],
             ],
           ),
           const SizedBox(height: Spacing.md),
           child,
         ],
       ),
+    );
+  }
+}
+
+/// أيقونة توضيح صغيرة (ⓘ) بجانب أي رقم/عنوان إحصائي: تفتح نافذة منبثقة
+/// صغيرة (Tooltip) بضغطة واحدة تشرح معنى الرقم، بدل الاعتماد على شرح خارج
+/// التطبيق. triggerMode.tap ضروري لأن الافتراضي على الموبايل ضغط طويل.
+class _HelpIcon extends StatelessWidget {
+  final String message;
+  const _HelpIcon({required this.message});
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: message,
+      triggerMode: TooltipTriggerMode.tap,
+      showDuration: const Duration(seconds: 6),
+      preferBelow: true,
+      textStyle: const TextStyle(color: Colors.white, fontSize: 12, height: 1.5),
+      decoration: BoxDecoration(
+        color: AppColors.textPrimary(context).withValues(alpha: 0.95),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      margin: const EdgeInsets.symmetric(horizontal: 24),
+      child: Icon(Icons.info_outline_rounded,
+          size: 14, color: AppColors.textSecondary(context)),
     );
   }
 }

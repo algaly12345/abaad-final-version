@@ -318,9 +318,19 @@ class _DettailsDilogState extends State<DettailsDilog> {
                     if (widget.estate?.streetSpace != null)
                       _InfoRowData("width_street".tr,
                           widget.estate?.streetSpace ?? ""),
+
+
+
                     if (widget.estate?.documentNumber != null)
+
+
+
                       _InfoRowData("document_number".tr,
                           widget.estate?.documentNumber ?? ""),
+
+
+
+
                     if (widget.estate?.priceNegotiation != null)
                       _InfoRowData(
                           "price".tr,

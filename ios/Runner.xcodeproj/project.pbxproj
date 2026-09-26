@@ -209,6 +209,7 @@
 				27909F325E41B214518AB898 /* [CP] Embed Pods Frameworks */,
 				1360EAF269648BEF412A0C7D /* [CP] Copy Pods Resources */,
 				89F77D9C304D875100809E55 /* ShellScript */,
+				8995EA543055B4700071199E /* ShellScript */,
 			);
 			buildRules = (
 			);
@@ -336,6 +337,23 @@
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
 			shellScript = "/bin/sh \"$FLUTTER_ROOT/packages/flutter_tools/bin/xcode_backend.sh\" embed_and_thin";
+		};
+		8995EA543055B4700071199E /* ShellScript */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "if [ \"${CONFIGURATION}\" = \"Release\" ]; then\n  FRAMEWORK_PATH=\"${BUILT_PRODUCTS_DIR}/ChottuLinkSDK.framework/ChottuLinkSDK\"\n  if [ -f \"$FRAMEWORK_PATH\" ]; then\n    dsymutil \"$FRAMEWORK_PATH\" -o \"${DWARF_DSYM_FOLDER_PATH}/ChottuLinkSDK.framework.dSYM\"\n  fi\nfi\n";
 		};
 		89F77D9C304D875100809E55 /* ShellScript */ = {
 			isa = PBXShellScriptBuildPhase;

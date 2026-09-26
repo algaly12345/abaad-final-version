@@ -21,11 +21,11 @@ import 'package:abaad_flutter/shared/widgets/estate_item.dart';
 import 'package:abaad_flutter/shared/widgets/no_data_screen.dart';
 import 'package:abaad_flutter/features/filter/view/screens/fillter_estate_sheet.dart';
 import 'package:abaad_flutter/shared/widgets/web_menu_bar.dart';
-import 'package:custom_map_markers/custom_map_markers.dart';
 import 'package:flip_card/flip_card.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:abaad_flutter/shared/utils/images.dart';
+import 'package:abaad_flutter/shared/utils/map_marker_factory.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -59,7 +59,6 @@ class MapScreen extends StatefulWidget {
 
 class _MapViewScreenState extends State<MapScreen> {
   late GoogleMapController _controller;
-  List<MarkerData> _customMarkers = [];
   late CameraPosition _cameraPosition;
   late Uint8List imageDataBytes;
   var markerIcon;
@@ -77,12 +76,13 @@ class _MapViewScreenState extends State<MapScreen> {
   late LatLng _initialPosition;
   var photoGalleryIndex = 0;
   final bool _ltr = Get.find<LocalizationController>().isLtr;
-  MapType _currentMapType = MapType.satellite;
+
+  /// الخريطة العادية أخف بكثير في التحميل من القمر الصناعي (مثل عقار).
+  /// زر الطبقات ما زال يبدّل بينهما.
+  MapType _currentMapType = MapType.normal;
 
   var tappedPoint;
   Estate? estate;
-
-  bool _didInitialLoad = false;
 
   late PageController _pageController;
   int prevPage = 0;
@@ -97,14 +97,34 @@ class _MapViewScreenState extends State<MapScreen> {
   final GlobalKey<ScaffoldState> _key = GlobalKey();
   final cardKey = GlobalKey<FlipCardState>();
 
+  // ===================== حالة الخريطة والتحميل =====================
 
+  /// زوم فتح المنطقة (كان 13 ثم تحريك إلى 9 بأنيميشن = تحميلان).
+  static const double _zoneZoom = 11;
 
+  /// نسبة التوسيع حول الجزء الظاهر عند الطلب: نجلب مساحة أكبر قليلًا من
+  /// الشاشة، فالسحب البسيط لا يحتاج طلبًا جديدًا (نفس أسلوب عقار).
+  static const double _prefetchPadding = 0.35;
 
   bool _mapReady = false;
+  bool _showMap = false;
   bool _isFetchingBounds = false;
+  bool _pendingFetch = false;
+  bool _pendingForce = false;
+  Timer? _idleDebounce;
 
-  String _lastBoundsKey = '';
-  int _lastMarkersHash = -1;
+  LatLngBounds? _fetchedBounds;
+  double? _fetchedZoom;
+  String _fetchedFilterKey = '';
+
+  /// الماركرات الحالية (بالمعرّف) + القائمة التي بُنيت منها.
+  final Map<MarkerId, Marker> _markerMap = {};
+  List<Estate> _products = const [];
+  String _lastListSignature = '';
+  int _markerBuildSeq = 0;
+  Color _primaryColor = const Color(0xFF2A7BF6);
+  bool _animatingFromMarker = false;
+
   late double lat;
   late double lot;
   int? _filterZoneId;
@@ -126,62 +146,6 @@ class _MapViewScreenState extends State<MapScreen> {
         card = false;
       }
     }
-  }
-
-  Future<void> _loadInitialEstatesFromPoint() async {
-    final categoryController = Get.find<CategoryController>();
-
-    // مساحة أكبر حول الزون
-    const double latDelta = 0.50;
-    const double lngDelta = 0.50;
-
-    final double northEastLat = lat + latDelta;
-    final double northEastLng = lot + lngDelta;
-    final double southWestLat = lat - latDelta;
-    final double southWestLng = lot - lngDelta;
-
-    await categoryController.getMapCategoryProductListByBounds(
-      widget.mainCategory.id,
-      categoryController.subCategoryList != null &&
-          categoryController.subCategoryList!.isNotEmpty
-          ? categoryController
-          .subCategoryList![categoryController.subCategoryIndex].id
-          .toString()
-          : "0",
-      0,
-      categoryController.filterCity,
-      categoryController.filterDistrict,
-      categoryController.filterSpace,
-      "0",
-      northEastLat,
-      northEastLng,
-      southWestLat,
-      southWestLng,
-      reload: true,
-      arPath: 0,
-      sv: 0,
-      type: selectedOption,
-    );
-  }
-
-
-
-  Future<void> _moveToZoneAndLoadFirstTime() async {
-    // 🔹 تحريك الكاميرا وجلب البيانات بيحصلوا الآن في نفس الوقت (بدل
-    // الانتظار التتابعي القديم) — وحذفنا الانتظار الصناعي (700 مللي ثانية)
-    // اللي ما كانش له أي داعي فعلي، وكان بيأخر بداية جلب البيانات من غير
-    // أي فائدة. هذا وحده يقلّل زمن التحميل بشكل ملحوظ.
-    _cameraPosition = CameraPosition(
-      target: LatLng(lat, lot),
-      zoom: 9,
-    );
-
-    final Future<void> cameraFuture = _controller.animateCamera(
-      CameraUpdate.newCameraPosition(_cameraPosition),
-    );
-
-    await Future.wait([cameraFuture, _loadInitialEstatesFromPoint()]);
-    _didInitialLoad = true;
   }
 
   void _setCircle(LatLng point) async {
@@ -210,34 +174,55 @@ class _MapViewScreenState extends State<MapScreen> {
   @override
   void initState() {
     super.initState();
-    // lat=widget.mainCategory.latitude as double;
-    // lot=widget.mainCategory.longitude as double;
-    Get.find<CategoryController>().getSubCategoryList("0",1);
-    _pageController = PageController(initialPage: 1, viewportFraction: 0.85)
+    Get.find<CategoryController>().getSubCategoryList("0", 1);
+    _pageController = PageController(initialPage: 0, viewportFraction: 0.85)
       ..addListener(_onScroll);
     lat = double.parse(widget.mainCategory.latitude);
     lot = double.parse(widget.mainCategory.longitude);
 
-    print("lat=======$lat---$lot");
+    _initialPosition = LatLng(lat, lot);
+    _cameraPosition = CameraPosition(target: _initialPosition, zoom: _zoneZoom);
 
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
 
+      // (بعد أول إطار وليس داخل initState لأن الكنترولر يستدعي update().)
+      // نمسح عقارات المنطقة السابقة حتى لا تظهر لحظة الفتح.
+      Get.find<CategoryController>().clearMapEstates();
 
+      // 🔹 نبدأ جلب البيانات فورًا — بالتوازي مع حركة فتح الصفحة وإنشاء
+      // الخريطة، بدل انتظار onMapCreated.
+      _loadMapEstatesByBounds(reload: true);
 
-    _initialPosition = LatLng(
-      lot,
-      lat,
-    );
+      // 🔹 إنشاء GoogleMap أثناء أنيميشن فتح الصفحة هو سبب "التقطيع"
+      // والثقل عند الفتح. نؤجله حتى تنتهي الحركة.
+      final anim = ModalRoute.of(context)?.animation;
+      if (anim == null || anim.status == AnimationStatus.completed) {
+        setState(() => _showMap = true);
+        return;
+      }
+      void listener(AnimationStatus s) {
+        if (s == AnimationStatus.completed) {
+          anim.removeStatusListener(listener);
+          if (mounted) setState(() => _showMap = true);
+        }
+      }
+      anim.addStatusListener(listener);
+    });
 
-    _cameraPosition = CameraPosition(
-      target: _initialPosition,
-      zoom: 13,
-    );
+    // نستمع للكنترولر مباشرة بدل فحص عدد العناصر داخل build.
+    Get.find<CategoryController>().addListener(_onCategoryChanged);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _onCategoryChanged();
+    });
   }
 
   @override
   void dispose() {
+    _idleDebounce?.cancel();
+    Get.find<CategoryController>().removeListener(_onCategoryChanged);
     _pageController.dispose();
-    _controller.dispose();
+    if (_mapReady) _controller.dispose();
     super.dispose();
   }
 
@@ -245,10 +230,6 @@ class _MapViewScreenState extends State<MapScreen> {
 
   Future<void> getCustomMarkerIcon(GlobalKey iconKey) async {
     return;
-  }
-
-  String _makeBoundsKey(LatLngBounds b) {
-    return '${b.northeast.latitude.toStringAsFixed(4)}_${b.northeast.longitude.toStringAsFixed(4)}_${b.southwest.latitude.toStringAsFixed(4)}_${b.southwest.longitude.toStringAsFixed(4)}';
   }
 
   Future<void> _applyFilterZoneIfChanged() async {
@@ -265,32 +246,115 @@ class _MapViewScreenState extends State<MapScreen> {
           : widget.mainCategory.id;
 
       if (_mapReady) {
-        await _controller.animateCamera(
+        // moveCamera فوري — بدل animate + انتظار 600 مللي ثانية.
+        await _controller.moveCamera(
           CameraUpdate.newCameraPosition(
             CameraPosition(target: LatLng(lat, lot), zoom: 12),
           ),
         );
-        await Future.delayed(const Duration(milliseconds: 600));
       }
     }
     await _loadMapEstatesByBounds(reload: true);
   }
 
+  // ===================== جلب البيانات حسب الجزء الظاهر =====================
+
+  /// لا نطلب مع كل توقف للكاميرا فورًا؛ ننتظر حتى يتوقف المستخدم عن
+  /// التحريك (debounce) ثم نطلب مرة واحدة فقط.
+  void _onCameraIdle() {
+    if (!_mapReady) return;
+    _idleDebounce?.cancel();
+    _idleDebounce = Timer(
+      const Duration(milliseconds: 350),
+          () => _loadMapEstatesByBounds(reload: false),
+    );
+  }
+
+  String _currentFilterKey() {
+    final c = Get.find<CategoryController>();
+    return [
+      _filterZoneId ?? widget.mainCategory.id,
+      c.subCategoryIndex,
+      c.filterCity,
+      c.filterDistrict,
+      c.filterSpace,
+      selectedOption,
+    ].join('|');
+  }
+
+  bool _contains(LatLngBounds outer, LatLngBounds inner) =>
+      inner.northeast.latitude <= outer.northeast.latitude &&
+          inner.northeast.longitude <= outer.northeast.longitude &&
+          inner.southwest.latitude >= outer.southwest.latitude &&
+          inner.southwest.longitude >= outer.southwest.longitude;
+
+  LatLngBounds _expand(LatLngBounds b, double ratio) {
+    final dLat = (b.northeast.latitude - b.southwest.latitude) * ratio;
+    final dLng = (b.northeast.longitude - b.southwest.longitude) * ratio;
+    return LatLngBounds(
+      southwest: LatLng(b.southwest.latitude - dLat, b.southwest.longitude - dLng),
+      northeast: LatLng(b.northeast.latitude + dLat, b.northeast.longitude + dLng),
+    );
+  }
+
+  /// [reload] = true: إجبار الطلب (تغيير فلتر/تصنيف/نوع).
+  /// [reload] = false: يطلب فقط إذا خرج المستخدم عن المساحة المحمّلة أو
+  /// غيّر الزوم بمستوى كامل.
+  /// تقدير الجزء الظاهر من الخريطة رياضيًا (من المركز + الزوم + حجم
+  /// الشاشة) — يسمح ببدء طلب البيانات قبل أن تنتهي الخريطة من الإنشاء.
+  LatLngBounds _estimateVisible(CameraPosition cam) {
+    final view = WidgetsBinding.instance.platformDispatcher.views.first;
+    final Size size = view.physicalSize / view.devicePixelRatio;
+    final double degPerPx = 360 / (256 * pow(2, cam.zoom));
+    final double lngSpan = size.width * degPerPx;
+    final double latSpan =
+        size.height * degPerPx * cos(cam.target.latitude * pi / 180);
+    final c = cam.target;
+    return LatLngBounds(
+      southwest: LatLng(c.latitude - latSpan / 2, c.longitude - lngSpan / 2),
+      northeast: LatLng(c.latitude + latSpan / 2, c.longitude + lngSpan / 2),
+    );
+  }
+
   Future<void> _loadMapEstatesByBounds({bool reload = true}) async {
-    if (!_mapReady || _isFetchingBounds) return;
+    // لو فيه طلب شغال، لا نرمي الطلب الجديد (كان يضيع آخر مكان وقف عنده
+    // المستخدم) — نسجله وننفذه مرة واحدة بعد انتهاء الحالي.
+    if (_isFetchingBounds) {
+      _pendingFetch = true;
+      _pendingForce = _pendingForce || reload;
+      return;
+    }
 
     _isFetchingBounds = true;
     try {
-      final bounds = await _controller.getVisibleRegion();
-      final boundsKey = _makeBoundsKey(bounds);
-
-      if (!reload && boundsKey == _lastBoundsKey) {
-        return;
+      LatLngBounds visible;
+      double zoom;
+      if (_mapReady) {
+        visible = await _controller.getVisibleRegion();
+        zoom = await _controller.getZoomLevel();
+        // أحيانًا (أندرويد) تُرجع الخريطة مساحة صفرية قبل أول رسم.
+        if (visible.northeast.latitude == visible.southwest.latitude ||
+            visible.northeast.longitude == visible.southwest.longitude) {
+          visible = _estimateVisible(_cameraPosition);
+        }
+      } else {
+        // الخريطة لم تُنشأ بعد: نطلب البيانات بالتوازي مع إنشائها.
+        visible = _estimateVisible(_cameraPosition);
+        zoom = _cameraPosition.zoom;
       }
 
+      final filterKey = _currentFilterKey();
+      final bool sameFilters = filterKey == _fetchedFilterKey;
+      final bool insideLoaded =
+          _fetchedBounds != null && _contains(_fetchedBounds!, visible);
+      final bool sameZoomLevel =
+          _fetchedZoom != null && (zoom - _fetchedZoom!).abs() < 1.0;
 
-      _lastBoundsKey = boundsKey;
+      if (!reload && sameFilters && insideLoaded && sameZoomLevel) {
+        return; // البيانات الموجودة تغطي الشاشة — لا داعي لطلب جديد.
+      }
 
+      final fetch = _expand(visible, _prefetchPadding);
       final categoryController = Get.find<CategoryController>();
 
       await categoryController.getMapCategoryProductListByBounds(
@@ -306,26 +370,36 @@ class _MapViewScreenState extends State<MapScreen> {
         categoryController.filterDistrict,
         categoryController.filterSpace,
         "0",
-        bounds.northeast.latitude,
-        bounds.northeast.longitude,
-        bounds.southwest.latitude,
-        bounds.southwest.longitude,
-        reload: reload,
+        fetch.northeast.latitude,
+        fetch.northeast.longitude,
+        fetch.southwest.latitude,
+        fetch.southwest.longitude,
+        reload: true,
         arPath: 0,
         sv: 0,
         type: selectedOption,
       );
+
+      _fetchedBounds = fetch;
+      _fetchedZoom = zoom;
+      _fetchedFilterKey = filterKey;
     } finally {
       _isFetchingBounds = false;
+      if (_pendingFetch && mounted) {
+        final force = _pendingForce;
+        _pendingFetch = false;
+        _pendingForce = false;
+        _loadMapEstatesByBounds(reload: force);
+      }
     }
   }
-
 
   @override
   Widget build(BuildContext context) {
     final currentLocale = Get.locale;
     bool isArabic = currentLocale?.languageCode == 'ar';
     var width = MediaQuery.of(context).size.width;
+    _primaryColor = Theme.of(context).primaryColor;
 
 
 
@@ -343,658 +417,664 @@ class _MapViewScreenState extends State<MapScreen> {
         builder: (categoryController) {
           return GetBuilder<LocationController>(
             builder: (locationController) {
-              List<Estate> products = [];
-              if (!categoryController.isSearching) {
-                if (categoryController.mapEstateList != null) {
-                  products.addAll(categoryController.mapEstateList!);
-                }
-              }
+              // القائمة نفسها التي بُنيت منها الماركرات — فيبقى رقم الماركر
+              // ورقم البطاقة متطابقين دائمًا.
+              final List<Estate> products = _products;
 
-              final currentHash = products.length;
-              if (_lastMarkersHash != currentHash) {
-                _lastMarkersHash = currentHash;
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  if (mounted) {
-                    _setMarkers(products);
-                  }
-                });
-              }
+              final googleMap = GoogleMap(
+                initialCameraPosition: CameraPosition(
+                  zoom: _zoneZoom,
+                  target: LatLng(lat, lot),
+                ),
+                markers: Set<Marker>.of(_markerMap.values),
+                zoomControlsEnabled: false,
+                mapType: _currentMapType,
+                // يقلل رسم عناصر إضافية لا نحتاجها.
+                mapToolbarEnabled: false,
+                buildingsEnabled: false,
+                indoorViewEnabled: false,
+                trafficEnabled: false,
+                onTap: (point) {
+                  tappedPoint = point;
+                  _setCircle(point);
+                },
+                onCameraMove: (position) {
+                  _cameraPosition = position;
+                },
+                onCameraIdle: _onCameraIdle,
+                minMaxZoomPreference: const MinMaxZoomPreference(0, 40),
+                circles: _circles,
+                polygons: _polygon,
+                onMapCreated: (GoogleMapController controller) {
+                  _controller = controller;
+                  _mapReady = true;
+                  // نعرض أي بيانات موجودة مسبقًا بعد جاهزية الخريطة.
+                  WidgetsBinding.instance.endOfFrame.then((_) {
+                    if (mounted) _onCategoryChanged();
+                  });
+                  // الطلب بدأ مسبقًا في initState؛ هذا لا يرسل طلبًا
+                  // جديدًا إلا إذا كانت الشاشة الفعلية خارج المساحة المحمّلة.
+                  _loadMapEstatesByBounds(reload: false);
+                },
+              );
 
-              return CustomGoogleMapMarkerBuilder(
-                customMarkers: _customMarkers,
-                builder: (context, markers) {
-                  final googleMap = GoogleMap(
-                    initialCameraPosition: CameraPosition(
-                      zoom: 13,
-                      target: LatLng(lat, lot),
-                    ),
-                    markers: markers ?? {},
-                    zoomControlsEnabled: false,
-                    mapType: _currentMapType,
-                    onTap: (point) {
-                      tappedPoint = point;
-                      _setCircle(point);
-                    },
-                    onCameraMove: (position) {
-                      _cameraPosition = position;
-                    },
-                    onCameraIdle: () async {
-                      if (_mapReady && _didInitialLoad) {
-                        await _loadMapEstatesByBounds(reload: true);
-                      }
-                    },
-                    minMaxZoomPreference: const MinMaxZoomPreference(0, 40),
-                    circles: _circles,
-                    polygons: _polygon,
-                    onMapCreated: (GoogleMapController controller) async {
-                      _controller = controller;
-                      _mapReady = true;
-                      await _moveToZoneAndLoadFirstTime();
-                    },
-                  );
+              return Stack(
+                children: [
+                  _showMap
+                      ? googleMap
+                      : const ColoredBox(
+                    color: Color(0xFFEDEBE6),
+                    child: SizedBox.expand(),
+                  ),
 
-                  return Stack(
-                    children: [
-                      googleMap,
-
-                      // 🔹 شريط تحميل علوي عائم بدل سبينر كبير في نص
-                      // الشاشة — لا يحجب الخريطة، ويعطي إحساسًا بسرعة
-                      // أكبر لأن المستخدم يقدر يبدأ يتفاعل مع الخريطة
-                      // فورًا أثناء التحميل بدل انتظار مؤشر مركزي.
-                      if (categoryController.isMapLoading)
-                        Positioned(
-                          top: 12,
-                          left: 0,
-                          right: 0,
-                          child: Center(
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 14, vertical: 8),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(30),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.12),
-                                    blurRadius: 8,
-                                    offset: const Offset(0, 3),
-                                  ),
-                                ],
+                  // 🔹 شريط تحميل علوي عائم بدل سبينر كبير في نص
+                  // الشاشة — لا يحجب الخريطة، ويعطي إحساسًا بسرعة
+                  // أكبر لأن المستخدم يقدر يبدأ يتفاعل مع الخريطة
+                  // فورًا أثناء التحميل بدل انتظار مؤشر مركزي.
+                  if (categoryController.isMapLoading)
+                    Positioned(
+                      top: 12,
+                      left: 0,
+                      right: 0,
+                      child: Center(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 14, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(30),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.12),
+                                blurRadius: 8,
+                                offset: const Offset(0, 3),
                               ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  SizedBox(
-                                    width: 15,
-                                    height: 15,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      valueColor:
-                                      AlwaysStoppedAnimation<Color>(
-                                        Theme.of(context).primaryColor,
-                                      ),
-                                    ),
+                            ],
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              SizedBox(
+                                width: 15,
+                                height: 15,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor:
+                                  AlwaysStoppedAnimation<Color>(
+                                    Theme.of(context).primaryColor,
                                   ),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    "جاري التحميل...",
-                                    style: TextStyle(
-                                      fontSize: 12.5,
-                                      fontWeight: FontWeight.w600,
-                                      color: Theme.of(context).primaryColor,
-                                    ),
-                                  ),
-                                ],
+                                ),
                               ),
-                            ),
+                              const SizedBox(width: 8),
+                              Text(
+                                "جاري التحميل...",
+                                style: TextStyle(
+                                  fontSize: 12.5,
+                                  fontWeight: FontWeight.w600,
+                                  color: Theme.of(context).primaryColor,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
+                      ),
+                    ),
 
-                      // if (!categoryController.isMapLoading &&
-                      //     products.isEmpty)
-                      //   const Center(
-                      //     child: NoDataScreen(
-                      //       text: 'no_data_available',
-                      //     ),
-                      //   ),
+                  // if (!categoryController.isMapLoading &&
+                  //     products.isEmpty)
+                  //   const Center(
+                  //     child: NoDataScreen(
+                  //       text: 'no_data_available',
+                  //     ),
+                  //   ),
 
-                      SafeArea(
-                        child: Align(
-                          alignment: Alignment.topCenter,
-                          child: Padding(
-                            padding: const EdgeInsets.only(top: 7.0),
-                            child: Container(
-                              margin: const EdgeInsets.only(
-                                left: 10.0,
-                                right: 7.0,
-                              ),
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                crossAxisAlignment: CrossAxisAlignment.end,
-                                children: <Widget>[
-                                  Row(
-                                    children: [
-                                      InkWell(
-                                        onTap: () {
-                                          // 🔹 بحث العقارات الشامل بدل بحث
-                                          // الموقع الجغرافي (LocationSearchDialog).
-                                          Get.to(() => const EstateSearchScreen());
-                                        },
-                                        child: Container(
-                                          height: 43,
-                                          padding: EdgeInsets.symmetric(
-                                            horizontal:
-                                            Dimensions.PADDING_SIZE_SMALL,
-                                          ),
-                                          decoration: BoxDecoration(
-                                            color: Theme.of(context).cardColor,
-                                            borderRadius:
-                                            BorderRadius.circular(
-                                              Dimensions.RADIUS_SMALL,
-                                            ),
-                                          ),
-                                          width: width - 130,
-                                          child: Row(
-                                            children: [
-                                              Icon(
-                                                Icons.location_on,
-                                                size: 25,
-                                                color: Theme.of(context)
-                                                    .primaryColor,
-                                              ),
-                                              SizedBox(
-                                                width: Dimensions
-                                                    .PADDING_SIZE_EXTRA_SMALL,
-                                              ),
-                                              Expanded(
-                                                child: Text(
-                                                  locationController.pickAddress,
-                                                  style:
-                                                  robotoRegular.copyWith(
-                                                    fontSize: Dimensions
-                                                        .fontSizeLarge,
-                                                  ),
-                                                  maxLines: 1,
-                                                  overflow:
-                                                  TextOverflow.ellipsis,
-                                                ),
-                                              ),
-                                              SizedBox(
-                                                width: Dimensions
-                                                    .PADDING_SIZE_SMALL,
-                                              ),
-                                              Icon(
-                                                Icons.search,
-                                                size: 25,
-                                                color: Theme.of(context)
-                                                    .textTheme
-                                                    .bodyLarge!
-                                                    .color,
-                                              ),
-                                            ],
-                                          ),
+                  SafeArea(
+                    child: Align(
+                      alignment: Alignment.topCenter,
+                      child: Padding(
+                        padding: const EdgeInsets.only(top: 7.0),
+                        child: Container(
+                          margin: const EdgeInsets.only(
+                            left: 10.0,
+                            right: 7.0,
+                          ),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: <Widget>[
+                              Row(
+                                children: [
+                                  InkWell(
+                                    onTap: () {
+                                      // 🔹 بحث العقارات الشامل بدل بحث
+                                      // الموقع الجغرافي (LocationSearchDialog).
+                                      Get.to(() => const EstateSearchScreen());
+                                    },
+                                    child: Container(
+                                      height: 43,
+                                      padding: EdgeInsets.symmetric(
+                                        horizontal:
+                                        Dimensions.PADDING_SIZE_SMALL,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: Theme.of(context).cardColor,
+                                        borderRadius:
+                                        BorderRadius.circular(
+                                          Dimensions.RADIUS_SMALL,
                                         ),
                                       ),
-                                      Container(
-                                        margin: const EdgeInsets.only(
-                                            left: 4.0, right: 4.0),
-                                        padding: const EdgeInsets.all(7),
-                                        decoration: BoxDecoration(
-                                          color: Colors.white,
-                                          borderRadius:
-                                          BorderRadius.circular(5),
-                                          border: Border.all(
-                                            width: 1,
-                                            color: Colors.blue,
-                                          ),
-                                        ),
-                                        child: const Icon(
-                                          Icons.qr_code,
-                                          size: 25,
-                                          color: Colors.blue,
-                                        ),
-                                      ),
-                                      GestureDetector(
-                                        onTap: () async {
-                                          cardTapped = true;
-                                          await Get.dialog(FiltersScreen());
-                                          await _applyFilterZoneIfChanged();
-                                        },
-                                        child: Container(
-                                          padding: const EdgeInsets.all(7),
-                                          margin: const EdgeInsets.only(
-                                              left: 4.0, right: 4.0),
-                                          decoration: BoxDecoration(
-                                            color: Colors.blue,
-                                            borderRadius:
-                                            BorderRadius.circular(5),
-                                            border: Border.all(
-                                              width: 1,
-                                              color: Colors.white,
-                                            ),
-                                          ),
-                                          child: const Icon(
-                                            Icons.filter_list_alt,
+                                      width: width - 130,
+                                      child: Row(
+                                        children: [
+                                          Icon(
+                                            Icons.location_on,
                                             size: 25,
-                                            color: Colors.white,
+                                            color: Theme.of(context)
+                                                .primaryColor,
                                           ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 5),
-
-                                  Row(
-                                    mainAxisAlignment:
-                                    MainAxisAlignment.start,
-                                    children: [
-                                      ElevatedButton(
-                                        onPressed: () async {
-                                          setState(() {
-                                            selectedOption = 'بيع';
-                                          });
-                                          await _loadMapEstatesByBounds(
-                                            reload: true,
-                                          );
-                                        },
-                                        style: ElevatedButton.styleFrom(
-                                          backgroundColor:
-                                          selectedOption == 'بيع'
-                                              ? Colors.blue
-                                              : Colors.white,
-                                          foregroundColor:
-                                          selectedOption == 'بيع'
-                                              ? Colors.white
-                                              : Colors.black,
-                                          shape: RoundedRectangleBorder(
-                                            side: const BorderSide(
-                                                color: Colors.blue),
-                                            borderRadius:
-                                            BorderRadius.circular(8),
+                                          SizedBox(
+                                            width: Dimensions
+                                                .PADDING_SIZE_EXTRA_SMALL,
                                           ),
-                                        ),
-                                        child: const Text('بيع'),
-                                      ),
-                                      const SizedBox(width: 10),
-                                      ElevatedButton(
-                                        onPressed: () async {
-                                          setState(() {
-                                            selectedOption = 'إيجار';
-                                          });
-                                          await _loadMapEstatesByBounds(
-                                            reload: true,
-                                          );
-                                        },
-                                        style: ElevatedButton.styleFrom(
-                                          backgroundColor:
-                                          selectedOption == 'إيجار'
-                                              ? Colors.blue
-                                              : Colors.white,
-                                          foregroundColor:
-                                          selectedOption == 'إيجار'
-                                              ? Colors.white
-                                              : Colors.black,
-                                          shape: RoundedRectangleBorder(
-                                            side: const BorderSide(
-                                                color: Colors.blue),
-                                            borderRadius:
-                                            BorderRadius.circular(8),
+                                          Expanded(
+                                            child: Text(
+                                              locationController.pickAddress,
+                                              style:
+                                              robotoRegular.copyWith(
+                                                fontSize: Dimensions
+                                                    .fontSizeLarge,
+                                              ),
+                                              maxLines: 1,
+                                              overflow:
+                                              TextOverflow.ellipsis,
+                                            ),
                                           ),
-                                        ),
-                                        child: const Text('إيجار'),
-                                      ),
-                                      const SizedBox(width: 10),
-                                      ElevatedButton(
-                                        onPressed: () async {
-                                          setState(() {
-                                            selectedOption = 'all';
-                                          });
-                                          await _loadMapEstatesByBounds(
-                                            reload: true,
-                                          );
-                                        },
-                                        style: ElevatedButton.styleFrom(
-                                          backgroundColor:
-                                          selectedOption == 'all'
-                                              ? Colors.blue
-                                              : Colors.white,
-                                          foregroundColor:
-                                          selectedOption == 'all'
-                                              ? Colors.white
-                                              : Colors.black,
-                                          shape: RoundedRectangleBorder(
-                                            side: const BorderSide(
-                                                color: Colors.blue),
-                                            borderRadius:
-                                            BorderRadius.circular(8),
-                                          ),
-                                        ),
-                                        child: const Text('الكل'),
-                                      ),
-                                    ],
-                                  ),
-
-                                  const SizedBox(height: 5),
-
-                                  SizedBox(
-                                    child: categoryController.subCategoryList !=
-                                        null
-                                        ? Center(
-                                      child: SizedBox(
-                                        height: 40,
-                                        child: ListView.builder(
-                                          scrollDirection:
-                                          Axis.horizontal,
-                                          itemCount: categoryController
-                                              .subCategoryList!.length,
-                                          padding: EdgeInsets.only(
-                                            left: Dimensions
+                                          SizedBox(
+                                            width: Dimensions
                                                 .PADDING_SIZE_SMALL,
                                           ),
-                                          physics:
-                                          const BouncingScrollPhysics(),
-                                          itemBuilder:
-                                              (context, index) {
-                                            return Padding(
+                                          Icon(
+                                            Icons.search,
+                                            size: 25,
+                                            color: Theme.of(context)
+                                                .textTheme
+                                                .bodyLarge!
+                                                .color,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                  Container(
+                                    margin: const EdgeInsets.only(
+                                        left: 4.0, right: 4.0),
+                                    padding: const EdgeInsets.all(7),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white,
+                                      borderRadius:
+                                      BorderRadius.circular(5),
+                                      border: Border.all(
+                                        width: 1,
+                                        color: Colors.blue,
+                                      ),
+                                    ),
+                                    child: const Icon(
+                                      Icons.qr_code,
+                                      size: 25,
+                                      color: Colors.blue,
+                                    ),
+                                  ),
+                                  GestureDetector(
+                                    onTap: () async {
+                                      cardTapped = true;
+                                      await Get.dialog(FiltersScreen());
+                                      await _applyFilterZoneIfChanged();
+                                    },
+                                    child: Container(
+                                      padding: const EdgeInsets.all(7),
+                                      margin: const EdgeInsets.only(
+                                          left: 4.0, right: 4.0),
+                                      decoration: BoxDecoration(
+                                        color: Colors.blue,
+                                        borderRadius:
+                                        BorderRadius.circular(5),
+                                        border: Border.all(
+                                          width: 1,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                      child: const Icon(
+                                        Icons.filter_list_alt,
+                                        size: 25,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 5),
+
+                              Row(
+                                mainAxisAlignment:
+                                MainAxisAlignment.start,
+                                children: [
+                                  ElevatedButton(
+                                    onPressed: () async {
+                                      setState(() {
+                                        selectedOption = 'بيع';
+                                      });
+                                      await _loadMapEstatesByBounds(
+                                        reload: true,
+                                      );
+                                    },
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor:
+                                      selectedOption == 'بيع'
+                                          ? Colors.blue
+                                          : Colors.white,
+                                      foregroundColor:
+                                      selectedOption == 'بيع'
+                                          ? Colors.white
+                                          : Colors.black,
+                                      shape: RoundedRectangleBorder(
+                                        side: const BorderSide(
+                                            color: Colors.blue),
+                                        borderRadius:
+                                        BorderRadius.circular(8),
+                                      ),
+                                    ),
+                                    child: const Text('بيع'),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  ElevatedButton(
+                                    onPressed: () async {
+                                      setState(() {
+                                        selectedOption = 'إيجار';
+                                      });
+                                      await _loadMapEstatesByBounds(
+                                        reload: true,
+                                      );
+                                    },
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor:
+                                      selectedOption == 'إيجار'
+                                          ? Colors.blue
+                                          : Colors.white,
+                                      foregroundColor:
+                                      selectedOption == 'إيجار'
+                                          ? Colors.white
+                                          : Colors.black,
+                                      shape: RoundedRectangleBorder(
+                                        side: const BorderSide(
+                                            color: Colors.blue),
+                                        borderRadius:
+                                        BorderRadius.circular(8),
+                                      ),
+                                    ),
+                                    child: const Text('إيجار'),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  ElevatedButton(
+                                    onPressed: () async {
+                                      setState(() {
+                                        selectedOption = 'all';
+                                      });
+                                      await _loadMapEstatesByBounds(
+                                        reload: true,
+                                      );
+                                    },
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor:
+                                      selectedOption == 'all'
+                                          ? Colors.blue
+                                          : Colors.white,
+                                      foregroundColor:
+                                      selectedOption == 'all'
+                                          ? Colors.white
+                                          : Colors.black,
+                                      shape: RoundedRectangleBorder(
+                                        side: const BorderSide(
+                                            color: Colors.blue),
+                                        borderRadius:
+                                        BorderRadius.circular(8),
+                                      ),
+                                    ),
+                                    child: const Text('الكل'),
+                                  ),
+                                ],
+                              ),
+
+                              const SizedBox(height: 5),
+
+                              SizedBox(
+                                child: categoryController.subCategoryList !=
+                                    null
+                                    ? Center(
+                                  child: SizedBox(
+                                    height: 40,
+                                    child: ListView.builder(
+                                      scrollDirection:
+                                      Axis.horizontal,
+                                      itemCount: categoryController
+                                          .subCategoryList!.length,
+                                      padding: EdgeInsets.only(
+                                        left: Dimensions
+                                            .PADDING_SIZE_SMALL,
+                                      ),
+                                      physics:
+                                      const BouncingScrollPhysics(),
+                                      itemBuilder:
+                                          (context, index) {
+                                        return Padding(
+                                          padding:
+                                          const EdgeInsets.only(
+                                            right: 6,
+                                            left: 6,
+                                          ),
+                                          child: InkWell(
+                                            onTap: () async {
+                                              categoryController
+                                                  .setSubCategoryIndex(
+                                                index,
+                                                widget.mainCategory.id,
+                                              );
+                                              await _loadMapEstatesByBounds(
+                                                reload: true,
+                                              );
+                                            },
+                                            child: Container(
                                               padding:
-                                              const EdgeInsets.only(
-                                                right: 6,
-                                                left: 6,
+                                              EdgeInsets.only(
+                                                left: index == 0
+                                                    ? Dimensions
+                                                    .PADDING_SIZE_LARGE
+                                                    : Dimensions
+                                                    .PADDING_SIZE_SMALL,
+                                                right: index ==
+                                                    categoryController
+                                                        .subCategoryList!
+                                                        .length -
+                                                        1
+                                                    ? Dimensions
+                                                    .PADDING_SIZE_LARGE
+                                                    : Dimensions
+                                                    .PADDING_SIZE_SMALL,
                                               ),
-                                              child: InkWell(
-                                                onTap: () async {
-                                                  categoryController
-                                                      .setSubCategoryIndex(
-                                                    index,
-                                                    widget.mainCategory.id,
-                                                  );
-                                                  await _loadMapEstatesByBounds(
-                                                    reload: true,
-                                                  );
-                                                },
-                                                child: Container(
-                                                  padding:
-                                                  EdgeInsets.only(
-                                                    left: index == 0
-                                                        ? Dimensions
-                                                        .PADDING_SIZE_LARGE
-                                                        : Dimensions
-                                                        .PADDING_SIZE_SMALL,
-                                                    right: index ==
-                                                        categoryController
-                                                            .subCategoryList!
-                                                            .length -
-                                                            1
-                                                        ? Dimensions
-                                                        .PADDING_SIZE_LARGE
-                                                        : Dimensions
-                                                        .PADDING_SIZE_SMALL,
-                                                  ),
-                                                  decoration:
-                                                  BoxDecoration(
-                                                    border: Border.all(
-                                                      color: index ==
-                                                          categoryController
-                                                              .subCategoryIndex
-                                                          ? Theme.of(
-                                                          context)
-                                                          .primaryColor
-                                                          : Colors
-                                                          .black12,
-                                                      width: 2,
-                                                    ),
-                                                    borderRadius:
-                                                    BorderRadius
-                                                        .circular(
-                                                        8.0),
-                                                    color: Colors.white,
-                                                  ),
-                                                  child: Row(
-                                                    children: [
-                                                      Text(
-                                                        isArabic
-                                                            ? categoryController
-                                                            .subCategoryList![
-                                                        index]
-                                                            .nameAr ??
-                                                            ""
-                                                            : categoryController
-                                                            .subCategoryList![
-                                                        index]
-                                                            .name ??
-                                                            "all",
-                                                        style: index ==
-                                                            categoryController
-                                                                .subCategoryIndex
-                                                            ? robotoMedium
-                                                            .copyWith(
-                                                          fontSize:
-                                                          Dimensions.fontSizeDefault,
-                                                          color: Theme.of(context)
-                                                              .primaryColor,
-                                                        )
-                                                            : robotoRegular
-                                                            .copyWith(
-                                                          fontSize:
-                                                          Dimensions.fontSizeDefault,
-                                                          color: Theme.of(context)
-                                                              .disabledColor,
-                                                        ),
-                                                      ),
-                                                      const SizedBox(
-                                                          width: 5),
-                                                      index == 0
-                                                          ? Container()
-                                                          : CustomImage(
-                                                        image:
-                                                        '${Get.find<SplashController>().configModel!.baseUrls!.categoryImageUrl}/${categoryController.subCategoryList![index].image}',
-                                                        height: 25,
-                                                        width: 25,
-                                                        colors: index ==
-                                                            categoryController.subCategoryIndex
-                                                            ? Theme.of(context)
-                                                            .primaryColor
-                                                            : Colors
-                                                            .black12,
-                                                      ),
-                                                    ],
-                                                  ),
+                                              decoration:
+                                              BoxDecoration(
+                                                border: Border.all(
+                                                  color: index ==
+                                                      categoryController
+                                                          .subCategoryIndex
+                                                      ? Theme.of(
+                                                      context)
+                                                      .primaryColor
+                                                      : Colors
+                                                      .black12,
+                                                  width: 2,
                                                 ),
+                                                borderRadius:
+                                                BorderRadius
+                                                    .circular(
+                                                    8.0),
+                                                color: Colors.white,
                                               ),
+                                              child: Row(
+                                                children: [
+                                                  Text(
+                                                    isArabic
+                                                        ? categoryController
+                                                        .subCategoryList![
+                                                    index]
+                                                        .nameAr ??
+                                                        ""
+                                                        : categoryController
+                                                        .subCategoryList![
+                                                    index]
+                                                        .name ??
+                                                        "all",
+                                                    style: index ==
+                                                        categoryController
+                                                            .subCategoryIndex
+                                                        ? robotoMedium
+                                                        .copyWith(
+                                                      fontSize:
+                                                      Dimensions.fontSizeDefault,
+                                                      color: Theme.of(context)
+                                                          .primaryColor,
+                                                    )
+                                                        : robotoRegular
+                                                        .copyWith(
+                                                      fontSize:
+                                                      Dimensions.fontSizeDefault,
+                                                      color: Theme.of(context)
+                                                          .disabledColor,
+                                                    ),
+                                                  ),
+                                                  const SizedBox(
+                                                      width: 5),
+                                                  index == 0
+                                                      ? Container()
+                                                      : CustomImage(
+                                                    image:
+                                                    '${Get.find<SplashController>().configModel!.baseUrls!.categoryImageUrl}/${categoryController.subCategoryList![index].image}',
+                                                    height: 25,
+                                                    width: 25,
+                                                    colors: index ==
+                                                        categoryController.subCategoryIndex
+                                                        ? Theme.of(context)
+                                                        .primaryColor
+                                                        : Colors
+                                                        .black12,
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  ),
+                                )
+                                    : const SizedBox(),
+                              ),
+
+                              SizedBox(
+                                height: 200,
+                                child: Column(
+                                  children: [
+                                    Container(
+                                      height: 60,
+                                      width: 60,
+                                      padding:
+                                      const EdgeInsets.all(10.0),
+                                      child: FloatingActionButton(
+                                        mini: true,
+                                        backgroundColor:
+                                        Theme.of(context).cardColor,
+                                        onPressed: () => _checkPermission(
+                                              () {
+                                            Get.find<LocationController>()
+                                                .getCurrentLocation(
+                                              false,
+                                              mapController: _controller,
+                                              defaultLatLng:
+                                              const LatLng(0, 0),
                                             );
                                           },
                                         ),
+                                        child: Icon(
+                                          Icons.my_location,
+                                          color: Theme.of(context)
+                                              .primaryColor,
+                                        ),
                                       ),
-                                    )
-                                        : const SizedBox(),
-                                  ),
-
-                                  SizedBox(
-                                    height: 200,
-                                    child: Column(
-                                      children: [
-                                        Container(
-                                          height: 60,
-                                          width: 60,
-                                          padding:
-                                          const EdgeInsets.all(10.0),
-                                          child: FloatingActionButton(
-                                            mini: true,
-                                            backgroundColor:
-                                            Theme.of(context).cardColor,
-                                            onPressed: () => _checkPermission(
-                                                  () {
-                                                Get.find<LocationController>()
-                                                    .getCurrentLocation(
-                                                  false,
-                                                  mapController: _controller,
-                                                  defaultLatLng:
-                                                  const LatLng(0, 0),
-                                                );
-                                              },
-                                            ),
-                                            child: Icon(
-                                              Icons.my_location,
-                                              color: Theme.of(context)
-                                                  .primaryColor,
-                                            ),
-                                          ),
-                                        ),
-                                        Container(
-                                          height: 60,
-                                          width: 60,
-                                          padding:
-                                          const EdgeInsets.all(10.0),
-                                          child: FloatingActionButton(
-                                            backgroundColor: Colors.white,
-                                            heroTag: 'recenterr',
-                                            onPressed: _onMapTypeButtonPressed,
-                                            shape: RoundedRectangleBorder(
-                                              borderRadius:
-                                              BorderRadius.circular(10.0),
-                                              side: const BorderSide(
-                                                color: Color(0xFFECEDF1),
-                                              ),
-                                            ),
-                                            child: Icon(
-                                              Icons.layers_outlined,
-                                              color: Theme.of(context)
-                                                  .primaryColor,
-                                            ),
-                                          ),
-                                        ),
-                                      ],
                                     ),
-                                  ),
-                                ],
+                                    Container(
+                                      height: 60,
+                                      width: 60,
+                                      padding:
+                                      const EdgeInsets.all(10.0),
+                                      child: FloatingActionButton(
+                                        backgroundColor: Colors.white,
+                                        heroTag: 'recenterr',
+                                        onPressed: _onMapTypeButtonPressed,
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius:
+                                          BorderRadius.circular(10.0),
+                                          side: const BorderSide(
+                                            color: Color(0xFFECEDF1),
+                                          ),
+                                        ),
+                                        child: Icon(
+                                          Icons.layers_outlined,
+                                          color: Theme.of(context)
+                                              .primaryColor,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
-                            ),
+                            ],
                           ),
                         ),
                       ),
+                    ),
+                  ),
 
-                      // cardTapped
-                      //     ? Positioned(
-                      //   top: 100.0,
-                      //   left: 15.0,
-                      //   child: FlipCard(
-                      //     key: cardKey,
-                      //     front: Container(
-                      //       height: 180.0,
-                      //       width: 175.0,
-                      //       decoration: const BoxDecoration(
-                      //         color: Colors.white,
-                      //         borderRadius: BorderRadius.all(
-                      //           Radius.circular(8.0),
-                      //         ),
-                      //       ),
-                      //       child: SingleChildScrollView(
-                      //         child: Column(
-                      //           children: [
-                      //             Align(
-                      //               alignment: Alignment.bottomRight,
-                      //               child: GestureDetector(
-                      //                 onTap: () {
-                      //                   setState(() {
-                      //                     cardTapped = !cardTapped;
-                      //                   });
-                      //                 },
-                      //                 child: Container(
-                      //                   decoration:
-                      //                   const BoxDecoration(
-                      //                     color: Colors.red,
-                      //                     shape: BoxShape.circle,
-                      //                   ),
-                      //                   padding:
-                      //                   const EdgeInsets.all(4),
-                      //                   child: const Icon(
-                      //                     Icons.close,
-                      //                     size: 16,
-                      //                     color: Colors.white,
-                      //                   ),
-                      //                 ),
-                      //               ),
-                      //             ),
-                      //             Container(
-                      //               height: 100.0,
-                      //               width: 175.0,
-                      //               decoration: const BoxDecoration(
-                      //                 borderRadius: BorderRadius.only(
-                      //                   topLeft: Radius.circular(8.0),
-                      //                   topRight: Radius.circular(8.0),
-                      //                 ),
-                      //                 image: DecorationImage(
-                      //                   image:
-                      //                   AssetImage(Images.offer),
-                      //                   fit: BoxFit.cover,
-                      //                 ),
-                      //               ),
-                      //             ),
-                      //             Container(
-                      //               padding:
-                      //               const EdgeInsets.fromLTRB(
-                      //                 7.0,
-                      //                 0.0,
-                      //                 7.0,
-                      //                 0.0,
-                      //               ),
-                      //               width: 175.0,
-                      //               child: Row(
-                      //                 crossAxisAlignment:
-                      //                 CrossAxisAlignment.center,
-                      //                 children: [
-                      //                   SizedBox(
-                      //                     width: 150,
-                      //                     child: Text(
-                      //                       "this_offer_includes_offers_and_discounts"
-                      //                           .tr,
-                      //                       style: robotoBlack.copyWith(
-                      //                         fontSize: 10,
-                      //                       ),
-                      //                     ),
-                      //                   ),
-                      //                 ],
-                      //               ),
-                      //             ),
-                      //           ],
-                      //         ),
-                      //       ),
-                      //     ),
-                      //     back: Container(
-                      //       width: 225.0,
-                      //       decoration: BoxDecoration(
-                      //         color: Colors.white.withOpacity(0.95),
-                      //         borderRadius:
-                      //         BorderRadius.circular(8.0),
-                      //       ),
-                      //       child: Column(
-                      //         children: [
-                      //           estate == null
-                      //               ? const SizedBox()
-                      //               : ServiceProviderItem(
-                      //             estate: estate!,
-                      //           ),
-                      //         ],
-                      //       ),
-                      //     ),
-                      //     autoFlipDuration:
-                      //     const Duration(seconds: 1),
-                      //   ),
-                      // )
-                      //     : Container(),
+                  // cardTapped
+                  //     ? Positioned(
+                  //   top: 100.0,
+                  //   left: 15.0,
+                  //   child: FlipCard(
+                  //     key: cardKey,
+                  //     front: Container(
+                  //       height: 180.0,
+                  //       width: 175.0,
+                  //       decoration: const BoxDecoration(
+                  //         color: Colors.white,
+                  //         borderRadius: BorderRadius.all(
+                  //           Radius.circular(8.0),
+                  //         ),
+                  //       ),
+                  //       child: SingleChildScrollView(
+                  //         child: Column(
+                  //           children: [
+                  //             Align(
+                  //               alignment: Alignment.bottomRight,
+                  //               child: GestureDetector(
+                  //                 onTap: () {
+                  //                   setState(() {
+                  //                     cardTapped = !cardTapped;
+                  //                   });
+                  //                 },
+                  //                 child: Container(
+                  //                   decoration:
+                  //                   const BoxDecoration(
+                  //                     color: Colors.red,
+                  //                     shape: BoxShape.circle,
+                  //                   ),
+                  //                   padding:
+                  //                   const EdgeInsets.all(4),
+                  //                   child: const Icon(
+                  //                     Icons.close,
+                  //                     size: 16,
+                  //                     color: Colors.white,
+                  //                   ),
+                  //                 ),
+                  //               ),
+                  //             ),
+                  //             Container(
+                  //               height: 100.0,
+                  //               width: 175.0,
+                  //               decoration: const BoxDecoration(
+                  //                 borderRadius: BorderRadius.only(
+                  //                   topLeft: Radius.circular(8.0),
+                  //                   topRight: Radius.circular(8.0),
+                  //                 ),
+                  //                 image: DecorationImage(
+                  //                   image:
+                  //                   AssetImage(Images.offer),
+                  //                   fit: BoxFit.cover,
+                  //                 ),
+                  //               ),
+                  //             ),
+                  //             Container(
+                  //               padding:
+                  //               const EdgeInsets.fromLTRB(
+                  //                 7.0,
+                  //                 0.0,
+                  //                 7.0,
+                  //                 0.0,
+                  //               ),
+                  //               width: 175.0,
+                  //               child: Row(
+                  //                 crossAxisAlignment:
+                  //                 CrossAxisAlignment.center,
+                  //                 children: [
+                  //                   SizedBox(
+                  //                     width: 150,
+                  //                     child: Text(
+                  //                       "this_offer_includes_offers_and_discounts"
+                  //                           .tr,
+                  //                       style: robotoBlack.copyWith(
+                  //                         fontSize: 10,
+                  //                       ),
+                  //                     ),
+                  //                   ),
+                  //                 ],
+                  //               ),
+                  //             ),
+                  //           ],
+                  //         ),
+                  //       ),
+                  //     ),
+                  //     back: Container(
+                  //       width: 225.0,
+                  //       decoration: BoxDecoration(
+                  //         color: Colors.white.withOpacity(0.95),
+                  //         borderRadius:
+                  //         BorderRadius.circular(8.0),
+                  //       ),
+                  //       child: Column(
+                  //         children: [
+                  //           estate == null
+                  //               ? const SizedBox()
+                  //               : ServiceProviderItem(
+                  //             estate: estate!,
+                  //           ),
+                  //         ],
+                  //       ),
+                  //     ),
+                  //     autoFlipDuration:
+                  //     const Duration(seconds: 1),
+                  //   ),
+                  // )
+                  //     : Container(),
 
-                      Align(
-                        alignment: Alignment.bottomCenter,
-                        child: products.isNotEmpty
-                            ? SizedBox(
-                          height: 200,
-                          child: nearbyPlacesList(products),
-                        )
-                            : const Text(""),
-                      ),
-                    ],
-                  );
-                },
+                  // 🔹 دليل الشارات — يظهر فقط لو فيه عقار واحد على الأقل
+                  // عليه خدمات أو جولة افتراضية أو فيديو.
+                  if (products.any((e) =>
+                  (e.serviceOffers ?? []).isNotEmpty ||
+                      _hasLink(e.arPath) ||
+                      _hasLink(e.videoUrl)))
+                    PositionedDirectional(
+                      start: 10,
+                      bottom: products.isNotEmpty ? 210 : 20,
+                      child: _badgesLegend(),
+                    ),
+
+                  Align(
+                    alignment: Alignment.bottomCenter,
+                    child: products.isNotEmpty
+                        ? SizedBox(
+                      height: 200,
+                      child: nearbyPlacesList(products),
+                    )
+                        : const Text(""),
+                  ),
+                ],
               );
             },
           );
@@ -1007,145 +1087,212 @@ class _MapViewScreenState extends State<MapScreen> {
     onTap();
   }
 
-  void _setMarkers(List<Estate> estate) {
-    _customMarkers = [];
-    _customMarkers.clear();
+  // ===================== الماركرات (سريعة + كاش) =====================
 
-    for (int i = 0; i < estate.length; i++) {
-      Estate currentCoordinate = estate[i];
+  bool _hasCoords(Estate e) =>
+      (e.latitude ?? '').isNotEmpty &&
+          (e.longitude ?? '').isNotEmpty &&
+          double.tryParse(e.latitude!) != null &&
+          double.tryParse(e.longitude!) != null;
 
-      if (currentCoordinate.latitude == null ||
-          currentCoordinate.longitude == null ||
-          currentCoordinate.latitude!.isEmpty ||
-          currentCoordinate.longitude!.isEmpty) {
-        continue;
+  MarkerId _markerIdFor(Estate e, int i) => MarkerId('e-${e.id ?? 'i$i'}');
+
+  /// يُستدعى عند كل update() في CategoryController، لكنه لا يعيد بناء
+  /// الماركرات إلا إذا تغيّرت القائمة فعلًا (وليس عددها فقط كما كان سابقًا).
+  void _onCategoryChanged() {
+    // نفس مشكلة شاشة المناطق: لا نرسل ماركرات قبل إنشاء الخريطة.
+    if (!_mapReady) return;
+    final c = Get.find<CategoryController>();
+    final List<Estate> list =
+    c.isSearching ? const <Estate>[] : (c.mapEstateList ?? const <Estate>[]);
+
+    final sig = '${list.length}:' +
+        list
+            .map((e) =>
+        '${e.id}_${e.price}_${e.totalPrice}_${e.serviceOffers?.length ?? 0}'
+            '_${_hasLink(e.arPath)}_${_hasLink(e.videoUrl)}')
+            .join(',');
+    if (sig == _lastListSignature) return;
+    _lastListSignature = sig;
+
+    assert(() {
+      final offers = list.where((e) => (e.serviceOffers ?? []).isNotEmpty).length;
+      final tours = list.where((e) => _hasLink(e.arPath)).length;
+      final videos = list.where((e) => _hasLink(e.videoUrl)).length;
+      debugPrint('🗺️ map estates=${list.length} offers=$offers '
+          'tours=$tours videos=$videos');
+      return true;
+    }());
+
+    _rebuildMarkers(list.where(_hasCoords).toList());
+  }
+
+  Future<void> _rebuildMarkers(List<Estate> list) async {
+    final int seq = ++_markerBuildSeq;
+
+    // نحافظ على العقار المحدد لو ما زال موجودًا في القائمة الجديدة.
+    final prevId = selectedIndex < _products.length
+        ? _products[selectedIndex].id
+        : null;
+    final int kept =
+    prevId == null ? -1 : list.indexWhere((e) => e.id == prevId);
+    selectedIndex = kept < 0 ? 0 : kept;
+
+    final built = await Future.wait([
+      for (int i = 0; i < list.length; i++) _buildEstateMarker(list[i], i),
+    ]);
+
+    // لو وصلت قائمة أحدث أثناء التوليد، نتجاهل هذه النتيجة القديمة.
+    if (!mounted || seq != _markerBuildSeq) return;
+
+    setState(() {
+      _products = list;
+      _markerMap
+        ..clear()
+        ..addEntries(built.map((m) => MapEntry(m.markerId, m)));
+    });
+
+    if (_pageController.hasClients && list.isNotEmpty) {
+      final current = (_pageController.page ?? 0).round();
+      if (current != selectedIndex) {
+        _pageController.jumpToPage(selectedIndex);
       }
+    }
+  }
 
-      LatLng latLng = LatLng(
-        double.parse(currentCoordinate.latitude!),
-        double.parse(currentCoordinate.longitude!),
-      );
-
-      _customMarkers.add(
-        MarkerData(
-          marker: Marker(
-            infoWindow: InfoWindow(
-              title: estate[i].title,
-              snippet: ' المساحة ${estate[i].space}',
+  Widget _badgesLegend() {
+    Widget item(MarkerBadge b, String label) => Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 16,
+            height: 16,
+            decoration: BoxDecoration(
+              color: b.color,
+              shape: BoxShape.circle,
+              border: Border.all(color: Colors.white, width: 1.5),
             ),
-            markerId: MarkerId('id-$i'),
-            position: latLng,
-            onTap: () {
-              selectedIndex = i;
-              _pageController.animateToPage(
-                selectedIndex,
-                duration: const Duration(milliseconds: 800),
-                curve: Curves.easeInOut,
-              );
-            },
+            child: Icon(b.icon, size: 10, color: Colors.white),
           ),
-          child: Column(
-            children: [
-              Container(
-                padding: const EdgeInsets.only(right: 1, left: 1),
-                decoration: BoxDecoration(
-                  border: Border.all(
-                    color: Theme.of(context).secondaryHeaderColor,
-                  ),
-                  borderRadius: BorderRadius.circular(2.0),
-                  color: Colors.white,
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      formatPrice(
-                        currentCoordinate.categoryName == "ارض"
-                            ? (currentCoordinate.totalPrice ?? "0")
-                            : (currentCoordinate.price ?? "0"),
-                      ),
-                      style: robotoBlack.copyWith(fontSize: 9),
-                    ),
-                    Image.asset(
-                      (currentCoordinate.serviceOffers ?? []).isEmpty
-                          ? Images.image
-                          : Images.vt_offer,
-                      height: 8,
-                      width: 8,
-                    ),
-                  ],
-                ),
-              ),
-              selectedIndex == i
-                  ? Stack(
-                children: [
-                  Image.asset(
-                    Images.location_marker,
-                    height: 40,
-                    width: 40,
-                    color: currentCoordinate.serviceOffers!.isEmpty
-                        ? Colors.red
-                        : Colors.orange,
-                  ),
-                  Positioned(
-                    top: 3,
-                    left: 0,
-                    right: 0,
-                    child: Center(
-                      child: ClipOval(
-                        child: CustomImage(
-                          image: currentCoordinate.images!.isNotEmpty
-                              ? "${Get.find<SplashController>().configModel!.baseUrls!.estateImageUrl}/${currentCoordinate.images![0]}"
-                              : Images.estate_type,
-                          placeholder: Images.placeholder,
-                          height: 20,
-                          width: 20,
-                          fit: BoxFit.cover,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              )
-                  : Stack(
-                children: [
-                  Image.asset(
-                    Images.location_marker,
-                    height: 35,
-                    width: 35,
-                    color: currentCoordinate.serviceOffers!.isEmpty
-                        ? Theme.of(context).primaryColor
-                        : Colors.orange,
-                  ),
-                  Positioned(
-                    top: 3,
-                    left: 0,
-                    right: 0,
-                    child: Center(
-                      child: ClipOval(
-                        child: CustomImage(
-                          image: currentCoordinate.images!.isNotEmpty
-                              ? "${Get.find<SplashController>().configModel!.baseUrls!.estateImageUrl}/${currentCoordinate.images![0]}"
-                              : Images.estate_type,
-                          placeholder: Images.placeholder,
-                          height: 18,
-                          width: 18,
-                          fit: BoxFit.cover,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: robotoMedium.copyWith(
+              fontSize: 11,
+              color: const Color(0xFF1F2937),
+            ),
           ),
-        ),
-      );
-    }
+        ],
+      ),
+    );
 
-    if (mounted) {
-      setState(() {});
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.95),
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.12),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          item(_offerBadge, 'خدمات مزودين'),
+          item(_tourBadge, 'جولة افتراضية'),
+          item(_videoBadge, 'فيديو'),
+        ],
+      ),
+    );
+  }
+
+  static const MarkerBadge _offerBadge = MapMarkerFactory.offerFeature;
+  static const MarkerBadge _tourBadge = MapMarkerFactory.tourFeature;
+  static const MarkerBadge _videoBadge = MapMarkerFactory.videoFeature;
+
+  /// رابط صالح فعلًا (السيرفر أحيانًا يرجّع "null" أو "0" أو نص فارغ).
+  bool _hasLink(String? v) {
+    final s = v?.trim() ?? '';
+    return s.isNotEmpty && s != 'null' && s != '0';
+  }
+
+  Future<Marker> _buildEstateMarker(Estate e, int i) async {
+    final bool selected = i == selectedIndex;
+    final bool hasOffer = (e.serviceOffers ?? []).isNotEmpty;
+    final bool hasTour = _hasLink(e.arPath);
+    final bool hasVideo = _hasLink(e.videoUrl);
+    final Color primary = _primaryColor;
+
+    // الشارات فوق شريحة السعر (بنفس الترتيب دائمًا):
+    // برتقالي = خدمات مزودين، بنفسجي = جولة افتراضية 360، أحمر = فيديو.
+    final int featuresCount =
+        (hasOffer ? 1 : 0) + (hasTour ? 1 : 0) + (hasVideo ? 1 : 0);
+
+    final String label = formatPrice(
+      e.categoryName == "ارض" ? (e.totalPrice ?? "0") : (e.price ?? "0"),
+    );
+
+    final icon = await MapMarkerFactory.estate(
+      price: label,
+      primary: primary,
+      selected: selected,
+      hasOffer: hasOffer,
+      hasTour: hasTour,
+      hasVideo: hasVideo,
+    );
+
+    return Marker(
+      markerId: _markerIdFor(e, i),
+      position: LatLng(double.parse(e.latitude!), double.parse(e.longitude!)),
+      icon: icon,
+      // العقارات التي عليها مزايا تظهر فوق غيرها عند التزاحم.
+      zIndex: selected ? 10 : (1 + featuresCount).toDouble(),
+      // يمنع جوجل من تحريك الكاميرا عند الضغط (كان يسبب طلب API إضافي).
+      consumeTapEvents: true,
+      onTap: () => _onMarkerTap(i),
+    );
+  }
+
+  void _onMarkerTap(int i) {
+    _selectEstate(i);
+    if (_pageController.hasClients) {
+      _animatingFromMarker = true;
+      _pageController
+          .animateToPage(
+        i,
+        duration: const Duration(milliseconds: 350),
+        curve: Curves.easeOut,
+      )
+          .whenComplete(() => _animatingFromMarker = false);
     }
+  }
+
+  /// تغيير العقار المحدد: نعيد رسم ماركرين فقط (القديم والجديد) بدل الكل.
+  Future<void> _selectEstate(int i) async {
+    if (i == selectedIndex || i < 0 || i >= _products.length) return;
+    final int old = selectedIndex;
+    selectedIndex = i;
+    final int seq = _markerBuildSeq;
+
+    final updates = await Future.wait([
+      if (old >= 0 && old < _products.length)
+        _buildEstateMarker(_products[old], old),
+      _buildEstateMarker(_products[i], i),
+    ]);
+
+    if (!mounted || seq != _markerBuildSeq) return;
+    setState(() {
+      for (final m in updates) {
+        _markerMap[m.markerId] = m;
+      }
+    });
   }
 
   bool _isDiscountOffer(ServiceOffers offer) {
@@ -1206,7 +1353,7 @@ class _MapViewScreenState extends State<MapScreen> {
       controller: _pageController,
       itemCount: products.length,
       onPageChanged: (int value) {
-        selectedIndex = value;
+        if (!_animatingFromMarker) _selectEstate(value);
         // _controller.animateCamera(
         //   CameraUpdate.newCameraPosition(
         //     CameraPosition(
@@ -1227,8 +1374,6 @@ class _MapViewScreenState extends State<MapScreen> {
         // } else {
         //   cardTapped = false;
         // }
-
-        setState(() {});
       },
       itemBuilder: (BuildContext context, int index) {
         return AnimatedBuilder(
@@ -1419,12 +1564,17 @@ class _MapViewScreenState extends State<MapScreen> {
     final num? price = num.tryParse(priceStr);
     if (price == null) return "0";
 
+    String trim(num v) => v
+        .toStringAsFixed(2)
+        .replaceAll(RegExp(r'0+$'), '')
+        .replaceAll(RegExp(r'\.$'), '');
+
     if (price >= 1000000) {
-      return "${(price / 1000000).toStringAsFixed(2)} مليون";
+      return "${trim(price / 1000000)} مليون";
     } else if (price >= 1000) {
-      return "${(price / 1000).toStringAsFixed(2)} ألف";
+      return "${trim(price / 1000)} ألف";
     } else {
-      return price.toString();
+      return trim(price);
     }
   }
 }

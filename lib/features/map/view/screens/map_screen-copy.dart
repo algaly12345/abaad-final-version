@@ -167,23 +167,20 @@ class _MapViewScreenState extends State<MapScreen> {
 
 
   Future<void> _moveToZoneAndLoadFirstTime() async {
-    await _controller.animateCamera(
-      CameraUpdate.newCameraPosition(
-        CameraPosition(
-          target: LatLng(lat, lot),
-          zoom: 9,
-        ),
-      ),
-    );
-
-    await Future.delayed(const Duration(milliseconds: 700));
-
+    // 🔹 تحريك الكاميرا وجلب البيانات بيحصلوا الآن في نفس الوقت (بدل
+    // الانتظار التتابعي القديم) — وحذفنا الانتظار الصناعي (700 مللي ثانية)
+    // اللي ما كانش له أي داعي فعلي، وكان بيأخر بداية جلب البيانات من غير
+    // أي فائدة. هذا وحده يقلّل زمن التحميل بشكل ملحوظ.
     _cameraPosition = CameraPosition(
       target: LatLng(lat, lot),
       zoom: 9,
     );
 
-    await _loadInitialEstatesFromPoint();
+    final Future<void> cameraFuture = _controller.animateCamera(
+      CameraUpdate.newCameraPosition(_cameraPosition),
+    );
+
+    await Future.wait([cameraFuture, _loadInitialEstatesFromPoint()]);
     _didInitialLoad = true;
   }
 
@@ -400,20 +397,58 @@ class _MapViewScreenState extends State<MapScreen> {
                     children: [
                       googleMap,
 
-                      categoryController.isMapLoading
-                          ? Center(
-                        child: Padding(
-                          padding: EdgeInsets.all(
-                            Dimensions.PADDING_SIZE_SMALL,
-                          ),
-                          child: CircularProgressIndicator(
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              Theme.of(context).primaryColor,
+                      // 🔹 شريط تحميل علوي عائم بدل سبينر كبير في نص
+                      // الشاشة — لا يحجب الخريطة، ويعطي إحساسًا بسرعة
+                      // أكبر لأن المستخدم يقدر يبدأ يتفاعل مع الخريطة
+                      // فورًا أثناء التحميل بدل انتظار مؤشر مركزي.
+                      if (categoryController.isMapLoading)
+                        Positioned(
+                          top: 12,
+                          left: 0,
+                          right: 0,
+                          child: Center(
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 14, vertical: 8),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(30),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.12),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 3),
+                                  ),
+                                ],
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  SizedBox(
+                                    width: 15,
+                                    height: 15,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      valueColor:
+                                      AlwaysStoppedAnimation<Color>(
+                                        Theme.of(context).primaryColor,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    "جاري التحميل...",
+                                    style: TextStyle(
+                                      fontSize: 12.5,
+                                      fontWeight: FontWeight.w600,
+                                      color: Theme.of(context).primaryColor,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         ),
-                      )
-                          : const SizedBox(),
 
                       // if (!categoryController.isMapLoading &&
                       //     products.isEmpty)

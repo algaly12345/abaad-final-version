@@ -1,10 +1,29 @@
-﻿import 'package:abaad_flutter/core/api/api_checker.dart';
+﻿import 'dart:convert';
+
+import 'package:abaad_flutter/core/api/api_checker.dart';
 import 'package:abaad_flutter/features/estate/data/bodies/filter_body.dart';
 import 'package:abaad_flutter/shared/data/models/category_model.dart';
 import 'package:abaad_flutter/shared/data/models/estate_model.dart';
 import 'package:abaad_flutter/features/estate/data/models/facilities_model.dart';
 import 'package:abaad_flutter/features/category/data/repositories/category_repo.dart';
+import 'package:flutter/foundation.dart' show compute;
 import 'package:get/get.dart';
+
+/// تحويل استجابة الخريطة إلى قائمة عقارات في Isolate منفصل.
+/// موديل Estate فيه أكثر من 100 حقل + قوائم متداخلة، فتحويله على الـ UI
+/// thread كان يسبب تجميدًا لحظيًا عند وصول البيانات.
+/// (لازم تكون خارج الكلاس — top-level.)
+List<Estate> parseMapEstatesInBackground(String body) {
+  final dynamic decoded = jsonDecode(body);
+  if (decoded is! Map<String, dynamic>) return <Estate>[];
+  return EstateModel.fromJson(decoded).estates ?? <Estate>[];
+}
+
+class _MapCacheEntry {
+  final List<Estate> estates;
+  final DateTime time;
+  _MapCacheEntry(this.estates, this.time);
+}
 
 class CategoryController extends GetxController implements GetxService {
   final CategoryRepo categoryRepo;
@@ -89,8 +108,24 @@ class CategoryController extends GetxController implements GetxService {
   int _mapCurrentPage = 1;
   int get mapCurrentPage => _mapCurrentPage;
 
-  final int _mapLimit = 10;
+  /// ⚠️ كان 10 فقط — أي أن الخريطة لا تعرض أكثر من 10 عقارات في أي مكان،
+  /// لأن شاشة الخريطة تطلب الصفحة الأولى فقط لكل مساحة.
+  /// 100 رقم مناسب لخريطة (عقار يعرض أكثر)، بشرط أن السيرفر يحترم limit.
+  /// لو الاستجابة ثقيلة جدًا (كل عقار فيه 100 حقل) خفّضه إلى 50.
+  final int _mapLimit = 100;
   int get mapLimit => _mapLimit;
+
+  /// رقم آخر طلب خريطة — أي رد أقدم منه يُتجاهل.
+  int _mapRequestId = 0;
+
+  /// كاش في الذاكرة: فتح نفس المنطقة مرة ثانية خلال 3 دقائق يكون فوريًا.
+  final Map<String, _MapCacheEntry> _mapCache = {};
+  static const Duration _mapCacheTtl = Duration(minutes: 3);
+  static const int _mapCacheMax = 20;
+
+  /// كاش قائمة التصنيفات (نادرًا ما تتغير) — كانت تُطلب من السيرفر مع كل
+  /// فتح لشاشة الخريطة.
+  List<CategoryModel>? _allCategoriesCache;
 
 
   Future<void> getCategoryList(bool reload) async {
@@ -213,40 +248,52 @@ class CategoryController extends GetxController implements GetxService {
     update();
   }
 
-  Future<void> getSubCategoryList(String categoryID  , int zone_id) async {
-    final currentLocale = Get.locale;
-    bool isArabic = currentLocale?.languageCode == 'ar';
-
+  /// [loadProducts]: الافتراضي true (نفس السلوك القديم لباقي الشاشات).
+  /// شاشة الخريطة تمرر false لأنها لا تستخدم categoryProductList إطلاقًا —
+  /// كانت تطلب 25 عقارًا كاملًا (لمنطقة رقم 1 ثابتة!) مع كل فتح بلا فائدة.
+  Future<void> getSubCategoryList(
+      String categoryID,
+      int zone_id, {
+        bool loadProducts = true,
+      }) async {
     _subCategoryIndex = 0;
-    _subCategoryList = null;
-    _categoryProductList = [];
-    _currentPage = 1;
-    _isLastPage = false;
+    if (loadProducts) {
+      _categoryProductList = [];
+      _currentPage = 1;
+      _isLastPage = false;
+    }
 
-    Response response = await categoryRepo.getCategoryList();
-
-    if (response.statusCode == 200) {
-      _isLoading = false;
-      _subCategoryList = [];
-
-      _subCategoryList?.add(
-        CategoryModel(
-          id: int.parse(categoryID),
-          nameAr: 'الكل'.tr,
-          name: 'all',
-          slug: '',
-          position: '',
-          statusHome: '',
-          image: '',
-          createdAt: '',
-          updatedAt: '',
-        ),
-      );
-
+    if (_allCategoriesCache == null) {
+      _subCategoryList = null;
+      Response response = await categoryRepo.getCategoryList();
+      if (response.statusCode != 200) {
+        ApiChecker.checkApi(response, showToaster: true);
+        return;
+      }
+      final List<CategoryModel> all = [];
       response.body.forEach((category) {
-        _subCategoryList?.add(CategoryModel.fromJson(category));
+        all.add(CategoryModel.fromJson(category));
       });
+      _allCategoriesCache = all;
+    }
 
+    _isLoading = false;
+    _subCategoryList = [
+      CategoryModel(
+        id: int.parse(categoryID),
+        nameAr: 'الكل'.tr,
+        name: 'all',
+        slug: '',
+        position: '',
+        statusHome: '',
+        image: '',
+        createdAt: '',
+        updatedAt: '',
+      ),
+      ..._allCategoriesCache!,
+    ];
+
+    if (loadProducts) {
       await getCategoryProductList(
         zone_id,
         categoryID,
@@ -260,54 +307,31 @@ class CategoryController extends GetxController implements GetxService {
         sv: 0,
         type: "",
       );
-
-      update();
-    } else {
-      ApiChecker.checkApi(response, showToaster: true);
     }
+
+    update();
   }
-  // void getSubCategoryList(String categoryID) async {
-  //   final currentLocale = Get.locale;
-  //   bool isArabic = currentLocale?.languageCode == 'ar';
-  //   _subCategoryIndex = 0;
-  //   _subCategoryList = null;
-  //   _categoryProductList = null;
-  //   Response response = await categoryRepo.getCategoryList();
-  //   if (response.statusCode == 200) {
-  //     _isLoading = false;
-  //     _subCategoryList= [];
-  //     _subCategoryList?.add(CategoryModel(id: int.parse(categoryID),nameAr: 'الكل'.tr , name: 'all ', slug: '', position: '', statusHome: '', image: '', createdAt: '', updatedAt: ''));
-  //     _isLoading=false;
-  //     response.body.forEach((category) => _subCategoryList?.add(CategoryModel.fromJson(category)));
-  //     getCategoryProductList(0,categoryID, 0 ,'0',"0","0","0","1",0,0,"");
-  //   } else {
-  //     ApiChecker.checkApi(response, showToaster: true);
-  //   }
-  // }
 
-  // void setSubCategoryIndex(int index ,int zoneId) {
-  //   _subCategoryIndex = index;
-  //   getCategoryProductList(zoneId,_subCategoryList![index].id.toString(),  0,'0',"0","0","0","1",0,0,"");
-  //   update();
-  //
-  // }
-
-  void setSubCategoryIndex(int index, int zoneId) {
+  /// [loadList]: شاشة الخريطة تمرر false — هي تعيد التحميل بنفسها حسب
+  /// الجزء الظاهر، فلا داعي لطلب قائمة عادية إضافية مع كل ضغطة تصنيف.
+  void setSubCategoryIndex(int index, int zoneId, {bool loadList = true}) {
     _subCategoryIndex = index;
 
-    getCategoryProductList(
-      zoneId,
-      _subCategoryList![index].id.toString(),
-      0,
-      '0',
-      '0',
-      '0',
-      '0',
-      reload: true,
-      arPath: 0,
-      sv: 0,
-      type: '',
-    );
+    if (loadList) {
+      getCategoryProductList(
+        zoneId,
+        _subCategoryList![index].id.toString(),
+        0,
+        '0',
+        '0',
+        '0',
+        '0',
+        reload: true,
+        arPath: 0,
+        sv: 0,
+        type: '',
+      );
+    }
 
     update();
   }
@@ -322,6 +346,9 @@ class CategoryController extends GetxController implements GetxService {
   String get filterDistrict => _filterDistrict;
   String get filterSpace => _filterSpace;
 
+  /// [loadList]: شاشة المناطق تمرر false لأن الشاشة التالية (الخريطة) هي
+  /// التي تجلب بياناتها — كان الضغط على منطقة يطلب قائمة 25 عقارًا كاملة
+  /// لا تُعرض في أي مكان.
   void setFilterIndex(
       int zoneId,
       int index,
@@ -330,58 +357,31 @@ class CategoryController extends GetxController implements GetxService {
       int space,
       int arPath,
       int sv,
-      String type,
-      ) {
-    print("--------------type $type");
-
+      String type, {
+        bool loadList = true,
+      }) {
     _filterCity = cityName.isEmpty ? "0" : cityName;
     _filterDistrict = districts.isEmpty ? "0" : districts;
     _filterSpace = space.toString();
 
-    getCategoryProductList(
-      zoneId,
-      index.toString(),
-      0,
-      cityName.isEmpty ? "0" : cityName,
-      districts.isEmpty ? "0" : districts,
-      space.toString(),
-      "0",
-      reload: true,
-      arPath: arPath,
-      sv: sv,
-      type: type,
-    );
+    if (loadList) {
+      getCategoryProductList(
+        zoneId,
+        index.toString(),
+        0,
+        cityName.isEmpty ? "0" : cityName,
+        districts.isEmpty ? "0" : districts,
+        space.toString(),
+        "0",
+        reload: true,
+        arPath: arPath,
+        sv: sv,
+        type: type,
+      );
+    }
 
     update();
   }
-
-  //
-  // void getCategoryProductList(int zoneId,String categoryID,int userId,String city,String districts, String space,String typeAdd,String offset,int arPath,int sv,String type) async {
-  //   if(offset == '1') {
-  //     _categoryProductList = null;
-  //
-  //     _isSearching = false;
-  //   }
-  //   Response response = await categoryRepo.getCategoryProductList(zoneId,categoryID,userId,city,districts,space,typeAdd, offset,arPath,sv,type);
-  //
-  //   //print("-----------------------------------tt$type");
-  //   if (response.statusCode == 200) {
-  //     if (offset == '1') {
-  //       _categoryProductList = [];
-  //       //_estateModel = null;
-  //
-  //     }
-  //     _isLoading=false;
-  //     _categoryProductList?.addAll(EstateModel.fromJson(response.body).estates as Iterable<Estate>);
-  //     _pageSize = EstateModel.fromJson(response.body).totalSize;
-  //     _estateModel = EstateModel.fromJson(response.body);
-  //     // Get.find<EstateController>() .getCategoryList(response.body);
-  //     _isLoading = false;
-  //   } else {
-  //     ApiChecker.checkApi(response, showToaster: true);
-  //   }
-  //   update();
-  // }
 
 
   bool _isPaginating = false;
@@ -478,6 +478,19 @@ class CategoryController extends GetxController implements GetxService {
     return _nameCityIndex;
   }
 
+  // ============================ الخريطة ============================
+
+  /// يُستدعى عند فتح شاشة الخريطة لمسح عقارات المنطقة السابقة.
+  void clearMapEstates() {
+    _mapRequestId++; // يلغي أي رد قديم ما زال في الطريق
+    _mapEstateList = [];
+    _mapCurrentPage = 1;
+    _isMapLastPage = false;
+    _isMapLoading = false;
+    _isMapPaginating = false;
+    update();
+  }
+
   Future<void> getMapCategoryProductListByBounds(
       int zoneId,
       String categoryID,
@@ -498,59 +511,96 @@ class CategoryController extends GetxController implements GetxService {
     if (reload) {
       _mapCurrentPage = 1;
       _isMapLastPage = false;
-      _mapEstateList = [];
-    }
-
-    if (_isMapPaginating) {
+      // ⚠️ لا نفرّغ _mapEstateList هنا — العقارات الحالية تبقى ظاهرة حتى
+      // يصل الرد الجديد (سابقًا كانت الخريطة تفرغ ثم ترجع مع كل تحريك).
+    } else if (_isMapPaginating || _isMapLastPage) {
       return;
     }
 
-    if (_mapCurrentPage == 1) {
+    final int page = _mapCurrentPage;
+
+    // الكاش: نفس الفلاتر ونفس المساحة تقريبًا (تقريب 3 خانات ≈ 100م).
+    String r(double v) => v.toStringAsFixed(3);
+    final String cacheKey = [
+      zoneId, categoryID, userId, city, districts, space, typeAdd, arPath, sv,
+      type, page, _mapLimit, r(northEastLat), r(northEastLng),
+      r(southWestLat), r(southWestLng),
+    ].join('|');
+
+    final cached = _mapCache[cacheKey];
+    if (cached != null &&
+        DateTime.now().difference(cached.time) < _mapCacheTtl) {
+      _mapRequestId++;
+      _applyMapPage(page, cached.estates);
+      _isMapLoading = false;
+      _isMapPaginating = false;
+      update();
+      return;
+    }
+
+    final int requestId = ++_mapRequestId;
+
+    if (page == 1) {
       _isMapLoading = true;
     } else {
       _isMapPaginating = true;
     }
     update();
 
-    Response response = await categoryRepo.getMapEstateList(
-      zoneId,
-      categoryID,
-      userId,
-      city,
-      districts,
-      space,
-      typeAdd,
-      _mapLimit,
-      _mapCurrentPage,
-      arPath,
-      sv,
-      type,
-      northEastLat,
-      northEastLng,
-      southWestLat,
-      southWestLng,
-    );
+    Response response;
+    try {
+      response = await categoryRepo.getMapEstateList(
+        zoneId,
+        categoryID,
+        userId,
+        city,
+        districts,
+        space,
+        typeAdd,
+        _mapLimit,
+        page,
+        arPath,
+        sv,
+        type,
+        northEastLat,
+        northEastLng,
+        southWestLat,
+        southWestLng,
+      );
+    } catch (e) {
+      if (requestId == _mapRequestId) {
+        _isMapLoading = false;
+        _isMapPaginating = false;
+        update();
+      }
+      return;
+    }
+
+    // المستخدم حرّك الخريطة أو غيّر الفلتر أثناء الانتظار → رد قديم.
+    if (requestId != _mapRequestId) return;
 
     if (response.statusCode == 200) {
-      EstateModel estateModel = EstateModel.fromJson(response.body);
-
-      if (_mapCurrentPage == 1) {
-        _mapEstateList = [];
-      }
-
-      List<Estate> newEstates = [];
-      if (estateModel.estates != null) {
-        newEstates.addAll(estateModel.estates as Iterable<Estate>);
-      }
-
-      _mapEstateList?.addAll(newEstates);
-
-      if (newEstates.length < _mapLimit) {
-        _isMapLastPage = true;
+      List<Estate> newEstates;
+      final String? raw = response.bodyString;
+      if (raw != null && raw.isNotEmpty) {
+        try {
+          newEstates = await compute(parseMapEstatesInBackground, raw);
+        } catch (_) {
+          newEstates =
+              EstateModel.fromJson(response.body).estates ?? <Estate>[];
+        }
       } else {
-        _isMapLastPage = false;
-        _mapCurrentPage++;
+        newEstates = EstateModel.fromJson(response.body).estates ?? <Estate>[];
       }
+
+      if (requestId != _mapRequestId) return;
+
+      _applyMapPage(page, newEstates);
+
+      if (_mapCache.length >= _mapCacheMax) {
+        _mapCache.remove(_mapCache.keys.first);
+      }
+      _mapCache[cacheKey] = _MapCacheEntry(newEstates, DateTime.now());
     } else {
       ApiChecker.checkApi(response, showToaster: true);
     }
@@ -558,6 +608,20 @@ class CategoryController extends GetxController implements GetxService {
     _isMapLoading = false;
     _isMapPaginating = false;
     update();
+  }
+
+  void _applyMapPage(int page, List<Estate> estates) {
+    if (page == 1) {
+      _mapEstateList = List<Estate>.of(estates);
+    } else {
+      _mapEstateList = [...?_mapEstateList, ...estates];
+    }
+    if (estates.length < _mapLimit) {
+      _isMapLastPage = true;
+    } else {
+      _isMapLastPage = false;
+      _mapCurrentPage = page + 1;
+    }
   }
 
 // Method to toggle the selection of an advantage

@@ -45,6 +45,18 @@ class _ProviderUpgradeScreenState extends State<ProviderUpgradeScreen> {
   void initState() {
     super.initState();
     _offerController = Get.find<ServiceOfferController>();
+
+    // provider بهوية ناقصة يصل هنا الآن أيضًا (راجع _hasCompleteProviderIdentity
+    // أعلاه) — نعبّئ النوع الذي اختاره سابقًا (فرد/منشأة) من بيانات الباكند
+    // بدل ترك النموذج فارغًا فيُعاد سؤاله عن شيء اختاره من قبل. لا نلمس
+    // entityType إن كان معبّأ بالفعل في نفس الجلسة (نفس حارس
+    // add_property_service_offer_screen.dart السطر 67).
+    if (_offerController.entityType == null) {
+      final provider = Get.find<UserController>().userInfoModel?.provider;
+      if (provider != null && provider.hasChosenIdentityType) {
+        _offerController.hydrateEntityFromProvider(provider);
+      }
+    }
   }
 
   // حفظ بيانات الهوية فوراً في service_providers قبل المتابعة، بدل انتظار
@@ -78,6 +90,17 @@ class _ProviderUpgradeScreenState extends State<ProviderUpgradeScreen> {
   bool get _canContinue =>
       _offerController.entityType != null && !_isNavigatingToOffer;
 
+  // provider فعلاً *و* هويته مكتملة (رقم الهوية/السجل التجاري موجود، لا
+  // 'pending') — نفس isComplete المستخدمة في ReferralScreen كبوابة صارمة قبل
+  // العمليات المالية. isProviderByType وحده لا يكفي: user_type يتحوّل provider
+  // فور اختيار فرد/منشأة فقط (راجع ServiceProviderService::updateProviderIdentity)
+  // حتى لو ظل رقم الهوية فارغًا — فلو اكتفينا بـ isProviderByType هنا، يُقفز
+  // مباشرة لـ"خدماتي" دون أن تُستكمل البيانات أبدًا، ويبقى أي مسار يعتمد على
+  // isComplete (مثل ReferralScreen) عالقًا في حلقة توجيه لا تنتهي.
+  bool get _hasCompleteProviderIdentity =>
+      Get.find<ProviderPermissionController>().isProviderByType &&
+      (Get.find<UserController>().userInfoModel?.provider?.isComplete ?? false);
+
   @override
   Widget build(BuildContext context) {
     if (!Get.find<AuthController>().isLoggedIn()) {
@@ -87,23 +110,21 @@ class _ProviderUpgradeScreenState extends State<ProviderUpgradeScreen> {
       // (users.user_type) هو الفيصل الوحيد: "خدماتي" لمزوّد فعلي، أو نموذج
       // الهوية من جديد لغيره.
       return NotLoggedInScreen(
-        redirectAfterLogin: () =>
-            Get.find<ProviderPermissionController>().isProviderByType
-                ? const MyServicesScreen()
-                : const ProviderUpgradeScreen(),
+        redirectAfterLogin: () => _hasCompleteProviderIdentity
+            ? const MyServicesScreen()
+            : const ProviderUpgradeScreen(),
       );
     }
 
-    // مستخدم مسجّل دخوله سبق له إرسال بيانات الهوية (فرد/منشأة) بالفعل —
-    // الباكند يُرقّيه إلى provider فور تلك الخطوة (راجع
-    // ServiceProviderService::updateProviderIdentity)، فلا داعي لعرض النموذج
-    // من جديد. يمنع هذا تحديداً ظهور النموذج عند الرجوع بزر الرجوع من معالج
-    // "إضافة خدمة" (AddPropertyServiceOfferScreen يفتح هذه الشاشة عبر
-    // Get.toNamed لا Get.off، فتبقى ProviderUpgradeScreen في المكدّس) —
-    // ينتقل مباشرة إلى "خدماتي" حيث تظهر عروضه بدل إعادة سؤاله عن فرد/منشأة.
-    // نفس فيصل نوع الحساب (user_type) المستخدَم بكل مكان آخر، لا وجود سجل
-    // service_providers وحده.
-    if (Get.find<ProviderPermissionController>().isProviderByType) {
+    // مستخدم مسجّل دخوله سبق له إرسال بيانات الهوية (فرد/منشأة) بالفعل
+    // *وأكملها* — فلا داعي لعرض النموذج من جديد. يمنع هذا تحديداً ظهور النموذج
+    // عند الرجوع بزر الرجوع من معالج "إضافة خدمة" (AddPropertyServiceOfferScreen
+    // يفتح هذه الشاشة عبر Get.toNamed لا Get.off، فتبقى ProviderUpgradeScreen في
+    // المكدّس) — ينتقل مباشرة إلى "خدماتي" حيث تظهر عروضه بدل إعادة سؤاله عن
+    // فرد/منشأة. لو كانت الهوية ناقصة (رقم الهوية/السجل التجاري فارغ أو
+    // 'pending') يستمر لعرض النموذج أدناه بدل القفز لـ"خدماتي" — انظر توثيق
+    // _hasCompleteProviderIdentity أعلاه.
+    if (_hasCompleteProviderIdentity) {
       return const MyServicesScreen();
     }
 

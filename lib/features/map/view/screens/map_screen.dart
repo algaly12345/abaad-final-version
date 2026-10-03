@@ -100,7 +100,7 @@ class _MapViewScreenState extends State<MapScreen> {
   // ===================== حالة الخريطة والتحميل =====================
 
   /// زوم فتح المنطقة (كان 13 ثم تحريك إلى 9 بأنيميشن = تحميلان).
-  static const double _zoneZoom = 11;
+  static const double _zoneZoom = 10;
 
   /// نسبة التوسيع حول الجزء الظاهر عند الطلب: نجلب مساحة أكبر قليلًا من
   /// الشاشة، فالسحب البسيط لا يحتاج طلبًا جديدًا (نفس أسلوب عقار).
@@ -174,7 +174,6 @@ class _MapViewScreenState extends State<MapScreen> {
   @override
   void initState() {
     super.initState();
-    Get.find<CategoryController>().getSubCategoryList("0", 1);
     _pageController = PageController(initialPage: 0, viewportFraction: 0.85)
       ..addListener(_onScroll);
     lat = double.parse(widget.mainCategory.latitude);
@@ -189,6 +188,11 @@ class _MapViewScreenState extends State<MapScreen> {
       // (بعد أول إطار وليس داخل initState لأن الكنترولر يستدعي update().)
       // نمسح عقارات المنطقة السابقة حتى لا تظهر لحظة الفتح.
       Get.find<CategoryController>().clearMapEstates();
+
+      // التصنيفات فقط (من الكاش بعد أول مرة) — بدون طلب قائمة العقارات
+      // العادية التي كانت تُطلب لمنطقة رقم 1 مع كل فتح بلا فائدة.
+      Get.find<CategoryController>()
+          .getSubCategoryList("0", widget.mainCategory.id, loadProducts: false);
 
       // 🔹 نبدأ جلب البيانات فورًا — بالتوازي مع حركة فتح الصفحة وإنشاء
       // الخريطة، بدل انتظار onMapCreated.
@@ -249,7 +253,7 @@ class _MapViewScreenState extends State<MapScreen> {
         // moveCamera فوري — بدل animate + انتظار 600 مللي ثانية.
         await _controller.moveCamera(
           CameraUpdate.newCameraPosition(
-            CameraPosition(target: LatLng(lat, lot), zoom: 12),
+            CameraPosition(target: LatLng(lat, lot), zoom: 13),
           ),
         );
       }
@@ -654,95 +658,7 @@ class _MapViewScreenState extends State<MapScreen> {
                               ),
                               const SizedBox(height: 5),
 
-                              Row(
-                                mainAxisAlignment:
-                                MainAxisAlignment.start,
-                                children: [
-                                  ElevatedButton(
-                                    onPressed: () async {
-                                      setState(() {
-                                        selectedOption = 'بيع';
-                                      });
-                                      await _loadMapEstatesByBounds(
-                                        reload: true,
-                                      );
-                                    },
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor:
-                                      selectedOption == 'بيع'
-                                          ? Colors.blue
-                                          : Colors.white,
-                                      foregroundColor:
-                                      selectedOption == 'بيع'
-                                          ? Colors.white
-                                          : Colors.black,
-                                      shape: RoundedRectangleBorder(
-                                        side: const BorderSide(
-                                            color: Colors.blue),
-                                        borderRadius:
-                                        BorderRadius.circular(8),
-                                      ),
-                                    ),
-                                    child: const Text('بيع'),
-                                  ),
-                                  const SizedBox(width: 10),
-                                  ElevatedButton(
-                                    onPressed: () async {
-                                      setState(() {
-                                        selectedOption = 'إيجار';
-                                      });
-                                      await _loadMapEstatesByBounds(
-                                        reload: true,
-                                      );
-                                    },
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor:
-                                      selectedOption == 'إيجار'
-                                          ? Colors.blue
-                                          : Colors.white,
-                                      foregroundColor:
-                                      selectedOption == 'إيجار'
-                                          ? Colors.white
-                                          : Colors.black,
-                                      shape: RoundedRectangleBorder(
-                                        side: const BorderSide(
-                                            color: Colors.blue),
-                                        borderRadius:
-                                        BorderRadius.circular(8),
-                                      ),
-                                    ),
-                                    child: const Text('إيجار'),
-                                  ),
-                                  const SizedBox(width: 10),
-                                  ElevatedButton(
-                                    onPressed: () async {
-                                      setState(() {
-                                        selectedOption = 'all';
-                                      });
-                                      await _loadMapEstatesByBounds(
-                                        reload: true,
-                                      );
-                                    },
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor:
-                                      selectedOption == 'all'
-                                          ? Colors.blue
-                                          : Colors.white,
-                                      foregroundColor:
-                                      selectedOption == 'all'
-                                          ? Colors.white
-                                          : Colors.black,
-                                      shape: RoundedRectangleBorder(
-                                        side: const BorderSide(
-                                            color: Colors.blue),
-                                        borderRadius:
-                                        BorderRadius.circular(8),
-                                      ),
-                                    ),
-                                    child: const Text('الكل'),
-                                  ),
-                                ],
-                              ),
+                              _buildTypeToggle(),
 
                               const SizedBox(height: 5),
 
@@ -777,6 +693,7 @@ class _MapViewScreenState extends State<MapScreen> {
                                                   .setSubCategoryIndex(
                                                 index,
                                                 widget.mainCategory.id,
+                                                loadList: false,
                                               );
                                               await _loadMapEstatesByBounds(
                                                 reload: true,
@@ -1160,6 +1077,66 @@ class _MapViewScreenState extends State<MapScreen> {
     }
   }
 
+  /// أزرار (بيع / إيجار / الكل) بشكل مضغوط مثل تطبيق عقار — كبسولة واحدة
+  /// صغيرة بدل ثلاثة أزرار ElevatedButton كبيرة.
+  Widget _buildTypeToggle() {
+    const options = <MapEntry<String, String>>[
+      MapEntry('all', 'الكل'),
+      MapEntry('بيع', 'بيع'),
+      MapEntry('إيجار', 'إيجار'),
+    ];
+    final Color primary = Theme.of(context).primaryColor;
+
+    return Container(
+      height: 34,
+
+      padding: const EdgeInsets.all(3),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.12),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: options.map((o) {
+          final bool selected = selectedOption == o.key;
+          return GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () async {
+              if (selected) return;
+              setState(() => selectedOption = o.key);
+              await _loadMapEstatesByBounds(reload: true);
+            },
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 180),
+              alignment: Alignment.center,
+              padding: const EdgeInsets.symmetric(horizontal: 14),
+              decoration: BoxDecoration(
+                color: selected ? primary : Colors.transparent,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Text(
+                o.value,
+                style: TextStyle(
+                  fontFamily: 'IBMPlexSansArabic',
+                  fontSize: 12.5,
+                  fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                  color: selected ? Colors.white : const Color(0xFF374151),
+                ),
+              ),
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
   Widget _badgesLegend() {
     Widget item(MarkerBadge b, String label) => Padding(
       padding: const EdgeInsets.symmetric(vertical: 2),
@@ -1205,7 +1182,7 @@ class _MapViewScreenState extends State<MapScreen> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          item(_offerBadge, 'خدمات مزودين'),
+          item(_offerBadge, 'مزودين الخدمات'),
           item(_tourBadge, 'جولة افتراضية'),
           item(_videoBadge, 'فيديو'),
         ],
@@ -1468,8 +1445,7 @@ class _MapViewScreenState extends State<MapScreen> {
                                           : products[index].serviceOffers!.length);
                                   i++)
                                     Container(
-                                      margin:
-                                      const EdgeInsetsDirectional.only(start: 3),
+                                      margin: const EdgeInsetsDirectional.only(start: 3),
                                       decoration: BoxDecoration(
                                         shape: BoxShape.circle,
                                         border: Border.all(
@@ -1485,13 +1461,31 @@ class _MapViewScreenState extends State<MapScreen> {
                                         ],
                                       ),
                                       child: ClipOval(
-                                        child: CustomImage(
-                                          image:
-                                          '${Get.find<SplashController>().configModel!.baseUrls!.provider}'
-                                              '/${products[index].serviceOffers![i].image ?? Images.image}',
-                                          height: 20,
-                                          width: 20,
-                                          fit: BoxFit.cover,
+                                        child: Builder(
+                                          builder: (context) {
+                                            final String? rawImage = products[index].serviceOffers?[i].image;
+                                            final String? baseUrl =
+                                                Get.find<SplashController>().configModel?.baseUrls?.provider;
+
+                                            final String finalUrl =
+                                            ((rawImage ?? '').trim().isNotEmpty && baseUrl != null)
+                                                ? '$baseUrl/$rawImage'
+                                                : '';
+
+                                            // 🔹 طباعة تشخيصية مؤقتة — هنشوف فيها المسار الخام من السيرفر،
+                                            // رابط السيرفر الأساسي، والرابط النهائي المُكوَّن.
+                                            print('🖼️ rawImage[$i]: $rawImage');
+                                            print('🖼️ baseUrl: $baseUrl');
+                                            print('🖼️ finalUrl[$i]: $finalUrl');
+
+                                            return CustomImage(
+                                              image: finalUrl,
+                                              height: 20,
+                                              width: 20,
+                                              fit: BoxFit.cover,
+                                              placeholder: Images.image,
+                                            );
+                                          },
                                         ),
                                       ),
                                     ),

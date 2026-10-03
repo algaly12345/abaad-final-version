@@ -135,13 +135,13 @@ class _SplashScreenState extends State<SplashScreen> {
         }
       }
 
-      // رابط تفاصيل عقار معلَّق: نتخطى فتح الرئيسية/تسجيل الدخول بالكامل هنا،
-      // ونترك GetX ينتقل مباشرة لصفحة /details عبر GetPage المسجَّلة، لتفادي
-      // ظهور الرئيسية للحظة قبل شاشة التفاصيل (الرمشة).
-      if (rlm.pendingDetailsEstateId != null) {
-        rlm.pendingDetailsEstateId = null;
-        return;
-      }
+      // رابط تفاصيل عقار معلَّق (قد يُضبط عرَضًا بواسطة ReferralLinkManager —
+      // كلاهما يستمع لنفس تيار ChottuLink): نُفرّغه دون إرجاع مبكر، فتستمر
+      // هذه الدالة لفتح الرئيسية/تسجيل الدخول كالمعتاد، ويصبح ذلك "الأرضية"
+      // في المكدس. EstateChottuLinkManager (مستقل تمامًا) هو من يفتح شاشة
+      // التفاصيل فعليًا، فوق هذه الأرضية — لا هنا. إرجاع مبكر بلا أرضية كان
+      // يترك شاشة الترحيب نفسها هي الأرضية، فيعلق زر الرجوع عليها.
+      rlm.pendingDetailsEstateId = null;
 
       if (Get.find<AuthController>().isLoggedIn()) {
         // مستخدم لديه حساب بالفعل — أي كود إحالة معلَّق لا معنى له (لا تسجيل

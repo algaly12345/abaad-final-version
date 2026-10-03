@@ -5,7 +5,6 @@ import 'package:abaad_flutter/features/referrals/data/models/referral_model.dart
 import 'package:abaad_flutter/features/referrals/view/screens/referral_payout_method_screen.dart';
 import 'package:abaad_flutter/features/referrals/view/screens/referral_withdrawal_screen.dart';
 import 'package:abaad_flutter/features/referrals/view/widgets/payout_form_widgets.dart';
-import 'package:abaad_flutter/features/provider/view/screens/provider_upgrade_screen.dart';
 import 'package:abaad_flutter/shared/controllers/splash_controller.dart';
 import 'package:abaad_flutter/shared/helpers/date_converter.dart';
 import 'package:abaad_flutter/shared/helpers/price_converter.dart';
@@ -28,7 +27,7 @@ class ReferralScreen extends StatefulWidget {
 class _ReferralScreenState extends State<ReferralScreen>
     with SingleTickerProviderStateMixin {
   final bool _isLoggedIn = Get.find<AuthController>().isLoggedIn();
-  bool _loadedForProvider = false;
+  bool _loaded = false;
   late final TabController _tabController = TabController(length: 2, vsync: this);
 
   @override
@@ -45,20 +44,6 @@ class _ReferralScreenState extends State<ReferralScreen>
     super.dispose();
   }
 
-  /// برنامج الإحالة حصراً لمزوّدي الخدمة — نفس الشرط المستخدم لإظهار عنصر
-  /// القائمة في DrawerMenu. هذا الفحص يمنع أي عميل عادي وصل للمسار مباشرة
-  /// (رابط عميق، إعادة بناء الحالة، ...) من رؤية بياناته أو استدعاء
-  /// endpoints الإحالة المحمية بـ provider.api على الباكند فتُرجع 403.
-  bool _isProvider(UserController userController) =>
-      userController.userInfoModel?.userType == 'provider';
-
-  /// نفس المبدأ المطبَّق قبل AddPropertyServiceOfferScreen (راجع
-  /// ServiceOfferController.hydrateEntityFromProvider وProviderUpgradeScreen):
-  /// مزوّد قديم لم يُكمل هويته (رقم هوية فردي أو سجل تجاري) بعد لا يُعامَل
-  /// كمزوّد فعلي هنا أيضاً — نفس isComplete المشتقة في ProviderIdentity.
-  bool _hasCompleteIdentity(UserController userController) =>
-      userController.userInfoModel?.provider?.isComplete ?? false;
-
   @override
   Widget build(BuildContext context) {
     if (!_isLoggedIn) {
@@ -71,21 +56,8 @@ class _ReferralScreenState extends State<ReferralScreen>
           return _scaffold(context, const Center(child: CircularProgressIndicator()));
         }
 
-        if (!_isProvider(userController)) {
-          return _scaffold(context, _providerOnlyScreen(context));
-        }
-
-        if (!_hasCompleteIdentity(userController)) {
-          // نفس تحويل AddPropertyServiceOfferScreen بالضبط لمزوّد لم يُكمل
-          // هويته بعد: يُستبدَل بشاشة إكمال الهوية بدل عرض صفحة الإحالة.
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            Get.off(() => const ProviderUpgradeScreen());
-          });
-          return _scaffold(context, const Center(child: CircularProgressIndicator()));
-        }
-
-        if (!_loadedForProvider) {
-          _loadedForProvider = true;
+        if (!_loaded) {
+          _loaded = true;
           Get.find<ReferralController>().loadAll();
         }
 
@@ -210,32 +182,6 @@ class _ReferralScreenState extends State<ReferralScreen>
           Tab(text: 'tab_referrals'.tr),
           Tab(text: 'tab_withdrawals'.tr),
         ],
-      ),
-    );
-  }
-
-  Widget _providerOnlyScreen(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.storefront_outlined, size: 72, color: AppColors.textSecondary(context)),
-            const SizedBox(height: 20),
-            Text(
-              'referral_provider_only_title'.tr,
-              style: AppTypography.subtitle.copyWith(color: AppColors.textPrimary(context)),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 10),
-            Text(
-              'referral_provider_only_desc'.tr,
-              style: AppTypography.small.copyWith(color: AppColors.textSecondary(context)),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
       ),
     );
   }

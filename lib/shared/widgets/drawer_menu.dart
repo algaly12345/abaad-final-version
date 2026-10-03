@@ -331,8 +331,7 @@ class _DrawerMenuState extends State<DrawerMenu> {
                         },
                       ),
 
-                      if (isLoggedIn &&
-                          userController.userInfoModel?.userType == 'provider')
+                      if (isLoggedIn)
                         _drawerTile(
                           context: context,
                           icon: Icons.diversity_3_outlined,

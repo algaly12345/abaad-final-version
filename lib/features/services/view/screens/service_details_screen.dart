@@ -990,6 +990,13 @@ class _StickyBottomBar extends StatelessWidget {
     required this.contactType,
   });
 
+  String _whatsappMessage() {
+    final title = (service.title ?? '').trim();
+    return 'السلام عليكم، أرغب في الاستفسار عن '
+        '${title.isNotEmpty ? 'خدمة "$title"' : 'هذه الخدمة'} '
+        'المعروضة على منصة وتطبيق أبعاد.';
+  }
+
   @override
   Widget build(BuildContext context) {
     final dark = Theme.of(context).brightness == Brightness.dark;
@@ -1024,7 +1031,8 @@ class _StickyBottomBar extends StatelessWidget {
                     onPressed: () => _launch(
                       isCallOnly
                           ? 'tel:$phone'
-                          : 'https://wa.me/${_cleanPhoneForWhatsapp(phone)}',
+                          : 'https://wa.me/${_cleanPhoneForWhatsapp(phone)}'
+                              '?text=${Uri.encodeComponent(_whatsappMessage())}',
                     ),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Theme.of(context).primaryColor,

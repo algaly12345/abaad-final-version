@@ -30,6 +30,7 @@ class ServiceOfferRepo {
     String? identityNumber,
     String? freelanceMembershipNumber,
     String? commercialRegistrationNo,
+    String? unifiedNumber,
   }) async {
     return await apiClient.postData(AppConstants.PROVIDER_UPDATE_IDENTITY_URI, {
       // الباكند يخزّن 'company' لا 'organization' في service_providers.identity_type.
@@ -39,6 +40,7 @@ class ServiceOfferRepo {
         'freelance_membership_number': freelanceMembershipNumber,
       if (commercialRegistrationNo != null)
         'commercial_registration_no': commercialRegistrationNo,
+      if (unifiedNumber != null) 'unified_number': unifiedNumber,
     });
   }
 

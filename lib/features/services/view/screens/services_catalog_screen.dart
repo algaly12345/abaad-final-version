@@ -3378,6 +3378,13 @@ class _ServiceActionButtons extends StatelessWidget {
     required this.service,
   });
 
+  String _whatsappMessage() {
+    final title = (service.title ?? '').trim();
+    return 'السلام عليكم، أرغب في الاستفسار عن '
+        '${title.isNotEmpty ? 'خدمة "$title"' : 'هذه الخدمة'} '
+        'المعروضة على منصة وتطبيق أبعاد.';
+  }
+
   ZoneData? get _mappableZone {
     final zones = service.zones;
     if (zones == null) return null;
@@ -3409,7 +3416,8 @@ class _ServiceActionButtons extends StatelessWidget {
             color: Colors.white,
             fillColor: primary,
             onTap: () => _launchUrl(
-              'https://wa.me/${_cleanPhoneForWhatsapp(phone)}',
+              'https://wa.me/${_cleanPhoneForWhatsapp(phone)}'
+              '?text=${Uri.encodeComponent(_whatsappMessage())}',
             ),
           ),
         if (zone != null) ...[

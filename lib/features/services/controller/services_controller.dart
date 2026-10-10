@@ -8,6 +8,7 @@ import 'package:abaad_flutter/features/services/data/repositories/services_repo.
 import 'package:abaad_flutter/shared/widgets/custom_snackbar.dart';
 import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
+import 'package:image_picker/image_picker.dart';
 
 class ServicesController extends GetxController implements GetxService {
   final ServicesRepo servicesRepo;
@@ -295,6 +296,56 @@ class ServicesController extends GetxController implements GetxService {
     } catch (e) {
       showCustomSnackBar('فشل تحديث حالة الخدمة');
     }
+  }
+
+  /// يرجع true عند النجاح. يحدّث قائمة "خدماتي" بعد الحفظ.
+  Future<bool> updateServiceDetails(
+    int id, {
+    required String title,
+    required String description,
+    required String address,
+    required String contactPhone,
+    required String contactType,
+    required String offerType,
+    String? servicePrice,
+    String? discount,
+    double? latitude,
+    double? longitude,
+    XFile? image,
+  }) async {
+    try {
+      final response = await servicesRepo.updateServiceDetails(
+        id,
+        title: title,
+        description: description,
+        address: address,
+        contactPhone: contactPhone,
+        contactType: contactType,
+        offerType: offerType,
+        servicePrice: servicePrice,
+        discount: discount,
+        latitude: latitude,
+        longitude: longitude,
+        image: image,
+      );
+      if (response.statusCode == 200 &&
+          response.body is Map &&
+          response.body['status'] == 'success') {
+        showCustomSnackBar(
+          response.body['message'] ?? 'تم تعديل بيانات الخدمة',
+          isError: false,
+        );
+        await loadAllMyServices(silentReload: true);
+        return true;
+      }
+      final message = (response.body is Map)
+          ? (response.body['message'] ?? 'فشل تعديل الخدمة')
+          : 'فشل تعديل الخدمة';
+      showCustomSnackBar(message);
+    } catch (e) {
+      showCustomSnackBar('فشل تعديل الخدمة');
+    }
+    return false;
   }
 
   void searchServices(String text) {

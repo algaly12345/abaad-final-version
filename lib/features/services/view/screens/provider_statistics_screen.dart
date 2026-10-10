@@ -575,11 +575,9 @@ class _AccountCard extends StatelessWidget {
             spacing: Spacing.sm,
             runSpacing: Spacing.xs,
             children: [
-              _VerifyChip('stats_verify_nafath'.tr, a.accountVerification),
               _VerifyChip('stats_verify_phone'.tr, a.phoneVerified),
               _VerifyChip('stats_verify_email'.tr, a.emailVerified),
               _VerifyChip('stats_verify_unified_number'.tr, a.hasUnifiedNumber),
-              _VerifyChip('stats_verify_fal'.tr, a.hasFalLicense),
               _VerifyChip('stats_verify_cr'.tr,
                   (a.commercialRegistrationNo ?? '').isNotEmpty),
             ],
@@ -613,11 +611,8 @@ class _AccountCard extends StatelessWidget {
     final items = <String>[];
     if (!a.hasImage) items.add('stats_missing_image'.tr);
     if (!a.emailVerified) items.add('stats_missing_email'.tr);
-    if (!a.accountVerification) items.add('stats_missing_nafath'.tr);
     if (!a.phoneVerified) items.add('stats_missing_phone'.tr);
-    if (!a.hasUnifiedNumber && !a.hasFalLicense) {
-      items.add('stats_missing_unified_or_fal'.tr);
-    }
+    if (!a.hasUnifiedNumber) items.add('stats_missing_unified'.tr);
     if ((a.commercialRegistrationNo ?? '').isEmpty) {
       items.add('stats_missing_cr'.tr);
     }
@@ -656,7 +651,8 @@ class _CompleteProfileAction extends StatelessWidget {
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
-              onPressed: () => Get.toNamed(RouteHelper.getUpdateProfileRoute()),
+              onPressed: () => Get.toNamed(RouteHelper.getUpdateProfileRoute(),
+                  arguments: {'focus_verification': true}),
               icon: const Icon(Icons.edit_note_rounded, size: 18),
               label: Text('stats_complete_profile_cta'.tr),
               style: ElevatedButton.styleFrom(
@@ -3591,6 +3587,9 @@ class _LineChart extends StatelessWidget {
             painter: _LineChartPainter(
               points: points,
               color: AppColors.primary(context),
+              // محور التسميات (Row) ينعكس في RTL فيصبح الأقدم يمينًا؛ نعكس الرسم
+              // ليتطابق معه بدل أن تظهر آخر نقطة تحت تسمية الشهر الأول.
+              isRtl: Directionality.of(context) == TextDirection.rtl,
             ),
           ),
         ),
@@ -3630,10 +3629,16 @@ class _LineChart extends StatelessWidget {
 class _LineChartPainter extends CustomPainter {
   final List<ViewsPoint> points;
   final Color color;
-  _LineChartPainter({required this.points, required this.color});
+  final bool isRtl;
+  _LineChartPainter(
+      {required this.points, required this.color, this.isRtl = false});
 
   @override
   void paint(Canvas canvas, Size size) {
+    if (isRtl) {
+      canvas.translate(size.width, 0);
+      canvas.scale(-1, 1);
+    }
     final maxV = max(1, points.map((p) => p.views).fold<int>(0, max));
     final n = points.length;
     final dx = n <= 1 ? 0.0 : size.width / (n - 1);

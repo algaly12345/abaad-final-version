@@ -793,8 +793,8 @@ class _ServiceProivderViewState extends State<ServiceProivderView> {
         .replaceAll('+', '')
         .replaceAll('-', '');
     final String message = isArabic
-        ? 'مرحبًا، أرغب بالاستفسار عن عرض "${offer.title ?? ''}"'
-        : 'Hello, I would like to ask about the offer "${offer.title ?? ''}"';
+        ? 'السلام عليكم، أرغب في الاستفسار عن عرض "${offer.title ?? ''}" المعروض على منصة وتطبيق أبعاد.'
+        : 'Hello, I would like to ask about the offer "${offer.title ?? ''}" listed on the Abaad platform and app.';
     final Uri waUri = Uri.parse(
       'https://wa.me/$cleaned?text=${Uri.encodeComponent(message)}',
     );

@@ -9,6 +9,7 @@ import 'package:abaad_flutter/shared/utils/styles.dart';
 import 'package:abaad_flutter/shared/widgets/custom_image.dart';
 import 'package:abaad_flutter/shared/widgets/not_logged_in_screen.dart';
 import 'package:abaad_flutter/shared/widgets/root_fallback_scope.dart';
+import 'package:abaad_flutter/features/services/view/screens/edit_service_details_screen.dart';
 import 'package:abaad_flutter/features/services/view/screens/service_details_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -478,6 +479,15 @@ class _ServiceCard extends StatelessWidget {
                 ),
               ),
             ),
+            if (service.id != null && service.status != 'cancelled')
+              IconButton(
+                tooltip: 'edit_service'.tr,
+                icon: Icon(Icons.edit_outlined, size: 20, color: primary),
+                onPressed: () => Get.to(
+                  () => EditServiceDetailsScreen(service: service),
+                  transition: Transition.cupertino,
+                ),
+              ),
             // Toggle switch
             if (canToggle)
               Padding(

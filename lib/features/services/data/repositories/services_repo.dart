@@ -1,5 +1,6 @@
 ﻿import 'package:abaad_flutter/core/api/api_client.dart';
 import 'package:get/get.dart';
+import 'package:image_picker/image_picker.dart';
 
 class ServicesRepo {
   final ApiClient apiClient;
@@ -84,6 +85,42 @@ class ServicesRepo {
 
   Future<Response> getServiceDetails(int id) async {
     return await apiClient.getData('/api/v1/services/$id');
+  }
+
+  /// يعدّل بيانات الخدمة كاملة عدا المناطق وأنواع العقار والمدة ونوع الخدمة.
+  Future<Response> updateServiceDetails(
+    int id, {
+    required String title,
+    required String description,
+    required String address,
+    required String contactPhone,
+    required String contactType,
+    required String offerType,
+    String? servicePrice,
+    String? discount,
+    double? latitude,
+    double? longitude,
+    XFile? image,
+  }) async {
+    return await apiClient.postMultipartData(
+      '/api/v1/services/$id/details',
+      {
+        'title': title,
+        'description': description,
+        'address': address,
+        'contact_phone': contactPhone,
+        'contact_type': contactType,
+        'offer_type': offerType,
+        if (offerType == 'price' && servicePrice != null)
+          'service_price': servicePrice,
+        if (offerType == 'discount' && discount != null) 'discount': discount,
+        if (latitude != null && longitude != null) ...{
+          'latitude': latitude.toString(),
+          'longitude': longitude.toString(),
+        },
+      },
+      [if (image != null) MultipartBody('image', image)],
+    );
   }
 
   /// يفعّل/يوقف خدمة مملوكة لمقدّم الخدمة الحالي مؤقتًا (accept <-> pending).
